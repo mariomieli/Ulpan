@@ -114,7 +114,7 @@ p { margin: 0 0 .8em; }
 .nav-icon { width: 20px; height: 20px; flex: none; }
 .sidebar-foot { margin-top: auto; font-size: .78rem; color: var(--text-2); padding: 10px; }
 
-.main { flex: 1; margin-left: var(--sidebar); padding: 32px 40px 60px; max-width: calc(1100px + var(--sidebar)); }
+.main { flex: 1; min-width: 0; margin-left: var(--sidebar); padding: 32px 40px 60px; max-width: calc(1100px + var(--sidebar)); }
 
 .bottom-nav { display: none; }
 
@@ -429,9 +429,22 @@ table.data .he { font-size: calc(2.2rem * var(--he-scale)); }
 .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .stack { display: grid; gap: 16px; }
+.stack > *, .grid > *, .page-head > *, .lesson-info { min-width: 0; }
+html, body { overflow-x: hidden; }
+h1, h2, h3, p, li, dd { overflow-wrap: anywhere; }
 .center { text-align: center; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
 
 .fade-in { animation: fade .25s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } * { transition: none !important; } }
+
+@media (max-width: 600px) {
+  .nikud-table thead { display: none; }
+  .nikud-table tr {
+    display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 4px 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .nikud-table td { border: 0; padding: 0; }
+  .nikud-table td.desc { grid-column: 1 / -1; }
+}

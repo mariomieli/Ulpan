@@ -27,7 +27,7 @@ export function NikudPage() {
         <div className="card" key={grp}>
           <div className="card-title"><h2>{VOWEL_GROUP_LABELS[grp]}</h2></div>
           <div className="table-wrap">
-            <table className="data">
+            <table className="data nikud-table">
               <thead>
                 <tr><th>Segno</th><th>Esempio</th><th>Nome</th><th>Suono</th><th>Descrizione</th></tr>
               </thead>
@@ -38,7 +38,7 @@ export function NikudPage() {
                     <td><He>{vowelDisplay(v, 'בּ')}</He></td>
                     <td><b>{v.name}</b><br /><span className="he-inline muted">{v.hebrewName}</span></td>
                     <td><span className="pill pill-primary">{v.sound}</span></td>
-                    <td className="small"><Rich text={v.description} /> <span className="muted">(lezione {v.lesson})</span></td>
+                    <td className="small desc"><Rich text={v.description} /> <span className="muted">(lezione {v.lesson})</span></td>
                   </tr>
                 ))}
               </tbody>
