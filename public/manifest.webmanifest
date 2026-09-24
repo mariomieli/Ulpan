@@ -1,0 +1,11 @@
+{
+  "name": "Ulpan · Impara a leggere l'ebraico",
+  "short_name": "Ulpan",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f7fb",
+  "theme_color": "#1d4ed8",
+  "lang": "it",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
