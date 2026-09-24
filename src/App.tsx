@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
+import { useAuth, showLogin } from './lib/auth';
+import { cloudEnabled } from './lib/supabase';
+import { AuthPage } from './pages/Auth';
 import { HomePage } from './pages/Home';
 import { LessonsPage } from './pages/Lessons';
 import { LessonPage } from './pages/Lesson';
@@ -24,6 +27,10 @@ const NAV = [
   { path: '/progressi', label: 'Progressi', icon: 'chart' },
   { path: '/impostazioni', label: 'Impostazioni', icon: 'settings' },
 ];
+
+const SYNC_LABEL = {
+  idle: 'Account online', saving: 'Salvataggio…', saved: 'Progressi salvati', offline: 'Offline', error: 'Errore di sincronizzazione',
+} as const;
 
 const MOBILE = ['/', '/lezioni', '/ripasso', '/test'];
 
@@ -54,6 +61,7 @@ export function App() {
   const { settings } = state;
   const [drawer, setDrawer] = useState(false);
   const due = dueItems(state, Date.now()).length;
+  const auth = useAuth();
 
   // tema, carattere e dimensione del testo ebraico
   useEffect(() => {
@@ -73,6 +81,12 @@ export function App() {
 
   useEffect(() => setDrawer(false), [path]);
 
+  if (auth.status === 'loading') {
+    return <div className="auth-wrap"><span className="brand-mark" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
+  }
+  if (auth.status === 'signedOut') return <AuthPage />;
+  if (auth.status === 'recovery') return <AuthPage recovery />;
+
   return (
     <div className="app">
       <nav className="sidebar" aria-label="Navigazione principale">
@@ -87,6 +101,14 @@ export function App() {
           </a>
         ))}
         <div className="sidebar-foot">
+          {auth.user ? (
+            <a href="#/impostazioni" className="user-chip">
+              <span className="avatar">{auth.user.name.slice(0, 1)}</span>
+              <span className="who"><b>{auth.user.name}</b><span className="small muted"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
+            </a>
+          ) : cloudEnabled && (
+            <button className="btn btn-sm btn-block" style={{ marginBottom: 8 }} onClick={showLogin}>Accedi o registrati</button>
+          )}
           <Icon name="flame" size={14} className="" /> {state.streak} {state.streak === 1 ? 'giorno' : 'giorni'} di fila · {state.xp} XP
         </div>
       </nav>

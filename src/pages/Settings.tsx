@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { actions, useAppState, type Settings } from '../lib/store';
 import { hasHebrewVoice, speak, speechAvailable } from '../lib/speech';
 import { He } from '../components/Hebrew';
+import { AccountCard } from '../components/Account';
 
 export function SettingsPage() {
   const { settings } = useAppState();
@@ -38,6 +39,8 @@ export function SettingsPage() {
   return (
     <div className="fade-in stack">
       <div className="page-head"><div><h1>Impostazioni</h1><p>Personalizza l’esperienza di studio.</p></div></div>
+
+      <AccountCard />
 
       <div className="card stack">
         <h2 style={{ margin: 0 }}>Aspetto</h2>
@@ -103,13 +106,13 @@ export function SettingsPage() {
 
       <div className="card stack">
         <h2 style={{ margin: 0 }}>Dati</h2>
-        <p className="muted small" style={{ margin: 0 }}>I progressi sono salvati solo in questo browser. Esportali per fare un backup o spostarli su un altro dispositivo.</p>
+        <p className="muted small" style={{ margin: 0 }}>Esporta i progressi per farne un backup; l’importazione li sostituisce a quelli attuali di questo profilo.</p>
         <div className="row">
           <button className="btn" onClick={exportData}>Esporta progressi</button>
           <button className="btn" onClick={() => fileRef.current?.click()}>Importa progressi</button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])} />
           <span className="spacer" />
-          <button className="btn btn-danger" onClick={() => { if (confirm('Cancellare tutti i progressi? L’operazione non è reversibile.')) { actions.reset(); setMsg('Progressi azzerati.'); } }}>
+          <button className="btn btn-danger" onClick={() => { if (confirm('Cancellare tutti i progressi di questo profilo? L’operazione non è reversibile.')) { actions.reset(); setMsg('Progressi azzerati.'); } }}>
             Azzera progressi
           </button>
         </div>

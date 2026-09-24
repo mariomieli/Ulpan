@@ -46,9 +46,20 @@ export interface AppState {
   streak: number;
   lastActive: string | null;
   days: Record<string, DayStats>;
+  /** Ultima modifica (ms): serve a scegliere le impostazioni più recenti in sincronizzazione. */
+  updatedAt?: number;
+  /** Momento dell'ultimo azzeramento/importazione: le copie più vecchie vengono scartate. */
+  resetAt?: number;
 }
 
-const STORAGE_KEY = 'ulpan:v1';
+const BASE_KEY = 'ulpan:v1';
+
+/** Chiave di archiviazione locale: una per utente, più quella dell'ospite. */
+export function storageKeyFor(userId: string | null): string {
+  return userId ? `${BASE_KEY}:${userId}` : BASE_KEY;
+}
+
+let storageKey = BASE_KEY;
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -81,7 +92,7 @@ function yesterdayKey(now: Date): string {
   return dayKey(d);
 }
 
-function sanitize(raw: unknown): AppState {
+export function sanitize(raw: unknown): AppState {
   const base = initialState();
   if (!raw || typeof raw !== 'object') return base;
   const r = raw as Partial<AppState>;
@@ -97,9 +108,9 @@ function sanitize(raw: unknown): AppState {
   };
 }
 
-function load(): AppState {
+function load(key: string = storageKey): AppState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? sanitize(JSON.parse(raw)) : initialState();
   } catch {
     return initialState();
@@ -111,14 +122,14 @@ const listeners = new Set<() => void>();
 
 function persist() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     /* archiviazione non disponibile: si continua in memoria */
   }
 }
 
 function set(next: AppState) {
-  state = next;
+  state = { ...next, updatedAt: Date.now() };
   persist();
   listeners.forEach((l) => l());
 }
@@ -135,6 +146,92 @@ export function subscribe(l: () => void): () => void {
 /** Stato completo dell'app (riferimento stabile finché non cambia). */
 export function useAppState(): AppState {
   return useSyncExternalStore(subscribe, getState, getState);
+}
+
+/** Passa ai progressi di un altro utente (null = ospite). */
+export function switchUser(userId: string | null) {
+  storageKey = storageKeyFor(userId);
+  state = load();
+  listeners.forEach((l) => l());
+}
+
+/** Sostituisce lo stato corrente (es. dopo una sincronizzazione). */
+export function replaceState(next: AppState) {
+  state = next;
+  persist();
+  listeners.forEach((l) => l());
+}
+
+/** Legge i progressi salvati localmente per un utente, senza attivarli. */
+export function readStored(userId: string | null): AppState {
+  return load(storageKeyFor(userId));
+}
+
+export function hasProgress(s: AppState): boolean {
+  return s.xp > 0 || Object.keys(s.srs).length > 0 || Object.keys(s.lessons).length > 0;
+}
+
+/**
+ * Unisce due copie dei progressi (es. telefono e computer) senza perdere nulla:
+ * per ogni elemento tiene il risultato migliore o più recente.
+ */
+export function mergeStates(a: AppState, b: AppState): AppState {
+  // Un azzeramento successivo all'ultima modifica dell'altra copia vince
+  if ((b.resetAt ?? 0) > (a.updatedAt ?? 0)) return b;
+  if ((a.resetAt ?? 0) > (b.updatedAt ?? 0)) return a;
+  const newer = (b.updatedAt ?? 0) > (a.updatedAt ?? 0) ? b : a;
+
+  const lessons: AppState['lessons'] = { ...a.lessons };
+  for (const [k, l] of Object.entries(b.lessons)) {
+    const p = lessons[Number(k)];
+    lessons[Number(k)] = p ? {
+      studied: p.studied || l.studied,
+      passed: p.passed || l.passed,
+      bestScore: Math.max(p.bestScore, l.bestScore),
+      attempts: Math.max(p.attempts, l.attempts),
+    } : l;
+  }
+
+  const exams: AppState['exams'] = { ...a.exams };
+  for (const [k, e] of Object.entries(b.exams)) {
+    const p = exams[k];
+    if (!p) { exams[k] = e; continue; }
+    const later = e.lastDate > p.lastDate ? e : p;
+    const best = e.bestScore > p.bestScore ? e : e.bestScore < p.bestScore ? p
+      : (e.bestTimeSec ?? Infinity) < (p.bestTimeSec ?? Infinity) ? e : p;
+    exams[k] = {
+      bestScore: best.bestScore, bestTimeSec: best.bestTimeSec,
+      lastScore: later.lastScore, lastDate: later.lastDate,
+      attempts: Math.max(p.attempts, e.attempts),
+    };
+  }
+
+  const srs: AppState['srs'] = { ...a.srs };
+  for (const [k, x] of Object.entries(b.srs)) {
+    const p = srs[k];
+    srs[k] = !p || x.seen > p.seen || (x.seen === p.seen && x.due > p.due) ? x : p;
+  }
+
+  const days: AppState['days'] = { ...a.days };
+  for (const [k, d] of Object.entries(b.days)) {
+    const p = days[k];
+    days[k] = p ? { answered: Math.max(p.answered, d.answered), correct: Math.max(p.correct, d.correct) } : d;
+  }
+
+  const recent = (b.lastActive ?? '') > (a.lastActive ?? '') ? b
+    : (a.lastActive ?? '') > (b.lastActive ?? '') ? a
+    : b.streak > a.streak ? b : a;
+
+  return {
+    version: 1,
+    settings: { ...newer.settings },
+    lessons, exams, srs, days,
+    xp: Math.max(a.xp, b.xp),
+    streak: recent.streak,
+    lastActive: recent.lastActive,
+    updatedAt: Math.max(a.updatedAt ?? 0, b.updatedAt ?? 0),
+    resetAt: Math.max(a.resetAt ?? 0, b.resetAt ?? 0) || undefined,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -270,12 +367,12 @@ export const actions = {
     set({ ...state, settings: { ...state.settings, ...patch } });
   },
   reset() {
-    set({ ...initialState(), settings: state.settings });
+    set({ ...initialState(), settings: state.settings, resetAt: Date.now() });
   },
   exportJson(): string {
     return JSON.stringify(state, null, 2);
   },
   importJson(json: string) {
-    set(sanitize(JSON.parse(json)));
+    set({ ...sanitize(JSON.parse(json)), resetAt: Date.now() });
   },
 };

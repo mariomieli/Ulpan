@@ -39,4 +39,17 @@ src/
 tests/         test Vitest
 ```
 
-I progressi sono salvati nel `localStorage` del browser.
+## Account e più utenti
+
+Con [Supabase](https://supabase.com) (piano gratuito) ogni persona si registra con email e password e ha il proprio avanzamento, salvato online e sincronizzato tra dispositivi. Senza configurazione l'app funziona in locale, senza account.
+
+1. Crea un progetto su supabase.com.
+2. In **SQL Editor** esegui `supabase/schema.sql` (tabella `progress` con Row Level Security: ognuno vede solo i propri dati).
+3. In **Authentication → URL Configuration** imposta *Site URL* e *Redirect URLs* all'indirizzo dell'app (es. `https://mariomieli.github.io/Ulpan/`).
+4. Da **Project Settings → API** copia *Project URL* e *anon public key* e impostale:
+   - per GitHub Pages: variabili del repository `SUPABASE_URL` e `SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions → Variables);
+   - in locale: file `.env.local` con `VITE_SUPABASE_URL=...` e `VITE_SUPABASE_ANON_KEY=...`.
+
+La chiave *anon* è pubblica per progettazione: la sicurezza dei dati è garantita dalle regole RLS.
+
+I progressi sono sempre salvati anche nel browser (una copia per utente) e si sincronizzano col cloud dopo ogni modifica, al ritorno online e quando riapri l'app. Se usi più dispositivi, i progressi vengono uniti tenendo il risultato migliore di ciascuno.

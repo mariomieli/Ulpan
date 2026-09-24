@@ -66,3 +66,36 @@ describe('store', () => {
     expect(s.exams.finale).toMatchObject({ bestScore: 90, lastScore: 50, attempts: 3, bestTimeSec: 700 });
   });
 });
+
+describe('sincronizzazione', () => {
+  it('unisce due dispositivi tenendo il meglio di ciascuno', async () => {
+    const { mergeStates } = await import('../src/lib/store');
+    let a = applyLessonTest(initialState(), 1, 90, 80);
+    a = applyAnswer(a, ['g:bet'], true, d('2026-01-01'));
+    a = { ...a, updatedAt: 100 };
+    let b = applyLessonTest(initialState(), 2, 85, 80);
+    b = applyAnswer(b, ['g:bet'], true, d('2026-01-02'));
+    b = applyAnswer(b, ['g:bet'], true, d('2026-01-02'));
+    b = applyExam(b, 'finale', 70, 500, d('2026-01-02'));
+    b = { ...b, updatedAt: 200, settings: { ...b.settings, theme: 'dark' } };
+    const m = mergeStates(a, b);
+    expect(m.lessons[1].passed && m.lessons[2].passed).toBe(true);
+    expect(m.srs['g:bet'].seen).toBe(2);
+    expect(m.days['2026-01-01'].answered).toBe(1);
+    expect(m.days['2026-01-02'].answered).toBe(2);
+    expect(m.exams.finale.bestScore).toBe(70);
+    expect(m.settings.theme).toBe('dark');
+    expect(m.lastActive).toBe('2026-01-02');
+    expect(mergeStates(b, a)).toMatchObject({ lessons: m.lessons, xp: m.xp });
+  });
+
+  it('un azzeramento non viene annullato da una copia più vecchia', async () => {
+    const { mergeStates } = await import('../src/lib/store');
+    const old = { ...applyLessonTest(initialState(), 1, 90, 80), updatedAt: 100 };
+    const reset = { ...initialState(), updatedAt: 300, resetAt: 300 };
+    expect(mergeStates(old, reset).lessons).toEqual({});
+    expect(mergeStates(reset, old).lessons).toEqual({});
+    const later = { ...applyLessonTest(initialState(), 3, 90, 80), updatedAt: 400 };
+    expect(mergeStates(reset, later).lessons[3].passed).toBe(true);
+  });
+});

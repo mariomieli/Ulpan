@@ -448,3 +448,25 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
   .nikud-table td { border: 0; padding: 0; }
   .nikud-table td.desc { grid-column: 1 / -1; }
 }
+
+/* ---------- Accesso ---------- */
+input[type='email'], input[type='password'] {
+  font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); min-width: 0; width: 100%;
+}
+.field input { width: 100%; }
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.auth-card { width: 100%; max-width: 420px; }
+.link-btn { background: none; border: 0; padding: 4px; color: var(--primary); cursor: pointer; font-weight: 500; }
+.link-btn.muted { color: var(--text-2); }
+.user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: var(--surface-2); margin-bottom: 8px; color: var(--text); }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: var(--on-primary);
+  display: grid; place-items: center; font-weight: 700; flex: none; text-transform: uppercase;
+}
+.user-chip .who { min-width: 0; line-height: 1.25; }
+.user-chip .who b, .user-chip .who span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: var(--text-2); }
+.sync-dot.saved { background: var(--ok); }
+.sync-dot.saving { background: var(--warn); }
+.sync-dot.error, .sync-dot.offline { background: var(--bad); }

@@ -6,6 +6,7 @@ import { VOWELS } from '../data/nikud';
 import { WORDS } from '../data/words';
 import { mastery } from '../lib/srs';
 import { Icon } from '../components/Icon';
+import { useAuth } from '../lib/auth';
 
 function Ring({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(1, max ? value / max : 0);
@@ -25,6 +26,7 @@ function Ring({ value, max, label }: { value: number; max: number; label: string
 
 export function HomePage() {
   const state = useAppState();
+  const auth = useAuth();
   const today = state.days[dayKey()] ?? { answered: 0, correct: 0 };
   const due = dueItems(state, Date.now()).length;
 
@@ -57,7 +59,7 @@ export function HomePage() {
     <div className="stack fade-in">
       <div className="page-head">
         <div>
-          <h1><span className="he-inline">שָׁלוֹם</span> · Ciao!</h1>
+          <h1><span className="he-inline">שָׁלוֹם</span> · Ciao{auth.user ? `, ${auth.user.name}` : ''}!</h1>
           <p>Il tuo percorso per leggere l’ebraico, una lettera alla volta.</p>
         </div>
       </div>
