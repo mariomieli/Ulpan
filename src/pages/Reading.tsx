@@ -167,7 +167,7 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
   if (!words.length || !w) return <div className="card empty">Nessuna parola disponibile.</div>;
 
   const next = (known: boolean) => {
-    actions.answer([`w:${w.id}`], known);
+    actions.answer([`w:${w.id}`], known, { selfRated: true });
     setScore((s) => (known ? { ...s, ok: s.ok + 1 } : { ...s, ko: s.ko + 1 }));
     setFlipped(false);
     let d = deck;

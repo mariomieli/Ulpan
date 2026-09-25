@@ -205,6 +205,11 @@ export function wordsOfLesson(lesson: number): Word[] {
   return WORDS.filter((w) => wordLesson(w) === lesson);
 }
 
+/** Parole di base di una lezione: quelle da imparare davvero (entrano nel ripasso). */
+export function coreWordsOfLesson(lesson: number): Word[] {
+  return wordsOfLesson(lesson).filter((w) => w.core);
+}
+
 export function sentencesUpTo(lesson: number): Sentence[] {
   return SENTENCES.filter((s) => lessonForText(s.he) <= lesson);
 }

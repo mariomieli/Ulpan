@@ -28,6 +28,7 @@ const NikudPage = lazy(() => loaders.nikud().then((m) => ({ default: m.NikudPage
 const ReadingPage = lazy(() => loaders.reading().then((m) => ({ default: m.ReadingPage })));
 const ReviewPage = lazy(() => loaders.review().then((m) => ({ default: m.ReviewPage })));
 const TestsPage = lazy(() => loaders.tests().then((m) => ({ default: m.TestsPage })));
+const PlacementPage = lazy(() => loaders.tests().then((m) => ({ default: m.PlacementPage })));
 const ExamPage = lazy(() => loaders.tests().then((m) => ({ default: m.ExamPage })));
 const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.ProgressPage })));
 const GroupsPage = lazy(() => loaders.groups().then((m) => ({ default: m.GroupsPage })));
@@ -70,6 +71,7 @@ function isActive(navPath: string, path: string) {
 function Page({ path }: { path: string }) {
   let p: Record<string, string> | null;
   if ((p = match('/lezioni/:id', path))) return <LessonPage id={Number(p.id)} />;
+  if (path.split('?')[0] === '/test/ingresso') return <PlacementPage />;
   if ((p = match('/test/:id', path))) return <ExamPage id={p.id} />;
   if ((p = match('/gruppi/:id', path))) return <GroupsPage path={path} groupId={p.id} />;
   switch (path.split('?')[0]) {

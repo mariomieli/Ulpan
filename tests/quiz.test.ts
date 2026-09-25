@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildLessonQuiz, buildReview, buildDictation, EXAMS, seededRng, misreadings, graphemes, trapTiles, type Question } from '../src/lib/quiz';
+import { buildLessonQuiz, buildReview, buildDictation, buildPlacementBlock, EXAMS, seededRng, misreadings, graphemes, trapTiles, explainMistake, gradeTyped, acceptedReadings, poolUpTo, DECODING_KINDS, type Question } from '../src/lib/quiz';
+import { LESSON_BY_ID } from '../src/data/curriculum';
+import { GLYPH_BY_ID } from '../src/data/alphabet';
+import { VOWEL_BY_ID } from '../src/data/nikud';
+import { WORDS } from '../src/data/words';
+import { requirements } from '../src/lib/hebrew';
 import { LESSONS } from '../src/data/curriculum';
 
 function checkQuestion(q: Question) {
@@ -122,7 +127,90 @@ describe('varietà delle domande', () => {
         const second = buildLessonQuiz(l.id, 10, seededRng(seed + 500), { avoid });
         overlap += second.filter((q) => avoid.has(q.key)).length;
       }
-      expect(overlap / 20, `lezione ${l.id}`).toBeLessThan(0.5);
+      // la lezione 1 ha solo 6 lettere e 2 vocali: qualche ritorno è inevitabile
+      expect(overlap / 20, `lezione ${l.id}`).toBeLessThan(l.id === 1 ? 2 : 0.5);
+    }
+  });
+});
+
+describe('fase 2: didattica', () => {
+  it('le alternative usano solo lettere, vocali e parole già studiate', () => {
+    for (const l of LESSONS.slice(0, 6)) {
+      const pool = poolUpTo(l.id);
+      const glyphChars = new Set(pool.glyphs.flatMap((g) => [g.char, g.letter, g.name, g.sound]));
+      for (let seed = 1; seed <= 15; seed++) {
+        for (const q of buildLessonQuiz(l.id, 10, seededRng(seed))) {
+          for (const opt of q.options ?? []) {
+            if (!opt.hebrew) continue;
+            const req = requirements(opt.value);
+            for (const g of req.glyphs) expect(GLYPH_BY_ID[g].lesson, `${q.key} opzione ${opt.value}`).toBeLessThanOrEqual(l.id);
+            for (const v of req.vowels) expect(VOWEL_BY_ID[v].lesson, `${q.key} opzione ${opt.value}`).toBeLessThanOrEqual(l.id);
+          }
+          if (q.kind === 'glyph-name') for (const o2 of q.options!) expect(glyphChars.has(o2.value), o2.value).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('test di lezione: ogni lettera e vocale nuova compare almeno 2 volte', () => {
+    for (const l of LESSONS.filter((x) => x.glyphs.length + x.vowels.length > 0)) {
+      for (let seed = 1; seed <= 10; seed++) {
+        const qs = buildLessonQuiz(l.id, 20, seededRng(seed), { typing: true }, 'test');
+        expect(qs.length, `lezione ${l.id}`).toBeGreaterThanOrEqual(15);
+        for (const id of [...l.glyphs.map((g) => `g:${g}`), ...l.vowels.map((v) => `v:${v}`)]) {
+          const n = qs.filter((q) => q.itemIds.includes(id)).length;
+          expect(n, `lezione ${l.id} seed ${seed}: ${id}`).toBeGreaterThanOrEqual(2);
+        }
+      }
+    }
+  });
+
+  it('test di lezione: una buona parte è lettura vera', () => {
+    for (const l of LESSONS.filter((x) => x.id >= 3)) {
+      const qs = buildLessonQuiz(l.id, 20, seededRng(7), { typing: true }, 'test');
+      const decoding = qs.filter((q) => DECODING_KINDS.includes(q.kind) || q.kind.startsWith('syllable') || q.kind === 'translit-syllable').length;
+      expect(decoding / qs.length, `lezione ${l.id}`).toBeGreaterThanOrEqual(0.3);
+    }
+  });
+
+  it('domande sul significato solo per le parole di base', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      for (const q of EXAMS.find((e) => e.id === 'lettura')!.build(seededRng(seed), {})) {
+        if (q.kind === 'word-meaning' || q.kind === 'meaning-word') {
+          const w = WORDS.find((x) => `w:${x.id}` === q.itemIds[0])!;
+          expect(w.core, w.he).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('spiega l’errore nelle sillabe e nelle lettere', () => {
+    const q = buildLessonQuiz(1, 10, seededRng(1)).find((x) => x.kind === 'syllable-read');
+    if (q) {
+      const wrong = q.options!.find((o2) => o2.value !== q.answer)!;
+      expect(explainMistake(q, wrong.value)).toBeTruthy();
+    }
+    const bet = { key: 'glyph-name:bet', kind: 'glyph-name', itemIds: ['g:bet'], prompt: '', answer: 'Bet', explanation: '', meta: { glyph: 'bet' } } as Question;
+    expect(explainMistake(bet, 'Vet')).toContain('Hai scelto');
+    expect(explainMistake(bet, 'Bet')).toBeNull();
+  });
+
+  it('scrittura: un refuso nelle parole lunghe è "quasi giusto", lo sheva iniziale è facoltativo', () => {
+    expect(gradeTyped('shalom', ['shalom'])).toBe('exact');
+    expect(gradeTyped('shalon', ['shalom'])).toBe('close');
+    expect(gradeTyped('ab', ['av'])).toBe('wrong');
+    const zman = WORDS.find((w) => w.translit === 'zman')!;
+    expect(gradeTyped('zeman', acceptedReadings(zman))).toBe('exact');
+    const yeladim = WORDS.find((w) => w.translit === 'yeladim')!;
+    expect(gradeTyped('yladim', acceptedReadings(yeladim))).toBe('exact');
+  });
+
+  it('test d’ingresso: blocchi brevi per ogni lezione', () => {
+    for (const l of LESSONS.filter((x) => x.glyphs.length || x.vowels.length)) {
+      const qs = buildPlacementBlock(l.id, seededRng(3));
+      expect(qs.length, `lezione ${l.id}`).toBeGreaterThanOrEqual(3);
+      qs.forEach(checkQuestion);
+      expect(LESSON_BY_ID[l.id]).toBeDefined();
     }
   });
 });

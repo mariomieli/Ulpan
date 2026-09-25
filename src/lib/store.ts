@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { newSrsState, review, isDue, type SrsState } from './srs';
-import { LESSON_BY_ID, wordsOfLesson, LAST_LESSON } from '../data/curriculum';
+import { LESSON_BY_ID, coreWordsOfLesson, LAST_LESSON } from '../data/curriculum';
 import { GLYPH_BY_ID } from '../data/alphabet';
 import { VOWEL_BY_ID } from '../data/nikud';
 import { WORDS } from '../data/words';
@@ -399,7 +399,9 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 /* Azioni (pure: stato → stato, per poterle testare)                   */
 /* ------------------------------------------------------------------ */
 
-export function applyAnswer(s: AppState, itemIds: string[], correct: boolean, now: Date, dev: string = deviceId()): AppState {
+export function applyAnswer(
+  s: AppState, itemIds: string[], correct: boolean, now: Date, dev: string = deviceId(), selfRated = false,
+): AppState {
   const t = now.getTime();
   const today = dayKey(now);
   const srs = { ...s.srs };
@@ -408,12 +410,14 @@ export function applyAnswer(s: AppState, itemIds: string[], correct: boolean, no
   let { streak } = s;
   if (s.lastActive !== today) streak = s.lastActive === yesterdayKey(now) ? streak + 1 : 1;
 
+  // Autovalutazione (flashcard "lo sapevo"): aggiorna il ripasso ma non dà XP né punti in classifica
+  if (selfRated) return { ...s, srs, streak, lastActive: today };
   return {
     ...s,
     srs,
     streak,
     lastActive: today,
-    ...addContrib(s, dev, correct ? 10 : 2, today, correct),
+    ...addContrib(s, dev, correct ? 10 : 0, today, correct),
   };
 }
 
@@ -422,7 +426,8 @@ export function lessonItemIds(lessonId: number): string[] {
   return [
     ...l.glyphs.map((g) => `g:${g}`),
     ...l.vowels.map((v) => `v:${v}`),
-    ...wordsOfLesson(lessonId).map((w) => `w:${w.id}`),
+    // solo le parole di base: le altre restano nella "banca di lettura"
+    ...coreWordsOfLesson(lessonId).map((w) => `w:${w.id}`),
   ];
 }
 
@@ -444,6 +449,24 @@ export function applyStudied(s: AppState, lessonId: number, now: Date): AppState
   }
   const prev = s.lessons[lessonId] ?? { studied: false, bestScore: 0, passed: false, attempts: 0 };
   return { ...s, srs, lessons: { ...s.lessons, [lessonId]: { ...prev, studied: true } } };
+}
+
+/**
+ * Risultato del test d'ingresso: le lezioni superate risultano completate e i loro
+ * elementi entrano nel ripasso con un intervallo iniziale già più lungo (3 giorni).
+ */
+export function applyPlacement(s: AppState, maxLesson: number, scores: Record<number, number>, now: Date): AppState {
+  const t = now.getTime();
+  const lessons = { ...s.lessons };
+  const srs = { ...s.srs };
+  for (let id = 1; id <= maxLesson; id++) {
+    const prev = lessons[id] ?? { studied: false, bestScore: 0, passed: false, attempts: 0 };
+    lessons[id] = { studied: true, passed: true, bestScore: Math.max(prev.bestScore, scores[id] ?? 80), attempts: prev.attempts + 1 };
+    for (const item of lessonItemIds(id)) {
+      srs[item] ??= { ...newSrsState(t), reps: 2, interval: 3, due: t + 3 * 24 * 60 * 60 * 1000 };
+    }
+  }
+  return { ...s, lessons, srs };
 }
 
 export function applyLessonTest(s: AppState, lessonId: number, score: number, passThreshold: number): AppState {
@@ -533,8 +556,11 @@ export function weakestItems(s: AppState, n: number): string[] {
 /* ------------------------------------------------------------------ */
 
 export const actions = {
-  answer(itemIds: string[], correct: boolean) {
-    set(applyAnswer(state, itemIds, correct, new Date()));
+  answer(itemIds: string[], correct: boolean, opts: { selfRated?: boolean } = {}) {
+    set(applyAnswer(state, itemIds, correct, new Date(), deviceId(), opts.selfRated));
+  },
+  placement(maxLesson: number, scores: Record<number, number>) {
+    set(applyPlacement(state, maxLesson, scores, new Date()));
   },
   studied(lessonId: number) {
     set(applyStudied(state, lessonId, new Date()));

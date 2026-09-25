@@ -90,6 +90,16 @@ export function HomePage() {
 
       {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
 
+      {done === 0 && Object.keys(state.srs).length === 0 && (
+        <a className="card row" href="#/test/ingresso" style={{ color: 'inherit' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ margin: 0 }}>Sai già un po’ di ebraico?</h3>
+            <p className="muted small" style={{ margin: 0 }}>Fai il test d’ingresso (5–10 minuti) e salta le lezioni che conosci già.</p>
+          </div>
+          <Icon name="arrowRight" />
+        </a>
+      )}
+
       <div className="grid grid-3">
         <div className="card row">
           <Ring value={today.answered} max={state.settings.dailyGoal} label="Obiettivo giornaliero" />

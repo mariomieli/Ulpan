@@ -16,6 +16,11 @@ export interface Word {
   translit: string;
   it: string;
   category: WordCategory;
+  /**
+   * Parola di base (vocabolario essenziale): entra nel ripasso e nelle domande sul significato.
+   * Le altre parole servono come "banca di lettura" per esercitarsi a decodificare.
+   */
+  core?: boolean;
   /** Traslitterazioni alternative accettate negli esercizi di scrittura. */
   alt?: string[];
 }
@@ -308,7 +313,7 @@ const BASE_WORDS: Word[] = [
 /** Tutte le parole: base + vocabolario esteso, con id univoci (stabili: dipendono dall'ordine). */
 export const WORDS: Word[] = (() => {
   const seen = new Set<string>();
-  return [...BASE_WORDS, ...EXTRA_WORDS.map(([he, translit, it, category, alt]) => w(he, translit, it, category, alt))]
+  return [...BASE_WORDS.map((b) => ({ ...b, core: true })), ...EXTRA_WORDS.map(([he, translit, it, category, alt]) => w(he, translit, it, category, alt))]
     .map((word) => {
       let id = word.id;
       for (let n = 2; seen.has(id); n++) id = `${word.id}-${n}`;

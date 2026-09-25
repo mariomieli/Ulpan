@@ -64,6 +64,8 @@ export interface Question {
   /** Risposte accettate per le domande a risposta scritta. */
   accepted?: string[];
   explanation: string;
+  /** Lettera/vocale in gioco, per spiegare l'errore specifico. */
+  meta?: { glyph?: string; vowel?: string };
 }
 
 export interface Pool {
@@ -165,14 +167,16 @@ function confusablesOf(g: Glyph): Glyph[] {
 }
 
 function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Question | null {
-  const conf = confusablesOf(g);
-  const inPool = pool.glyphs.length >= 4 ? pool.glyphs : GLYPHS;
-  const base = { key: `${kind}:${g.id}`, kind, itemIds: [`g:${g.id}`] };
+  // Solo lettere già studiate come alternative: niente segni sconosciuti tra le risposte
+  const inPool = pool.glyphs.length ? pool.glyphs : GLYPHS;
+  const known = new Set(inPool.map((x) => x.id));
+  const conf = confusablesOf(g).filter((x) => known.has(x.id));
+  const base = { key: `${kind}:${g.id}`, kind, itemIds: [`g:${g.id}`], meta: { glyph: g.id } };
   const expl = `${g.char} è ${g.name} (${g.hebrewName}): ${g.description}`;
 
   switch (kind) {
     case 'glyph-name': {
-      const ds = distractors(g.name, conf, [...inPool, ...GLYPHS], (x) => x.name, 3, rng);
+      const ds = distractors(g.name, conf, inPool, (x) => x.name, 3, rng);
       return {
         ...base, prompt: say(rng, 'Come si chiama questa lettera?', 'Qual è il nome di questa lettera?', 'Riconosci questa lettera?'),
         stimulus: { text: g.char, hebrew: true, size: 'xl' }, speak: g.hebrewName,
@@ -181,7 +185,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       };
     }
     case 'glyph-sound': {
-      const ds = distractors(g.sound, conf, [...inPool, ...GLYPHS], (x) => x.sound, 3, rng);
+      const ds = distractors(g.sound, conf, inPool, (x) => x.sound, 3, rng);
       return {
         ...base, prompt: say(rng, 'Che suono ha questa lettera?', 'Come si pronuncia questa lettera?', 'Quale suono rappresenta?'),
         stimulus: { text: g.char, hebrew: true, size: 'xl' },
@@ -190,7 +194,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       };
     }
     case 'name-glyph': {
-      const ds = distractors(g.char, conf, [...inPool, ...GLYPHS], (x) => x.char, 3, rng);
+      const ds = distractors(g.char, conf, inPool, (x) => x.char, 3, rng);
       return {
         ...base, prompt: `Quale di queste è la lettera «${g.name}»?`,
         options: options(opt(g.char, true), ds.map((d) => opt(d.char, true)), rng),
@@ -198,7 +202,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       };
     }
     case 'sound-glyph': {
-      const ds = distractors(g.char, conf, [...inPool, ...GLYPHS], (x) => x.char, 3, rng,
+      const ds = distractors(g.char, conf, inPool, (x) => x.char, 3, rng,
         (x) => x.sound === g.sound);
       return {
         ...base,
@@ -210,7 +214,9 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
     case 'final-form': {
       if (g.finalForm) {
         const fin = GLYPH_BY_ID[g.finalForm];
-        const ds = distractors(fin.char, [], FINAL_GLYPHS, (x) => x.char, 3, rng);
+        if (!known.has(fin.id)) return null;
+        const ds = distractors(fin.char, FINAL_GLYPHS.filter((x) => known.has(x.id)), inPool, (x) => x.char, 3, rng,
+          (x) => x.id === g.id);
         return {
           ...base, prompt: `Qual è la forma finale (sofit) di ${g.letter}?`,
           options: options(opt(fin.char, true), ds.map((d) => opt(d.char, true)), rng),
@@ -220,8 +226,8 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       }
       if (g.finalOf) {
         const normal = GLYPH_BY_ID[g.finalOf];
-        const normals = FINAL_GLYPHS.map((f) => GLYPH_BY_ID[f.finalOf!]);
-        const ds = distractors(normal.letter, [], normals, (x) => x.letter, 3, rng);
+        const normals = FINAL_GLYPHS.map((f) => GLYPH_BY_ID[f.finalOf!]).filter((x) => known.has(x.id));
+        const ds = distractors(normal.letter, normals, inPool.filter((x) => !x.finalOf), (x) => x.letter, 3, rng);
         return {
           ...base, prompt: `${g.char} è la forma finale di quale lettera?`,
           options: options(opt(normal.letter, true), ds.map((d) => opt(d.letter, true)), rng),
@@ -232,7 +238,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       return null;
     }
     case 'listen-glyph': {
-      const ds = distractors(g.char, conf, [...inPool, ...GLYPHS], (x) => x.char, 3, rng,
+      const ds = distractors(g.char, conf, inPool, (x) => x.char, 3, rng,
         (x) => x.hebrewName === g.hebrewName);
       return {
         ...base, prompt: 'Ascolta il nome della lettera e scegli quella giusta',
@@ -258,14 +264,17 @@ export function vowelDisplay(v: Vowel, carrier = VOWEL_CARRIER): string {
 }
 
 function vowelQuestion(v: Vowel, kind: QuestionKind, pool: Pool, rng: Rng): Question | null {
-  const base = { key: `${kind}:${v.id}`, kind, itemIds: [`v:${v.id}`] };
+  const base = { key: `${kind}:${v.id}`, kind, itemIds: [`v:${v.id}`], meta: { vowel: v.id } };
   const shown = vowelDisplay(v);
   const expl = `${v.name} (${v.hebrewName}): ${v.description}`;
-  const inPool = pool.vowels.length >= 4 ? pool.vowels : VOWELS;
+  const inPool = pool.vowels.length ? pool.vowels : VOWELS;
 
   switch (kind) {
     case 'vowel-sound': {
-      const ds = distractors(v.sound, [], SOUND_LABELS, (x) => x, 3, rng);
+      // solo suoni di vocali già studiate (con una sola vocale nota la domanda non ha senso)
+      const known = SOUND_LABELS.filter((l) => inPool.some((x) => x.sound === l));
+      const ds = distractors(v.sound, [], known, (x) => x, 3, rng);
+      if (!ds.length) return null;
       return {
         ...base, prompt: say(rng, 'Come si legge questa vocale? (א è muta)', 'Che suono dà questo segno? (א è muta)', 'Leggi questa vocale (א è muta)'),
         stimulus: { text: shown, hebrew: true, size: 'xl' },
@@ -274,7 +283,7 @@ function vowelQuestion(v: Vowel, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       };
     }
     case 'vowel-name': {
-      const ds = distractors(v.name, inPool, VOWELS, (x) => x.name, 3, rng,
+      const ds = distractors(v.name, inPool, [], (x) => x.name, 3, rng,
         (x) => vowelDisplay(x) === shown);
       return {
         ...base, prompt: say(rng, 'Come si chiama questo segno vocalico?', 'Qual è il nome di questo segno?'),
@@ -284,7 +293,7 @@ function vowelQuestion(v: Vowel, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       };
     }
     case 'name-vowel': {
-      const ds = distractors(shown, inPool, VOWELS, (x) => vowelDisplay(x), 3, rng);
+      const ds = distractors(shown, inPool, [], (x) => vowelDisplay(x), 3, rng);
       return {
         ...base, prompt: `Quale di questi è il «${v.name}»?`,
         options: options(opt(shown, true), ds.map((d) => opt(vowelDisplay(d), true)), rng),
@@ -326,19 +335,19 @@ function syllableQuestion(
 ): Question | null {
   if (!canCombine(g, v)) return null;
   const s = syllable(g, v);
-  const consonants = (pool.glyphs.length >= 4 ? pool.glyphs : GLYPHS).filter((x) => !x.finalOf);
-  const vowels = (pool.vowels.length >= 2 ? pool.vowels : VOWELS);
+  const consonants = (pool.glyphs.length ? pool.glyphs : GLYPHS).filter((x) => !x.finalOf);
+  const vowels = pool.vowels.length ? pool.vowels : VOWELS;
   const candidates: Syllable[] = [];
-  const confs = confusablesOf(g).filter((x) => !x.finalOf);
+  const confs = confusablesOf(g).filter((x) => !x.finalOf && consonants.includes(x));
   for (const c of [g, ...confs, ...consonants]) {
-    for (const vv of [v, ...vowels, ...VOWELS]) {
+    for (const vv of [v, ...vowels]) {
       if ((c === g && vv === v) || !canCombine(c, vv)) continue;
       candidates.push(syllable(c, vv));
     }
   }
   const preferred = candidates.filter((c) => c.glyph === g || c.vowel === v).slice(0, 40);
   const base = {
-    key: `${kind}:${g.id}+${v.id}`, kind, itemIds: [`g:${g.id}`, `v:${v.id}`],
+    key: `${kind}:${g.id}+${v.id}`, kind, itemIds: [`g:${g.id}`, `v:${v.id}`], meta: { glyph: g.id, vowel: v.id },
     explanation: `${s.text} = ${g.char} (${g.name}, “${g.sound}”) + ${v.name} (“${v.sound}”) → «${s.translit}».`,
   };
   if (kind === 'syllable-read') {
@@ -392,16 +401,15 @@ export function misreadings(translit: string): string[] {
   return [...out];
 }
 
-/** Parole per i distrattori: quelle del pool o, se sono poche, quelle delle lezioni successive più vicine. */
+/** Parole per le alternative: solo quelle già leggibili (mai parole con segni non studiati). */
 function nearbyWords(pool: Pool): Word[] {
-  if (pool.words.length >= 6) return pool.words;
-  const level = Math.max(1, ...pool.glyphs.map((g) => g.lesson));
-  for (let l = level + 1; l <= LAST_LESSON; l++) {
-    const ws = wordsUpTo(l);
-    if (ws.length >= 6) return ws;
-  }
-  return WORDS;
+  return pool.words.length ? pool.words : WORDS;
 }
+
+/** Tipi di domanda sul significato: solo per le parole di base, quelle davvero insegnate. */
+const MEANING_KINDS: QuestionKind[] = ['word-meaning', 'meaning-word', 'listen-word'];
+/** Tipi di domanda di decodifica (leggere davvero), validi per qualsiasi parola. */
+export const DECODING_KINDS: QuestionKind[] = ['word-read', 'word-type', 'word-compose'];
 
 /** Divide una parola in tessere: ogni lettera con i suoi segni. */
 export function graphemes(he: string): string[] {
@@ -449,11 +457,26 @@ export function canCompose(w: Word): boolean {
   return g.length >= 2 && g.length <= 7 && !/\s/.test(w.he);
 }
 
-function acceptedReadings(w: Word): string[] {
-  return [w.translit, ...(w.alt ?? [])];
+const DIGRAPHS = ['sh', 'ch', 'ts'];
+
+/**
+ * Letture accettate nelle risposte scritte. Con lo sheva sulla prima lettera la “e”
+ * breve è facoltativa (zman = zeman, bracha = beracha, yeladim = yladim).
+ */
+export function acceptedReadings(w: Pick<Word, 'he' | 'translit' | 'alt'>): string[] {
+  const out = [w.translit, ...(w.alt ?? [])];
+  const first = clusters(w.he)[0];
+  if (first?.marks.includes(MARKS.SHEVA)) {
+    const t = w.translit;
+    const unit = DIGRAPHS.find((d) => t.toLowerCase().startsWith(d)) ?? t.slice(0, 1);
+    const rest = t.slice(unit.length);
+    out.push(rest.startsWith('e') ? unit + rest.slice(1) : `${unit}e${rest}`);
+  }
+  return out;
 }
 
 function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Question | null {
+  if (!w.core && MEANING_KINDS.includes(kind)) return null;
   const base = { key: `${kind}:${w.id}`, kind, itemIds: [`w:${w.id}`] };
   const expl = `${w.he} si legge «${w.translit}» e significa «${w.it}».`;
   const others = nearbyWords(pool).filter((x) => x.id !== w.id);
@@ -474,7 +497,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
       };
     }
     case 'word-meaning': {
-      const ds = distractors(w.it, others, WORDS, (x) => x.it, 3, rng);
+      const ds = distractors(w.it, others.filter((x) => x.core), [], (x) => x.it, 3, rng);
       return {
         ...base, prompt: say(rng, 'Che cosa significa questa parola?', 'Qual è il significato?', 'Leggi e scegli la traduzione'),
         stimulus: { text: w.he, hebrew: true, size: 'lg' }, speak: w.he,
@@ -483,7 +506,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
       };
     }
     case 'meaning-word': {
-      const ds = distractors(w.he, others, WORDS, (x) => x.he, 3, rng, (x) => x.it === w.it);
+      const ds = distractors(w.he, others, [], (x) => x.he, 3, rng, (x) => x.it === w.it);
       return {
         ...base, prompt: `Quale parola significa «${w.it}»?`,
         options: options(opt(w.he, true), ds.map((d) => opt(d.he, true)), rng),
@@ -511,7 +534,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
       };
     }
     case 'listen-word': {
-      const ds = distractors(w.he, others, WORDS, (x) => x.he, 3, rng);
+      const ds = distractors(w.he, others, [], (x) => x.he, 3, rng);
       return {
         ...base, prompt: 'Ascolta e scegli la parola che senti',
         audioOnly: true, speak: w.he,
@@ -618,35 +641,165 @@ export function poolUpTo(lesson: number): Pool {
   return { glyphs: glyphsUpTo(lesson), vowels: vowelsUpTo(lesson), words: wordsUpTo(lesson) };
 }
 
-/** Esercizi o test di una lezione: soprattutto elementi nuovi, più un po' di ripasso. */
-export function buildLessonQuiz(lessonId: number, count: number, rng: Rng, o: QuizOptions = {}): Question[] {
+/**
+ * Esercizi o test di una lezione.
+ * - Test: ogni lettera e vocale nuova compare almeno 2 volte in formati diversi,
+ *   e circa il 40% delle domande è di lettura vera (leggere, scrivere, dettato).
+ * - Esercizi: soprattutto elementi nuovi, più un po' di ripasso.
+ */
+export function buildLessonQuiz(
+  lessonId: number, count: number, rng: Rng, o: QuizOptions = {}, mode: 'practice' | 'test' = 'practice',
+): Question[] {
   const lesson = LESSON_BY_ID[lessonId];
   const pool = poolUpTo(lessonId);
   const newWords = wordsOfLesson(lessonId);
   const focusGlyphs = lesson.glyphs.map((id) => GLYPH_BY_ID[id]);
   const focusVowels = lesson.vowels.map((id) => VOWEL_BY_ID[id]);
-  const reviewShare = lessonId === 1 ? 0 : Math.round(count * 0.3);
+  const out: Question[] = [];
+  const keys = new Set<string>();
+  const add = (q: Question | null): boolean => {
+    if (!q || keys.has(q.key) || (q.options && q.options.length < 2)) return false;
+    keys.add(q.key);
+    out.push(q);
+    return true;
+  };
 
-  const main = buildQuiz({
-    focusGlyphs,
-    focusVowels,
-    focusWords: newWords.length >= 3 ? newWords : pool.words,
-    pool,
-    count: count - reviewShare,
+  if (mode === 'test') {
+    const gk = allowedKinds(GLYPH_KINDS, o);
+    const vk = allowedKinds(VOWEL_KINDS, o);
+    for (const g of focusGlyphs) {
+      let n = 0;
+      for (const k of shuffle(gk, rng)) if (n < 2 && add(glyphQuestion(g, k, pool, rng))) n++;
+      // se i formati "lettera" non bastano (es. forme finali), una sillaba con quella lettera
+      for (const v of shuffle(pool.vowels, rng)) if (n < 2 && add(syllableQuestion(g, v, pick(SYLLABLE_KINDS, rng), pool, rng))) n++;
+    }
+    for (const v of focusVowels) {
+      let n = 0;
+      for (const k of shuffle(vk, rng)) if (n < 1 && add(vowelQuestion(v, k, pool, rng))) n++;
+      for (const g of shuffle(pool.glyphs, rng)) if (n < 2 && add(syllableQuestion(g, v, pick(SYLLABLE_KINDS, rng), pool, rng))) n++;
+      // vocali che non formano sillabe da sole (sheva, chataf): un'altra domanda sul segno
+      for (const k of shuffle(vk, rng)) if (n < 2 && add(vowelQuestion(v, k, pool, rng))) n++;
+    }
+  }
+
+  // Lettura vera: decodificare parole (anche mai viste prima), non solo riconoscerle
+  const decodeTarget = Math.round(count * (mode === 'test' ? 0.4 : 0.3));
+  const readable = newWords.length >= 4 ? newWords : pool.words;
+  if (readable.length) {
+    for (const q of buildQuiz({
+      focusGlyphs: [], focusVowels: [], focusWords: readable, pool, count: decodeTarget, categories: ['word'], kinds: DECODING_KINDS,
+    }, rng, o)) if (out.length < count) add(q);
+  }
+
+  // Resto: domande sugli elementi nuovi (compresi i significati delle parole di base) e ripasso
+  const reviewShare = lessonId === 1 ? 0 : Math.round(count * 0.25);
+  const mainCount = Math.max(0, count - out.length - reviewShare);
+  const coreNew = newWords.filter((w) => w.core);
+  for (const q of buildQuiz({
+    focusGlyphs, focusVowels,
+    focusWords: coreNew.length >= 3 ? coreNew : pool.words.filter((w) => w.core),
+    pool, count: mainCount * 2,
     weights: lessonId === LAST_LESSON ? { word: 6, syllable: 2 } : undefined,
+  }, rng, o)) if (out.length < count - reviewShare) add(q);
+
+  const used = new Set(out.flatMap((q) => q.itemIds));
+  const review = buildQuiz({
+    focusGlyphs: pool.glyphs, focusVowels: pool.vowels, focusWords: pool.words.filter((w) => w.core), pool, count: count * 2,
   }, rng, o);
+  const fresh = review.filter((q) => !q.itemIds.some((id) => used.has(id)));
+  for (const q of [...fresh, ...review]) if (out.length < count) add(q);
 
-  // ripasso: elementi diversi da quelli già usati negli esercizi principali, se possibile
-  const mainItems = new Set(main.flatMap((q) => q.itemIds));
-  const reviewAll = reviewShare ? buildQuiz({
-    focusGlyphs: pool.glyphs, focusVowels: pool.vowels, focusWords: pool.words, pool, count: reviewShare * 3,
-  }, rng, o).filter((q) => !main.some((m) => m.key === q.key)) : [];
-  const fresh = reviewAll.filter((q) => !q.itemIds.some((id) => mainItems.has(id)));
-  const review = [...fresh, ...reviewAll.filter((q) => !fresh.includes(q))];
+  return spread(shuffle(out.slice(0, count), rng));
+}
 
-  const all = [...main, ...review];
-  // se la lezione ha pochi elementi, completa con il ripasso
-  return spread(shuffle(all.slice(0, count), rng));
+/**
+ * Test d'ingresso: un blocco breve per lezione (lettere e vocali nuove + lettura).
+ * Si procede finché il blocco è superato.
+ */
+export function buildPlacementBlock(lessonId: number, rng: Rng): Question[] {
+  const lesson = LESSON_BY_ID[lessonId];
+  const pool = poolUpTo(lessonId);
+  const out: Question[] = [];
+  const keys = new Set<string>();
+  const add = (q: Question | null) => {
+    if (q && !keys.has(q.key) && (!q.options || q.options.length >= 2)) { keys.add(q.key); out.push(q); }
+  };
+  const readingKinds: QuestionKind[] = ['glyph-sound', 'sound-glyph', 'glyph-name'];
+  for (const id of shuffle(lesson.glyphs, rng).slice(0, 3)) add(glyphQuestion(GLYPH_BY_ID[id], pick(readingKinds, rng), pool, rng));
+  for (const id of shuffle(lesson.vowels, rng).slice(0, 2)) {
+    const v = VOWEL_BY_ID[id];
+    const g = pick(pool.glyphs.filter((x) => canCombine(x, v)), rng);
+    if (g) add(syllableQuestion(g, v, 'syllable-read', pool, rng));
+  }
+  const words = shuffle(wordsOfLesson(lessonId).length ? wordsOfLesson(lessonId) : pool.words, rng);
+  for (const w of words) {
+    if (out.length >= 6) break;
+    add(wordQuestion(w, 'word-read', pool, rng));
+  }
+  return shuffle(out, rng);
+}
+
+/** Spiega l'errore specifico confrontando la risposta data con quella giusta. */
+export function explainMistake(q: Question, given: string | null): string | null {
+  if (given === null || given === q.answer) return null;
+  const target = q.meta?.glyph ? GLYPH_BY_ID[q.meta.glyph] : undefined;
+  const vowel = q.meta?.vowel ? VOWEL_BY_ID[q.meta.vowel] : undefined;
+
+  if (target && !vowel) {
+    if (q.kind === 'glyph-sound') {
+      const same = GLYPHS.filter((g) => g.sound === given).map((g) => g.char);
+      return `«${given}» è il suono di ${same.join(' ')}. ${target.char} si legge «${target.sound}»: ${target.tip}`;
+    }
+    const chosen = GLYPHS.find((g) => g.name === given || g.char === given || (!g.finalOf && g.letter === given));
+    if (chosen && chosen.id !== target.id) {
+      return `Hai scelto ${chosen.char} (${chosen.name}, «${chosen.sound}»). Quella giusta è ${target.char} (${target.name}): ${target.tip}`;
+    }
+    return null;
+  }
+  if (vowel && !target) {
+    if (q.kind === 'vowel-sound') return `${vowelDisplay(vowel)} si legge «${vowel.sound}», non «${given}»: ${vowel.description}`;
+    const chosen = VOWELS.find((v) => v.name === given || vowelDisplay(v) === given);
+    return chosen ? `Hai scelto ${chosen.name}: ${chosen.description} Il ${vowel.name} invece: ${vowel.description}` : null;
+  }
+  if (target && vowel) {
+    // Sillabe: capire se l'errore è nella consonante o nella vocale
+    const combos = GLYPHS.filter((g) => !g.finalOf).flatMap((g) => VOWELS.filter((v) => canCombine(g, v)).map((v) => syllable(g, v)));
+    const chosen = combos.find((c) => (q.kind === 'syllable-read' ? c.translit === given : c.text === given));
+    if (!chosen) return null;
+    if (chosen.vowel.sound === vowel.sound || chosen.vowel.translit === vowel.translit) {
+      return `La vocale è giusta, ma la consonante no: hai letto ${chosen.glyph.char} (${chosen.glyph.name}, «${chosen.glyph.sound}»), invece è ${target.char} (${target.name}, «${target.sound}»). ${target.tip}`;
+    }
+    if (chosen.glyph.translit === target.translit) {
+      return `La consonante è giusta, ma la vocale no: ${vowel.name} si legge «${vowel.translit}», non «${chosen.vowel.translit}».`;
+    }
+    return `Consonante e vocale: ${target.char} si legge «${target.sound}» e ${vowel.name} «${vowel.translit}».`;
+  }
+  if (q.kind === 'word-read' || q.kind === 'word-type') {
+    return `Hai letto «${given}», ma si legge «${q.answer}». Rileggi lettera per lettera, da destra a sinistra, facendo attenzione alle vocali.`;
+  }
+  return null;
+}
+
+/** Distanza di modifica (per riconoscere un piccolo refuso nelle risposte scritte). */
+export function editDistance(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+/** Valuta una risposta scritta: esatta, quasi (un refuso in una parola lunga) o sbagliata. */
+export function gradeTyped(input: string, accepted: string[]): 'exact' | 'close' | 'wrong' {
+  const n = normalizeTranslit(input);
+  if (!n) return 'wrong';
+  const norms = accepted.map(normalizeTranslit);
+  if (norms.includes(n)) return 'exact';
+  if (norms.some((a) => a.length >= 5 && editDistance(a, n) <= 1)) return 'close';
+  return 'wrong';
 }
 
 export interface ExamDef {
@@ -676,8 +829,12 @@ export const EXAMS: ExamDef[] = [
   },
   {
     id: 'lettura', title: 'Esame: lettura', count: 25, requires: 9,
-    description: 'Leggere parole vocalizzate e riconoscerne il significato.',
-    build: (rng, o) => buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS, pool: FULL_POOL, count: 25, categories: ['word', 'syllable'], weights: { word: 5, syllable: 1 } }, rng, o),
+    description: 'Leggere parole vocalizzate, anche mai viste prima: lettura, scrittura e dettato.',
+    build: (rng, o) => {
+      const decoding = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS, pool: FULL_POOL, count: 18, categories: ['word'], kinds: DECODING_KINDS }, rng, o);
+      const meaning = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS.filter((w) => w.core), pool: FULL_POOL, count: 7, categories: ['word'], kinds: ['word-meaning', 'meaning-word'] }, rng, o);
+      return spread(shuffle([...decoding, ...meaning], rng));
+    },
   },
   {
     id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: 10,

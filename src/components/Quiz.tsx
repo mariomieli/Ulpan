@@ -1,8 +1,8 @@
 import { rememberQuestion } from '../lib/recent';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Question } from '../lib/quiz';
-import { gradeLabel } from '../lib/quiz';
-import { translitMatches } from '../lib/hebrew';
+import { explainMistake, gradeLabel, gradeTyped } from '../lib/quiz';
+
 import { actions, useAppState } from '../lib/store';
 import { speak } from '../lib/speech';
 import { He, SpeakButton } from './Hebrew';
@@ -12,6 +12,8 @@ export interface AnswerRecord {
   question: Question;
   given: string | null;
   correct: boolean;
+  /** Risposta scritta con un piccolo refuso: valida, ma si mostra la grafia esatta. */
+  close?: boolean;
 }
 
 export interface QuizResult {
@@ -92,17 +94,20 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     if (q && !q.options) setTimeout(() => inputRef.current?.focus(), 30);
   }, [q, settings.audio, settings.speechRate]);
 
-  const evaluate = useCallback((given: string): boolean => {
-    if (!q) return false;
-    if (q.accepted) return translitMatches(given, q.accepted);
-    return given === q.answer;
+  const evaluate = useCallback((given: string): { correct: boolean; close: boolean } => {
+    if (!q) return { correct: false, close: false };
+    if (q.accepted) {
+      const g = gradeTyped(given, q.accepted);
+      return { correct: g !== 'wrong', close: g === 'close' };
+    }
+    return { correct: given === q.answer, close: false };
   }, [q]);
 
   const commit = useCallback((given: string) => {
     if (!q) return;
-    const correct = evaluate(given);
+    const { correct, close } = evaluate(given);
     actions.answer(q.itemIds, correct);
-    const rec: AnswerRecord = { question: q, given, correct };
+    const rec: AnswerRecord = { question: q, given, correct, close };
     const next = [...answers, rec];
     setAnswers(next);
     return next;
@@ -211,6 +216,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   };
 
   const correctLabel = q.options?.find((o) => o.value === q.answer);
+  const mistake = showFeedback && !last.correct ? explainMistake(q, last.given) : null;
 
   return (
     <div className="quiz fade-in" key={q.key}>
@@ -293,10 +299,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
         {showFeedback && (
           <div className={`feedback fade-in ${last.correct ? 'ok' : 'bad'}`}>
             <div>
-              <strong>{last.correct ? 'Esatto!' : 'Non proprio…'}</strong>
+              <strong>{last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}</strong>
+              {last.close && <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>}
               {!last.correct && (
                 <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
               )}
+              {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
               <div className="small">{q.explanation}</div>
             </div>
             <button className="btn btn-primary" onClick={() => goNext(answers)} autoFocus>
@@ -369,7 +377,7 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
                   <div className="muted small">{a.question.prompt}</div>
                   <div>La tua risposta: {labelOf(a, a.given)}</div>
                   <div>Corretta: {a.question.accepted ? <b>{a.question.answer}</b> : labelOf(a, a.question.answer)}</div>
-                  <div className="small muted">{a.question.explanation}</div>
+                  <div className="small muted">{explainMistake(a.question, a.given) ?? a.question.explanation}</div>
                 </div>
               </div>
             ))}

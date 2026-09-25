@@ -547,3 +547,4 @@ input[type='email'], input[type='password'] {
 .assignment { padding: 12px; border-radius: 12px; background: var(--surface-2); }
 input[type='date'] { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-width: 0; width: 100%; }
 .field select, .field input[type='text'] { width: 100%; }
+.mistake { background: color-mix(in srgb, var(--bad) 8%, transparent); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }

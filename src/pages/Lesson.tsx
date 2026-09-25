@@ -1,7 +1,7 @@
 import { recentQuestions } from '../lib/recent';
 import { listeningEnabled } from '../lib/speech';
 import { useMemo, useState, type ReactNode } from 'react';
-import { LESSON_BY_ID, LESSONS, wordsOfLesson, wordsUpTo, glyphsUpTo, type TheoryBlock } from '../data/curriculum';
+import { LESSON_BY_ID, LESSONS, coreWordsOfLesson, wordsOfLesson, wordsUpTo, glyphsUpTo, type TheoryBlock } from '../data/curriculum';
 import { GLYPH_BY_ID, type Glyph } from '../data/alphabet';
 import { VOWEL_BY_ID, type Vowel } from '../data/nikud';
 import type { Word } from '../data/words';
@@ -98,14 +98,15 @@ function VowelStudy({ v, lesson }: { v: Vowel; lesson: number }) {
   );
 }
 
-function WordsStudy({ words }: { words: Word[] }) {
+function WordsStudy({ words, extra }: { words: Word[]; extra: number }) {
   return (
     <div>
       <h2 className="center">Parole da leggere</h2>
-      <p className="center muted">Prova a leggerle da solo, poi controlla la traslitterazione.</p>
+      <p className="center muted">Le parole da imparare di questa lezione: prova a leggerle in autonomia, poi controlla la traslitterazione.</p>
       <div className="word-grid">
         {words.map((w) => <WordReveal key={w.id} w={w} />)}
       </div>
+      {extra > 0 && <p className="center small muted" style={{ marginTop: 12 }}>Con le lettere che conosci puoi già leggere altre {extra} parole: le trovi nella sezione Lettura e negli esercizi di lettura.</p>}
     </div>
   );
 }
@@ -125,14 +126,15 @@ function WordReveal({ w }: { w: Word }) {
 
 function Study({ lessonId, onDone }: { lessonId: number; onDone: () => void }) {
   const lesson = LESSON_BY_ID[lessonId];
-  const words = wordsOfLesson(lessonId);
+  const words = coreWordsOfLesson(lessonId);
+  const extraWords = wordsOfLesson(lessonId).length - words.length;
   const cards = useMemo(() => {
     const c: { key: string; node: ReactNode }[] = [
       ...lesson.glyphs.map((id) => ({ key: id, node: <GlyphStudy g={GLYPH_BY_ID[id]} lesson={lessonId} /> })),
       ...lesson.vowels.map((id) => ({ key: id, node: <VowelStudy v={VOWEL_BY_ID[id]} lesson={lessonId} /> })),
     ];
-    const list = words.length ? words : wordsUpTo(lessonId).slice(-16);
-    if (list.length) c.push({ key: 'words', node: <WordsStudy words={list} /> });
+    const list = words.length ? words : wordsUpTo(lessonId).filter((w) => w.core).slice(-16);
+    if (list.length) c.push({ key: 'words', node: <WordsStudy words={list} extra={extraWords} /> });
     return c;
   }, [lesson, lessonId, words]);
   const [i, setI] = useState(0);
@@ -183,7 +185,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const questions = useMemo(
-    () => buildLessonQuiz(lessonId, 15, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }),
+    () => buildLessonQuiz(lessonId, 20, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }, 'test'),
     [lessonId, round],
   );
   const p = state.lessons[lessonId];

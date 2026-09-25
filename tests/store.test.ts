@@ -35,7 +35,7 @@ describe('store', () => {
     s = applyAnswer(s, ['g:bet'], true, d('2026-01-05'));
     expect(s.streak).toBe(1);
     expect(s.days['2026-01-02']).toEqual({ answered: 1, correct: 0 });
-    expect(s.xp).toBe(32);
+    expect(s.xp).toBe(30); // le risposte sbagliate non danno XP
   });
 
   it('sblocco lezioni', () => {
@@ -179,5 +179,25 @@ describe('fase 1: validazione dei dati', () => {
     const s = sanitize({ version: 1, xp: 120, days: { '2026-01-01': { answered: 5, correct: 4 } }, srs: {}, settings: {} });
     expect(s.xp).toBe(120);
     expect(s.days['2026-01-01']).toEqual({ answered: 5, correct: 4 });
+  });
+});
+
+describe('fase 2: test d’ingresso e flashcard', () => {
+  it('le lezioni superate al test d’ingresso risultano completate', async () => {
+    const { applyPlacement, maxUnlockedLesson } = await import('../src/lib/store');
+    const now = d('2026-01-01');
+    const s = applyPlacement(initialState(), 4, { 1: 100, 2: 90 }, now);
+    expect(s.lessons[1]).toMatchObject({ passed: true, bestScore: 100 });
+    expect(s.lessons[4].passed).toBe(true);
+    expect(maxUnlockedLesson(s)).toBe(5);
+    expect(s.srs['g:bet'].interval).toBe(3);
+    expect(dueItems(s, now.getTime())).toEqual([]);
+  });
+
+  it('le flashcard autovalutate non danno XP né punti in classifica', () => {
+    const s = applyAnswer(initialState(), ['w:shalom'], true, d('2026-01-01'), 'x', true);
+    expect(s.xp).toBe(0);
+    expect(s.days).toEqual({});
+    expect(s.srs['w:shalom'].seen).toBe(1);
   });
 });
