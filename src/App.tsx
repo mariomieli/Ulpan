@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
-import { useAuth, showLogin } from './lib/auth';
+import { useAuth, showLogin, signOut } from './lib/auth';
 import { cloudEnabled } from './lib/supabase';
 import { AuthPage } from './pages/Auth';
 import { HomePage } from './pages/Home';
@@ -52,6 +52,10 @@ const NAV = [
 const SYNC_LABEL = {
   idle: 'Account online', saving: 'Salvataggio…', saved: 'Progressi salvati', offline: 'Offline', error: 'Errore di sincronizzazione',
 } as const;
+
+function logout() {
+  if (confirm('Vuoi uscire dal tuo account? I progressi restano salvati.')) void signOut();
+}
 
 const MOBILE = ['/', '/lezioni', '/ripasso', '/test'];
 
@@ -124,10 +128,15 @@ export function App() {
         ))}
         <div className="sidebar-foot">
           {auth.user ? (
-            <a href="#/impostazioni" className="user-chip">
-              <span className="avatar">{auth.user.name.slice(0, 1)}</span>
-              <span className="who"><b>{auth.user.name}</b><span className="small muted"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
-            </a>
+            <div className="user-row">
+              <a href="#/impostazioni" className="user-chip">
+                <span className="avatar">{auth.user.name.slice(0, 1)}</span>
+                <span className="who"><b>{auth.user.name}</b><span className="small muted"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
+              </a>
+              <button className="btn btn-ghost btn-icon" onClick={logout} aria-label="Esci" title="Esci">
+                <Icon name="logout" size={18} className="" />
+              </button>
+            </div>
           ) : cloudEnabled && (
             <button className="btn btn-sm btn-block" style={{ marginBottom: 8 }} onClick={showLogin}>Accedi o registrati</button>
           )}
@@ -164,6 +173,15 @@ export function App() {
                 <Icon name={n.icon} /> {n.label}
               </a>
             ))}
+            {auth.user ? (
+              <div className="drawer-user">
+                <span className="avatar">{auth.user.name.slice(0, 1)}</span>
+                <span className="who"><b>{auth.user.name}</b><span className="small muted">{auth.user.email}</span></span>
+                <button className="btn btn-sm" onClick={logout}><Icon name="logout" size={16} className="" /> Esci</button>
+              </div>
+            ) : cloudEnabled && (
+              <button className="btn btn-block" style={{ marginTop: 8 }} onClick={showLogin}>Accedi o registrati</button>
+            )}
           </div>
         </>
       )}

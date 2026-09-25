@@ -489,3 +489,8 @@ input[type='email'], input[type='password'] {
 .danger-zone summary { cursor: pointer; color: var(--bad); font-weight: 600; font-size: .9rem; }
 .danger-zone p { margin: 10px 0; }
 .page-loading { height: 40vh; }
+.user-row { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.user-row .user-chip { flex: 1; min-width: 0; margin-bottom: 0; }
+.drawer-user { display: flex; align-items: center; gap: 10px; padding: 12px; margin-top: 8px; border-top: 1px solid var(--border); }
+.drawer-user .who { flex: 1; min-width: 0; line-height: 1.25; }
+.drawer-user .who b, .drawer-user .who span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
