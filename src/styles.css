@@ -531,3 +531,11 @@ input[type='email'], input[type='password'] {
   .leaderboard .btn-icon { padding: 4px; }
   .lb-rank { width: 22px; }
 }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 48px; }
+.pw-wrap input[type='text'] { font: inherit; padding: 10px 48px 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; }
+.pw-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px;
+  display: grid; place-items: center; border: 0; background: none; color: var(--text-2); cursor: pointer; border-radius: 8px;
+}
+.pw-toggle:hover { color: var(--text); background: var(--surface-2); }

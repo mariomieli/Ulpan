@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Icon } from '../components/Icon';
 import { continueAsGuest, resetPassword, signIn, signUp, updatePassword } from '../lib/auth';
 
 type Mode = 'login' | 'register' | 'forgot' | 'newPassword';
@@ -9,6 +10,7 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -86,14 +88,27 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
           {mode !== 'forgot' && (
             <div className="field">
               <label htmlFor="pw">{mode === 'newPassword' ? 'Nuova password' : 'Password'}</label>
-              <input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+              <div className="pw-wrap">
+                <input id="pw" type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+                <button type="button" className="pw-toggle" onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? 'Nascondi password' : 'Mostra password'} aria-pressed={showPw} title={showPw ? 'Nascondi password' : 'Mostra password'}>
+                  <Icon name={showPw ? 'eyeOff' : 'eye'} size={20} className="" />
+                </button>
+              </div>
             </div>
           )}
           {(mode === 'register' || mode === 'newPassword') && (
             <div className="field">
               <label htmlFor="pw2">Ripeti la password</label>
-              <input id="pw2" type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} required minLength={6} autoComplete="new-password" />
+              <div className="pw-wrap">
+                <input id="pw2" type={showPw ? 'text' : 'password'} value={password2} onChange={(e) => setPassword2(e.target.value)} required minLength={6}
+                  autoComplete="new-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+                <button type="button" className="pw-toggle" onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? 'Nascondi password' : 'Mostra password'} aria-pressed={showPw} title={showPw ? 'Nascondi password' : 'Mostra password'}>
+                  <Icon name={showPw ? 'eyeOff' : 'eye'} size={20} className="" />
+                </button>
+              </div>
             </div>
           )}
 
