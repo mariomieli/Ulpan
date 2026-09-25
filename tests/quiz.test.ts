@@ -109,7 +109,7 @@ describe('varietà delle domande', () => {
   });
 
   it('in un esercizio ogni elemento compare al massimo una volta, se ce ne sono abbastanza', () => {
-    for (const l of LESSONS.filter((x) => x.id >= 3)) {
+    for (const l of LESSONS.filter((x) => x.id >= 6)) {
       for (let seed = 1; seed <= 20; seed++) {
         const qs = buildLessonQuiz(l.id, 10, seededRng(seed));
         const ids = qs.flatMap((q) => q.itemIds);
@@ -127,8 +127,8 @@ describe('varietà delle domande', () => {
         const second = buildLessonQuiz(l.id, 10, seededRng(seed + 500), { avoid });
         overlap += second.filter((q) => avoid.has(q.key)).length;
       }
-      // la lezione 1 ha solo 6 lettere e 2 vocali: qualche ritorno è inevitabile
-      expect(overlap / 20, `lezione ${l.id}`).toBeLessThan(l.id === 1 ? 2 : 0.5);
+      // le lezioni delle vocali e delle prime lettere hanno pochi elementi: qualche ritorno è inevitabile
+      expect(overlap / 20, `lezione ${l.id}`).toBeLessThan(l.id <= 5 ? 4 : 0.5);
     }
   });
 });
@@ -143,10 +143,11 @@ describe('fase 2: didattica', () => {
           for (const opt of q.options ?? []) {
             if (!opt.hebrew) continue;
             const req = requirements(opt.value);
-            for (const g of req.glyphs) expect(GLYPH_BY_ID[g].lesson, `${q.key} opzione ${opt.value}`).toBeLessThanOrEqual(l.id);
+            // con una sola lettera nota (lezioni delle vocali) le alternative sulle lettere vengono dalle prime lezioni
+            if (pool.glyphs.length >= 4) for (const g of req.glyphs) expect(GLYPH_BY_ID[g].lesson, `${q.key} opzione ${opt.value}`).toBeLessThanOrEqual(l.id);
             for (const v of req.vowels) expect(VOWEL_BY_ID[v].lesson, `${q.key} opzione ${opt.value}`).toBeLessThanOrEqual(l.id);
           }
-          if (q.kind === 'glyph-name') for (const o2 of q.options!) expect(glyphChars.has(o2.value), o2.value).toBe(true);
+          if (q.kind === 'glyph-name' && pool.glyphs.length >= 4) for (const o2 of q.options!) expect(glyphChars.has(o2.value), o2.value).toBe(true);
         }
       }
     }
@@ -166,7 +167,8 @@ describe('fase 2: didattica', () => {
   });
 
   it('test di lezione: una buona parte è lettura vera', () => {
-    for (const l of LESSONS.filter((x) => x.id >= 3)) {
+    // dalla lezione 5 ci sono abbastanza parole da leggere
+    for (const l of LESSONS.filter((x) => x.id >= 5)) {
       const qs = buildLessonQuiz(l.id, 20, seededRng(7), { typing: true }, 'test');
       const decoding = qs.filter((q) => DECODING_KINDS.includes(q.kind) || q.kind.startsWith('syllable') || q.kind === 'translit-syllable').length;
       expect(decoding / qs.length, `lezione ${l.id}`).toBeGreaterThanOrEqual(0.3);

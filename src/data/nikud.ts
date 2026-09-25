@@ -55,22 +55,22 @@ export const VOWELS: Vowel[] = [
   },
   {
     id: 'hiriq', mark: MARKS.HIRIQ, name: 'Chirik', hebrewName: 'חִירִיק',
-    sound: 'i', translit: 'i', group: 'I', lesson: 1,
+    sound: 'i', translit: 'i', group: 'I', lesson: 2,
     description: 'Un punto sotto la lettera: si legge “i”.',
   },
   {
     id: 'hiriq-male', mark: MARKS.HIRIQ, mater: 'י', name: 'Chirik malè', hebrewName: 'חִירִיק מָלֵא',
-    sound: 'i', translit: 'i', group: 'I', lesson: 1,
+    sound: 'i', translit: 'i', group: 'I', lesson: 2,
     description: 'Il punto sotto la lettera seguito da una י muta: “i” (forma “piena”).',
   },
   {
     id: 'holam', mark: MARKS.HOLAM, name: 'Cholam', hebrewName: 'חוֹלָם',
-    sound: 'o', translit: 'o', group: 'O', lesson: 1,
+    sound: 'o', translit: 'o', group: 'O', lesson: 2,
     description: 'Un punto in alto a sinistra della lettera: si legge “o”.',
   },
   {
     id: 'holam-male', mark: MARKS.HOLAM, mater: 'ו', onMater: true, name: 'Cholam malè', hebrewName: 'חוֹלָם מָלֵא',
-    sound: 'o', translit: 'o', group: 'O', lesson: 1,
+    sound: 'o', translit: 'o', group: 'O', lesson: 2,
     description: 'Una ו con un punto sopra (וֹ) dopo la consonante: si legge “o”.',
   },
   {
@@ -90,32 +90,32 @@ export const VOWELS: Vowel[] = [
   },
   {
     id: 'kubutz', mark: MARKS.QUBUTS, name: 'Kubutz', hebrewName: 'קֻבּוּץ',
-    sound: 'u', translit: 'u', group: 'U', lesson: 1,
+    sound: 'u', translit: 'u', group: 'U', lesson: 2,
     description: 'Tre punti in diagonale sotto la lettera: si legge “u”.',
   },
   {
     id: 'shuruk', mark: MARKS.DAGESH, mater: 'ו', onMater: true, name: 'Shuruk', hebrewName: 'שׁוּרוּק',
-    sound: 'u', translit: 'u', group: 'U', lesson: 1,
+    sound: 'u', translit: 'u', group: 'U', lesson: 2,
     description: 'Una ו con un punto a sinistra (וּ) dopo la consonante: si legge “u”.',
   },
   {
     id: 'sheva', mark: MARKS.SHEVA, name: 'Sheva', hebrewName: 'שְׁוָא',
-    sound: 'muta / e breve', translit: 'e', group: 'Sheva', lesson: 1,
+    sound: 'muta / e breve', translit: 'e', group: 'Sheva', lesson: 3,
     description: 'Due punti verticali sotto la lettera. Di solito non si pronuncia; a inizio parola può suonare come una “e” brevissima.',
   },
   {
     id: 'hataf-patach', mark: MARKS.HATAF_PATAH, name: 'Chataf patach', hebrewName: 'חֲטַף פַּתַח',
-    sound: 'a', translit: 'a', group: 'A', lesson: 1,
+    sound: 'a', translit: 'a', group: 'A', lesson: 3,
     description: 'Sheva + patach: una “a” breve. Compare soprattutto sotto א ה ח ע.',
   },
   {
     id: 'hataf-segol', mark: MARKS.HATAF_SEGOL, name: 'Chataf segol', hebrewName: 'חֲטַף סֶגּוֹל',
-    sound: 'e', translit: 'e', group: 'E', lesson: 1,
+    sound: 'e', translit: 'e', group: 'E', lesson: 3,
     description: 'Sheva + segol: una “e” breve, sotto le lettere gutturali.',
   },
   {
     id: 'hataf-kamatz', mark: MARKS.HATAF_QAMATS, name: 'Chataf kamatz', hebrewName: 'חֲטַף קָמַץ',
-    sound: 'o', translit: 'o', group: 'O', lesson: 1,
+    sound: 'o', translit: 'o', group: 'O', lesson: 3,
     description: 'Sheva + kamatz: una “o” breve, sotto le lettere gutturali.',
   },
 ];

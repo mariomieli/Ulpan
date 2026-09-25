@@ -5,7 +5,7 @@ import { clusters, normalizeTranslit } from './hebrew';
 import { MARKS } from '../data/nikud';
 import { ktivMale } from './ktiv';
 import {
-  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON, wordLesson,
+  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON, LAST_LETTER_LESSON, wordLesson,
 } from '../data/curriculum';
 
 export type Rng = () => number;
@@ -169,7 +169,8 @@ function confusablesOf(g: Glyph): Glyph[] {
 
 function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Question | null {
   // Solo lettere già studiate come alternative: niente segni sconosciuti tra le risposte
-  const inPool = pool.glyphs.length ? pool.glyphs : GLYPHS;
+  // all'inizio (solo la א) le alternative vengono dalle prime lettere del corso: altrimenti non ce ne sarebbero
+  const inPool = pool.glyphs.length >= 4 ? pool.glyphs : GLYPHS.filter((x) => x.lesson <= 5 || pool.glyphs.includes(x));
   const known = new Set(inPool.map((x) => x.id));
   const conf = confusablesOf(g).filter((x) => known.has(x.id));
   const base = { key: `${kind}:${g.id}`, kind, itemIds: [`g:${g.id}`], meta: { glyph: g.id } };
@@ -348,7 +349,9 @@ function syllableQuestion(
   }
   const preferred = candidates.filter((c) => c.glyph === g || c.vowel === v).slice(0, 40);
   const base = {
-    key: `${kind}:${g.id}+${v.id}`, kind, itemIds: [`g:${g.id}`, `v:${v.id}`], meta: { glyph: g.id, vowel: v.id },
+    key: `${kind}:${g.id}+${v.id}`, kind,
+    // sulla א muta la sillaba mette alla prova solo la vocale
+    itemIds: g.id === 'alef' ? [`v:${v.id}`] : [`g:${g.id}`, `v:${v.id}`], meta: { glyph: g.id, vowel: v.id },
     explanation: `${s.text} = ${g.char} (${g.name}, “${g.sound}”) + ${v.name} (“${v.sound}”) → «${s.translit}».`,
   };
   if (kind === 'syllable-read') {
@@ -652,6 +655,8 @@ export function buildLessonQuiz(
   lessonId: number, count: number, rng: Rng, o: QuizOptions = {}, mode: 'practice' | 'test' = 'practice',
 ): Question[] {
   const lesson = LESSON_BY_ID[lessonId];
+  // l'ultima lezione allena la lettura senza nikud
+  if (lessonId === LAST_LESSON) return buildPlainReading(count, rng, o);
   // nel test ogni elemento nuovo va chiesto almeno due volte (la lezione delle vocali ne ha molti)
   if (mode === 'test') count = Math.max(count, 2 * (lesson.glyphs.length + lesson.vowels.length) + 2);
   const pool = poolUpTo(lessonId);
@@ -703,7 +708,7 @@ export function buildLessonQuiz(
     focusGlyphs, focusVowels,
     focusWords: coreNew.length >= 3 ? coreNew : pool.words.filter((w) => w.core),
     pool, count: mainCount * 2,
-    weights: lessonId === LAST_LESSON ? { word: 6, syllable: 2 } : undefined,
+    weights: !lesson.glyphs.length && !lesson.vowels.length ? { word: 6, syllable: 2 } : undefined,
   }, rng, o)];
   // prima gli elementi non ancora chiesti, poi (se servono) le ripetizioni
   for (const q of main) if (out.length < count - reviewShare && !q.itemIds.some((id) => usedIds().has(id))) add(q);
@@ -736,7 +741,7 @@ export function buildPlacementBlock(lessonId: number, rng: Rng): Question[] {
   for (const id of shuffle(lesson.vowels, rng).slice(0, lesson.glyphs.length <= 1 ? 4 : 2)) {
     const v = VOWEL_BY_ID[id];
     const g = pick(pool.glyphs.filter((x) => canCombine(x, v)), rng);
-    if (g) add(syllableQuestion(g, v, 'syllable-read', pool, rng));
+    add(g ? syllableQuestion(g, v, 'syllable-read', pool, rng) : vowelQuestion(v, pick(VOWEL_KINDS, rng), pool, rng));
   }
   const words = shuffle(wordsOfLesson(lessonId).length ? wordsOfLesson(lessonId) : pool.words, rng);
   for (const w of words) {
@@ -823,19 +828,29 @@ export interface ExamDef {
 
 const FULL_POOL: Pool = { glyphs: GLYPHS, vowels: VOWELS, words: WORDS };
 
+/** Parole scritte senza nikud, in grafia piena, come su giornali e cartelli. */
+function buildPlainReading(count: number, rng: Rng, o: QuizOptions): Question[] {
+  const qs = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS.filter((w) => w.core), pool: FULL_POOL, count, categories: ['word'], kinds: ['word-meaning', 'word-read', 'word-type'] }, rng, o);
+  return qs.map((q) => q.stimulus ? {
+    ...q, key: `plain:${q.key}`,
+    stimulus: { ...q.stimulus, text: ktivMale(q.stimulus.text) },
+    explanation: `${ktivMale(q.stimulus.text)} = ${q.explanation}`,
+  } : q);
+}
+
 export const EXAMS: ExamDef[] = [
   {
-    id: 'alfabeto', title: 'Esame: alfabeto', count: 30, requires: 9,
+    id: 'alfabeto', title: 'Esame: alfabeto', count: 30, requires: LAST_LETTER_LESSON,
     description: 'Tutte le 22 lettere, le varianti con dagesh e le 5 forme finali.',
     build: (rng, o) => buildQuiz({ focusGlyphs: GLYPHS, focusVowels: [], focusWords: [], pool: FULL_POOL, count: 30, categories: ['glyph'] }, rng, o),
   },
   {
-    id: 'nikud', title: 'Esame: nikud', count: 25, requires: 1,
+    id: 'nikud', title: 'Esame: nikud', count: 25, requires: 3,
     description: 'Riconoscere i segni vocalici e leggere le sillabe.',
     build: (rng, o) => buildQuiz({ focusGlyphs: [], focusVowels: VOWELS, focusWords: [], pool: FULL_POOL, count: 25, categories: ['vowel', 'syllable'], weights: { vowel: 2, syllable: 3 } }, rng, o),
   },
   {
-    id: 'lettura', title: 'Esame: lettura', count: 25, requires: 9,
+    id: 'lettura', title: 'Esame: lettura', count: 25, requires: LAST_LETTER_LESSON,
     description: 'Leggere parole vocalizzate, anche mai viste prima: lettura, scrittura e dettato.',
     build: (rng, o) => {
       const decoding = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS, pool: FULL_POOL, count: 18, categories: ['word'], kinds: DECODING_KINDS }, rng, o);
@@ -844,19 +859,12 @@ export const EXAMS: ExamDef[] = [
     },
   },
   {
-    id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: 10,
+    id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: LAST_LESSON,
     description: 'Parole scritte come su giornali e cartelli: senza vocali, in grafia piena (שולחן, סיפור).',
-    build: (rng, o) => {
-      const qs = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS.filter((w) => w.core), pool: FULL_POOL, count: 20, categories: ['word'], kinds: ['word-meaning', 'word-read', 'word-type'] }, rng, o);
-      return qs.map((q) => q.stimulus ? {
-        ...q, key: `plain:${q.key}`,
-        stimulus: { ...q.stimulus, text: ktivMale(q.stimulus.text) },
-        explanation: `${ktivMale(q.stimulus.text)} = ${q.explanation}`,
-      } : q);
-    },
+    build: (rng, o) => buildPlainReading(20, rng, o),
   },
   {
-    id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: 10,
+    id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: LAST_LESSON,
     description: 'Prova completa a tempo: lettere, vocali, sillabe e parole. Soglia di superamento 80%.',
     build: (rng, o) => buildQuiz({ focusGlyphs: GLYPHS, focusVowels: VOWELS, focusWords: WORDS, pool: FULL_POOL, count: 40 }, rng, o),
   },

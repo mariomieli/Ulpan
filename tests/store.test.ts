@@ -57,7 +57,7 @@ describe('store', () => {
     const ids = lessonItemIds(1);
     expect(ids).toContain('g:alef');
     expect(ids).toContain('v:kamatz');
-    expect(ids).toContain('v:shuruk');
+    expect(ids).toContain('v:segol');
     expect(dueItems(s, now.getTime()).sort()).toEqual([...ids].sort());
   });
 
@@ -204,19 +204,25 @@ describe('fase 2: test d’ingresso e flashcard', () => {
 });
 
 describe('nuovo ordine del corso', () => {
-  it('converte i progressi salvati con il vecchio ordine', () => {
-    const old = { ...initialState(), curriculum: undefined, lessons: {
-      1: { studied: true, passed: true, bestScore: 90, attempts: 2 },
-      2: { studied: true, passed: true, bestScore: 85, attempts: 1 },
-      3: { studied: true, passed: true, bestScore: 95, attempts: 1 },
-    } };
+  const lp = (bestScore: number) => ({ studied: true, passed: true, bestScore, attempts: 1 });
+  it('converte i progressi dell’ordine originale', () => {
+    const old = { ...initialState(), curriculum: undefined, lessons: { 1: lp(90), 2: lp(85), 3: lp(95) } };
     const s = sanitize(JSON.parse(JSON.stringify(old)));
-    expect(s.curriculum).toBe(2);
-    // vecchie lezioni 1-3: א בּ ב ל מ ם שׁ ת ד י נ ן ג → nuova lezione 2 (בּ ב ג ד) superata
-    expect(s.lessons[2]).toMatchObject({ passed: true, bestScore: 85 });
-    // la nuova lezione 1 (tutte le vocali) richiedeva le vecchie 1-7
+    expect(s.curriculum).toBe(3);
+    // vecchie lezioni 1-3: א בּ ב ל מ ם שׁ ת ד י נ ן ג → בּ ב (4), ג ד (5) superate
+    expect(s.lessons[4]).toMatchObject({ passed: true, bestScore: 90 });
+    expect(s.lessons[5]).toMatchObject({ passed: true, bestScore: 85 });
+    // le vocali "e" erano nella vecchia lezione 5: la nuova lezione 1 non risulta superata
     expect(s.lessons[1]).toBeUndefined();
     // già convertito: non si converte di nuovo
     expect(sanitize(JSON.parse(JSON.stringify(s))).lessons).toEqual(s.lessons);
+  });
+  it('converte i progressi del corso a 10 lezioni', () => {
+    const old = { ...initialState(), curriculum: 2, lessons: { 1: lp(88), 2: lp(92) } };
+    const s = sanitize(JSON.parse(JSON.stringify(old)));
+    // lezione 1 (tutte le vocali) → nuove 1-3; lezione 2 (בּ ב ג ד) → nuove 4-5
+    for (const n of [1, 2, 3]) expect(s.lessons[n]).toMatchObject({ passed: true, bestScore: 88 });
+    for (const n of [4, 5]) expect(s.lessons[n]).toMatchObject({ passed: true, bestScore: 92 });
+    expect(s.lessons[6]).toBeUndefined();
   });
 });

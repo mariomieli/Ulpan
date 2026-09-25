@@ -1,6 +1,6 @@
 import { recentQuestions } from '../lib/recent';
 import { useMemo, useState } from 'react';
-import { EXAMS, PASS_THRESHOLD, buildPlacementBlock } from '../lib/quiz';
+import { EXAMS, PASS_THRESHOLD, buildPlacementBlock, shuffle } from '../lib/quiz';
 import { LESSONS, LESSON_BY_ID } from '../data/curriculum';
 import { actions, isLessonUnlocked, useAppState } from '../lib/store';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
@@ -142,36 +142,45 @@ export function ExamPage({ id }: { id: string }) {
 
 const PLACEMENT_PASS = 75;
 
-/** Test d'ingresso: blocchi brevi dalla lezione 1 in su, fino al primo blocco non superato. */
+/** Test d'ingresso: blocchi brevi (due lezioni per blocco), fino al primo blocco non superato. */
 export function PlacementPage() {
   const state = useAppState();
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
-  const [lesson, setLesson] = useState(1);
+  const [block, setBlock] = useState(0);
   const [scores, setScores] = useState<Record<number, number>>({});
   const [reached, setReached] = useState(0);
-  const blocks = LESSONS.filter((l) => l.glyphs.length || l.vowels.length);
-  const questions = useMemo(() => (phase === 'run' ? buildPlacementBlock(lesson, Math.random) : []), [phase, lesson]);
+  const blocks = useMemo(() => {
+    const withItems = LESSONS.filter((l) => l.glyphs.length || l.vowels.length);
+    const out: number[][] = [];
+    for (let i = 0; i < withItems.length; i += 2) out.push(withItems.slice(i, i + 2).map((l) => l.id));
+    return out;
+  }, []);
+  const ids = blocks[block];
+  const questions = useMemo(
+    () => (phase === 'run' ? shuffle(ids.flatMap((id) => buildPlacementBlock(id, Math.random).slice(0, 4)), Math.random) : []),
+    [phase, ids],
+  );
 
   const finishBlock = (r: QuizResult) => {
-    const next = { ...scores, [lesson]: r.pct };
+    const next = { ...scores };
+    for (const id of ids) next[id] = r.pct;
     setScores(next);
-    const idx = blocks.findIndex((l) => l.id === lesson);
-    if (r.pct >= PLACEMENT_PASS && idx < blocks.length - 1) {
-      setLesson(blocks[idx + 1].id);
+    if (r.pct >= PLACEMENT_PASS && block < blocks.length - 1) {
+      setBlock(block + 1);
       return;
     }
-    const passedUpTo = r.pct >= PLACEMENT_PASS ? lesson : lesson - 1;
+    const passedUpTo = r.pct >= PLACEMENT_PASS ? ids[ids.length - 1] : ids[0] - 1;
     setReached(passedUpTo);
     if (passedUpTo > 0) actions.placement(passedUpTo, next);
     setPhase('done');
   };
 
   if (phase === 'run') {
-    const idx = blocks.findIndex((l) => l.id === lesson);
+    const title = ids.map((id) => LESSON_BY_ID[id].title).join(' · ');
     return (
       <div className="stack">
-        <p className="center muted small" style={{ margin: 0 }}>Test d’ingresso · blocco {idx + 1} di {blocks.length}: {LESSON_BY_ID[lesson].title}</p>
-        <QuizRunner key={lesson} questions={questions} mode="exam" onFinish={finishBlock}
+        <p className="center muted small" style={{ margin: 0 }}>Test d’ingresso · blocco {block + 1} di {blocks.length}: {title}</p>
+        <QuizRunner key={block} questions={questions} mode="exam" onFinish={finishBlock}
           onExit={() => { if (confirm('Interrompere il test d’ingresso?')) setPhase('intro'); }} />
       </div>
     );
@@ -207,11 +216,11 @@ export function PlacementPage() {
       <div className="card center" style={{ marginTop: 10 }}>
         <Icon name="test" size={40} className="" />
         <h1 style={{ marginTop: 8 }}>Test d’ingresso</h1>
-        <p className="muted">Sai già un po’ di ebraico? Rispondi a brevi blocchi di domande, dalle prime lettere in su.
+        <p className="muted">Sai già un po’ di ebraico? Rispondi a brevi blocchi di domande, dalle vocali in su.
           Ci fermiamo al primo blocco difficile e sblocchiamo tutte le lezioni che conosci già.</p>
         <p className="small muted">Circa 5–10 minuti · correzione alla fine di ogni blocco · soglia {PLACEMENT_PASS}%</p>
         {already && <p className="small">Le lezioni già superate restano tali: il test può solo sbloccarne altre.</p>}
-        <button className="btn btn-primary btn-lg" onClick={() => { setLesson(blocks[0].id); setScores({}); setPhase('run'); }}>Inizia</button>
+        <button className="btn btn-primary btn-lg" onClick={() => { setBlock(0); setScores({}); setPhase('run'); }}>Inizia</button>
       </div>
     </div>
   );

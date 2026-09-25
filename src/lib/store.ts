@@ -48,8 +48,8 @@ export interface DeviceContrib {
 
 export interface AppState {
   version: 1;
-  /** Ordine del corso: 2 = vocali nella lezione 1, poi lettere in ordine alfabetico. */
-  curriculum?: 2;
+  /** Versione dell'ordine del corso (3 = 19 lezioni: vocali, lettere in ordine alfabetico, regole). */
+  curriculum?: 3;
   settings: Settings;
   lessons: Record<number, LessonProgress>;
   exams: Record<string, ExamResult>;
@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function initialState(): AppState {
   return {
-    version: 1, curriculum: 2, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
+    version: 1, curriculum: 3, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
     xp: 0, streak: 0, lastActive: null, days: {}, texts: {}, contrib: {},
   };
 }
@@ -212,10 +212,10 @@ export function sanitize(raw: unknown): AppState {
   }
   return {
     version: 1,
-    curriculum: 2,
+    curriculum: 3,
     settings: sanitizeSettings(r.settings),
-    // progressi salvati con il vecchio ordine delle lezioni: si convertono
-    lessons: r.version === 1 && r.curriculum !== 2 ? migrateLessons(lessons) : lessons,
+    // progressi salvati con un ordine delle lezioni precedente: si convertono
+    lessons: r.version === 1 && r.curriculum !== 3 ? migrateLessons(lessons, r.curriculum === 2 ? 2 : 1) : lessons,
     exams, srs, texts, contrib,
     ...totals(contrib),
     streak: num(r.streak, 0, 0, 1e5),
@@ -226,32 +226,51 @@ export function sanitize(raw: unknown): AppState {
   };
 }
 
-/** In quale lezione si studiava ogni lettera e vocale nel vecchio ordine del corso. */
-const OLD_LESSON: Record<string, number> = {
-  'g:alef': 1, 'g:bet': 1, 'g:vet': 1, 'g:lamed': 1, 'g:mem': 1, 'g:mem-sofit': 1,
-  'g:shin': 2, 'g:tav': 2, 'g:dalet': 2,
-  'g:yod': 3, 'g:nun': 3, 'g:nun-sofit': 3, 'g:gimel': 3,
-  'g:he': 4, 'g:vav': 4,
-  'g:resh': 5, 'g:kaf': 5, 'g:khaf': 5, 'g:khaf-sofit': 5,
-  'g:samekh': 6, 'g:kuf': 6, 'g:sin': 6,
-  'g:chet': 7, 'g:ayin': 7,
-  'g:zayin': 8, 'g:tet': 8, 'g:tsadi': 8, 'g:tsadi-sofit': 8,
-  'g:pe': 9, 'g:fe': 9, 'g:fe-sofit': 9,
-  'v:kamatz': 1, 'v:patach': 1, 'v:hiriq': 2, 'v:hiriq-male': 3, 'v:sheva': 3,
-  'v:holam': 4, 'v:holam-male': 4, 'v:tsere': 5, 'v:tsere-male': 5, 'v:segol': 5,
-  'v:kubutz': 6, 'v:shuruk': 6, 'v:hataf-patach': 7, 'v:hataf-segol': 7, 'v:hataf-kamatz': 7,
+/** In quale lezione si studiava ogni lettera e vocale negli ordini precedenti del corso. */
+const OLD_LESSONS: Record<1 | 2, Record<string, number>> = {
+  // 1: ordine originale (10 lezioni, lettere e vocali mescolate)
+  1: {
+    'g:alef': 1, 'g:bet': 1, 'g:vet': 1, 'g:lamed': 1, 'g:mem': 1, 'g:mem-sofit': 1,
+    'g:shin': 2, 'g:tav': 2, 'g:dalet': 2,
+    'g:yod': 3, 'g:nun': 3, 'g:nun-sofit': 3, 'g:gimel': 3,
+    'g:he': 4, 'g:vav': 4,
+    'g:resh': 5, 'g:kaf': 5, 'g:khaf': 5, 'g:khaf-sofit': 5,
+    'g:samekh': 6, 'g:kuf': 6, 'g:sin': 6,
+    'g:chet': 7, 'g:ayin': 7,
+    'g:zayin': 8, 'g:tet': 8, 'g:tsadi': 8, 'g:tsadi-sofit': 8,
+    'g:pe': 9, 'g:fe': 9, 'g:fe-sofit': 9,
+    'v:kamatz': 1, 'v:patach': 1, 'v:hiriq': 2, 'v:hiriq-male': 3, 'v:sheva': 3,
+    'v:holam': 4, 'v:holam-male': 4, 'v:tsere': 5, 'v:tsere-male': 5, 'v:segol': 5,
+    'v:kubutz': 6, 'v:shuruk': 6, 'v:hataf-patach': 7, 'v:hataf-segol': 7, 'v:hataf-kamatz': 7,
+  },
+  // 2: 10 lezioni (tutte le vocali nella 1, lettere in ordine alfabetico, regole nella 10)
+  2: {
+    'g:alef': 1, 'g:bet': 2, 'g:vet': 2, 'g:gimel': 2, 'g:dalet': 2,
+    'g:he': 3, 'g:vav': 3, 'g:zayin': 3, 'g:chet': 3,
+    'g:tet': 4, 'g:yod': 4, 'g:kaf': 4, 'g:khaf': 4, 'g:khaf-sofit': 4,
+    'g:lamed': 5, 'g:mem': 5, 'g:mem-sofit': 5,
+    'g:nun': 6, 'g:nun-sofit': 6, 'g:samekh': 6, 'g:ayin': 6,
+    'g:pe': 7, 'g:fe': 7, 'g:fe-sofit': 7, 'g:tsadi': 7, 'g:tsadi-sofit': 7,
+    'g:kuf': 8, 'g:resh': 8, 'g:shin': 9, 'g:sin': 9, 'g:tav': 9,
+    'v:kamatz': 1, 'v:patach': 1, 'v:hiriq': 1, 'v:hiriq-male': 1, 'v:sheva': 1,
+    'v:holam': 1, 'v:holam-male': 1, 'v:tsere': 1, 'v:tsere-male': 1, 'v:segol': 1,
+    'v:kubutz': 1, 'v:shuruk': 1, 'v:hataf-patach': 1, 'v:hataf-segol': 1, 'v:hataf-kamatz': 1,
+  },
 };
+/** In entrambi gli ordini precedenti le regole di lettura erano nella lezione 10. */
+const OLD_RULES_LESSON = 10;
 
 /**
- * Vecchio ordine → nuovo: una lezione nuova risulta superata (o studiata) se tutte le sue
- * lettere e vocali stavano in lezioni già superate (o studiate) nel vecchio ordine.
+ * Ordine precedente → attuale: una lezione risulta superata (o studiata) se tutte le sue
+ * lettere e vocali stavano in lezioni già superate (o studiate) nell'ordine precedente.
  */
-export function migrateLessons(old: AppState['lessons']): AppState['lessons'] {
+export function migrateLessons(old: AppState['lessons'], from: 1 | 2 = 1): AppState['lessons'] {
+  const map = OLD_LESSONS[from];
   const out: AppState['lessons'] = {};
   for (const lesson of Object.values(LESSON_BY_ID)) {
     const oldIds = lesson.glyphs.length + lesson.vowels.length
-      ? [...new Set([...lesson.glyphs.map((g) => OLD_LESSON[`g:${g}`]), ...lesson.vowels.map((v) => OLD_LESSON[`v:${v}`])])]
-      : [lesson.id];
+      ? [...new Set([...lesson.glyphs.map((g) => map[`g:${g}`]), ...lesson.vowels.map((v) => map[`v:${v}`])])]
+      : [OLD_RULES_LESSON];
     const prev = oldIds.map((n) => old[n]);
     if (!prev.every((p) => p?.studied || p?.passed)) continue;
     const passed = prev.every((p) => p?.passed);
@@ -427,7 +446,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 
   return {
     version: 1,
-    curriculum: 2,
+    curriculum: 3,
     settings: { ...newerSettings.settings },
     settingsUpdatedAt: Math.max(a.settingsUpdatedAt ?? 0, b.settingsUpdatedAt ?? 0) || undefined,
     lessons, exams, srs, contrib, ...totals(contrib),
