@@ -48,7 +48,7 @@ const NAV = [
   { path: '/', label: 'Home', icon: 'home' },
   { path: '/lezioni', label: 'Lezioni', icon: 'book' },
   { path: '/alfabeto', label: 'Alfabeto', icon: 'alef' },
-  { path: '/nikud', label: 'Nikud', icon: 'dots' },
+  { path: '/nikud', label: 'Nikud (Punteggiatura)', icon: 'dots' },
   { path: '/lettura', label: 'Lettura', icon: 'read' },
   { path: '/ripasso', label: 'Ripasso', icon: 'repeat' },
   { path: '/test', label: 'Test ed esami', icon: 'test' },
