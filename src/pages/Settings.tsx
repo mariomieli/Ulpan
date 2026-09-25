@@ -107,7 +107,7 @@ export function SettingsPage() {
         <div className="field" style={{ maxWidth: 320 }}>
           <label htmlFor="goal">Obiettivo giornaliero (risposte)</label>
           <select id="goal" value={settings.dailyGoal} onChange={(e) => set({ dailyGoal: Number(e.target.value) })}>
-            {[10, 20, 30, 50, 80, 120].map((n) => <option key={n} value={n}>{n}{n === 30 ? ' (consigliato)' : ''}</option>)}
+            {[10, 20, 30, 50, 80, 120, 150, 200].map((n) => <option key={n} value={n}>{n}{n === 30 ? ' (consigliato)' : ''}</option>)}
           </select>
         </div>
         <label className="toggle"><input type="checkbox" checked={settings.typing} onChange={(e) => set({ typing: e.target.checked })} /> Includi domande a risposta scritta (traslitterazione)</label>
