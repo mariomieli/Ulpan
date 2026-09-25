@@ -1,3 +1,4 @@
+import { recentQuestions } from '../lib/recent';
 import { listeningEnabled } from '../lib/speech';
 import { useMemo, useState, type ReactNode } from 'react';
 import { LESSON_BY_ID, LESSONS, wordsOfLesson, wordsUpTo, glyphsUpTo, type TheoryBlock } from '../data/curriculum';
@@ -163,7 +164,7 @@ function Practice({ lessonId, onTest }: { lessonId: number; onTest: () => void }
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const questions = useMemo(
-    () => buildLessonQuiz(lessonId, 10, Math.random, { audio: listeningEnabled(settings.audio), typing: settings.typing }),
+    () => buildLessonQuiz(lessonId, 10, Math.random, { audio: listeningEnabled(settings.audio), typing: settings.typing, avoid: recentQuestions() }),
     [lessonId, round],
   );
   if (result) {
@@ -182,7 +183,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const questions = useMemo(
-    () => buildLessonQuiz(lessonId, 15, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing }),
+    () => buildLessonQuiz(lessonId, 15, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }),
     [lessonId, round],
   );
   const p = state.lessons[lessonId];

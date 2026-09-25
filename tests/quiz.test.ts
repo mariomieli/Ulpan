@@ -89,3 +89,40 @@ describe('dettato', () => {
     expect(qs.length).toBeGreaterThan(0);
   });
 });
+
+describe('varietà delle domande', () => {
+  it('domande consecutive non riguardano lo stesso elemento (quando evitabile)', () => {
+    for (const l of LESSONS) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const qs = buildLessonQuiz(l.id, 10, seededRng(seed));
+        for (let i = 1; i < qs.length; i++) {
+          const shared = qs[i].itemIds.some((id) => qs[i - 1].itemIds.includes(id));
+          expect(shared, `lezione ${l.id} seed ${seed} pos ${i}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('in un esercizio ogni elemento compare al massimo una volta, se ce ne sono abbastanza', () => {
+    for (const l of LESSONS.filter((x) => x.id >= 3)) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const qs = buildLessonQuiz(l.id, 10, seededRng(seed));
+        const ids = qs.flatMap((q) => q.itemIds);
+        expect(ids.length - new Set(ids).size, `lezione ${l.id} seed ${seed}`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('le domande appena viste non vengono riproposte', () => {
+    for (const l of LESSONS) {
+      let overlap = 0;
+      for (let seed = 1; seed <= 20; seed++) {
+        const first = buildLessonQuiz(l.id, 10, seededRng(seed));
+        const avoid = new Set(first.map((q) => q.key));
+        const second = buildLessonQuiz(l.id, 10, seededRng(seed + 500), { avoid });
+        overlap += second.filter((q) => avoid.has(q.key)).length;
+      }
+      expect(overlap / 20, `lezione ${l.id}`).toBeLessThan(0.5);
+    }
+  });
+});

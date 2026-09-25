@@ -1,3 +1,4 @@
+import { recentQuestions } from '../lib/recent';
 import { useMemo, useState } from 'react';
 import { EXAMS, PASS_THRESHOLD } from '../lib/quiz';
 import { LESSONS } from '../data/curriculum';
@@ -78,7 +79,7 @@ export function ExamPage({ id }: { id: string }) {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const questions = useMemo(
-    () => (exam ? exam.build(Math.random, { audio: false, typing: state.settings.typing }) : []),
+    () => (exam ? exam.build(Math.random, { audio: false, typing: state.settings.typing, avoid: recentQuestions() }) : []),
     [exam, round, state.settings.typing],
   );
 

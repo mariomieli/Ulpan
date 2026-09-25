@@ -1,3 +1,4 @@
+import { rememberQuestion } from '../lib/recent';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Question } from '../lib/quiz';
 import { gradeLabel } from '../lib/quiz';
@@ -81,6 +82,9 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   useEffect(() => {
     if (remaining === 0) finish(answers);
   }, [remaining, answers, finish]);
+
+  // memorizza la domanda come "vista di recente", così non torna subito nei prossimi esercizi
+  useEffect(() => { if (q) rememberQuestion(q.key); }, [q]);
 
   // audio automatico per le domande di ascolto
   useEffect(() => {

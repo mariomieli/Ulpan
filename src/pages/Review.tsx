@@ -1,3 +1,4 @@
+import { recentQuestions } from '../lib/recent';
 import { listeningEnabled } from '../lib/speech';
 import { useState } from 'react';
 import { buildReview, type Question } from '../lib/quiz';
@@ -17,7 +18,7 @@ export function ReviewPage() {
   const start = (ids: string[]) => {
     setResult(null);
     setQuestions(buildReview(ids.slice(0, SESSION), maxUnlockedLesson(state), Math.random,
-      { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing }));
+      { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }));
   };
 
   if (questions && !result) {

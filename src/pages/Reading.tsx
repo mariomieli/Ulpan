@@ -1,3 +1,4 @@
+import { recentQuestions } from '../lib/recent';
 import { useMemo, useState } from 'react';
 import { WORDS, type Word, type WordCategory } from '../data/words';
 import { LESSONS, sentencesUpTo, textLevel, wordLesson } from '../data/curriculum';
@@ -272,7 +273,7 @@ function Dictation({ level }: { level: number }) {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const questions = useMemo(
-    () => buildDictation(level, 10, Math.random, { audio: listeningEnabled(settings.audio) }),
+    () => buildDictation(level, 10, Math.random, { audio: listeningEnabled(settings.audio), avoid: recentQuestions() }),
     [level, round, settings.audio],
   );
   if (result) {

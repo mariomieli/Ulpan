@@ -77,6 +77,43 @@ export interface Pool {
 export interface QuizOptions {
   audio?: boolean;
   typing?: boolean;
+  /** Domande viste di recente: si evitano finché ce ne sono altre disponibili. */
+  avoid?: ReadonlySet<string>;
+}
+
+/** Restituisce gli elementi di una lista a turno, in ordine casuale, prima di ripeterli. */
+function rotation<T>(items: readonly T[], rng: Rng): () => T {
+  let queue: T[] = [];
+  return () => {
+    if (!queue.length) queue = shuffle(items, rng);
+    return queue.pop()!;
+  };
+}
+
+/**
+ * Riordina le domande perché due domande consecutive non riguardino
+ * lo stesso elemento e, se possibile, non siano dello stesso tipo.
+ */
+export function spread(questions: Question[]): Question[] {
+  const rest = [...questions];
+  const out: Question[] = [];
+  while (rest.length) {
+    const prev = out[out.length - 1];
+    const sameItem = (q: Question) => !!prev && q.itemIds.some((id) => prev.itemIds.includes(id));
+    let i = rest.findIndex((q) => !sameItem(q) && q.kind !== prev?.kind);
+    if (i < 0) i = rest.findIndex((q) => !sameItem(q));
+    if (i < 0) i = 0;
+    out.push(rest.splice(i, 1)[0]);
+  }
+  // Se in fondo sono rimaste due domande sullo stesso elemento, sposta la seconda dove non disturba
+  const clash = (a?: Question, b?: Question) => !!a && !!b && a.itemIds.some((id) => b.itemIds.includes(id));
+  for (let i = 1; i < out.length; i++) {
+    if (!clash(out[i - 1], out[i])) continue;
+    const [q] = out.splice(i, 1);
+    const j = [...Array(out.length + 1).keys()].find((k) => !clash(out[k - 1], q) && !clash(q, out[k]));
+    out.splice(j ?? i, 0, q);
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -116,6 +153,9 @@ function options(correct: Option, others: Option[], rng: Rng): Option[] {
 
 const opt = (value: string, hebrew = false): Option => ({ value, label: value, hebrew });
 
+/** Più modi di porre la stessa domanda, per non leggere sempre la stessa frase. */
+const say = (rng: Rng, ...variants: string[]) => pick(variants, rng);
+
 /* ------------------------------------------------------------------ */
 /* Lettere                                                             */
 /* ------------------------------------------------------------------ */
@@ -134,7 +174,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
     case 'glyph-name': {
       const ds = distractors(g.name, conf, [...inPool, ...GLYPHS], (x) => x.name, 3, rng);
       return {
-        ...base, prompt: 'Come si chiama questa lettera?',
+        ...base, prompt: say(rng, 'Come si chiama questa lettera?', 'Qual è il nome di questa lettera?', 'Riconosci questa lettera?'),
         stimulus: { text: g.char, hebrew: true, size: 'xl' }, speak: g.hebrewName,
         options: options(opt(g.name), ds.map((d) => opt(d.name)), rng),
         answer: g.name, explanation: expl,
@@ -143,7 +183,7 @@ function glyphQuestion(g: Glyph, kind: QuestionKind, pool: Pool, rng: Rng): Ques
     case 'glyph-sound': {
       const ds = distractors(g.sound, conf, [...inPool, ...GLYPHS], (x) => x.sound, 3, rng);
       return {
-        ...base, prompt: 'Che suono ha questa lettera?',
+        ...base, prompt: say(rng, 'Che suono ha questa lettera?', 'Come si pronuncia questa lettera?', 'Quale suono rappresenta?'),
         stimulus: { text: g.char, hebrew: true, size: 'xl' },
         options: options(opt(g.sound), ds.map((d) => opt(d.sound)), rng),
         answer: g.sound, explanation: expl,
@@ -227,7 +267,7 @@ function vowelQuestion(v: Vowel, kind: QuestionKind, pool: Pool, rng: Rng): Ques
     case 'vowel-sound': {
       const ds = distractors(v.sound, [], SOUND_LABELS, (x) => x, 3, rng);
       return {
-        ...base, prompt: 'Come si legge questa vocale? (א è muta)',
+        ...base, prompt: say(rng, 'Come si legge questa vocale? (א è muta)', 'Che suono dà questo segno? (א è muta)', 'Leggi questa vocale (א è muta)'),
         stimulus: { text: shown, hebrew: true, size: 'xl' },
         options: options(opt(v.sound), ds.map((d) => opt(d)), rng),
         answer: v.sound, explanation: expl,
@@ -237,7 +277,7 @@ function vowelQuestion(v: Vowel, kind: QuestionKind, pool: Pool, rng: Rng): Ques
       const ds = distractors(v.name, inPool, VOWELS, (x) => x.name, 3, rng,
         (x) => vowelDisplay(x) === shown);
       return {
-        ...base, prompt: 'Come si chiama questo segno vocalico?',
+        ...base, prompt: say(rng, 'Come si chiama questo segno vocalico?', 'Qual è il nome di questo segno?'),
         stimulus: { text: shown, hebrew: true, size: 'xl' },
         options: options(opt(v.name), ds.map((d) => opt(d.name)), rng),
         answer: v.name, explanation: expl,
@@ -302,7 +342,7 @@ function syllableQuestion(
   if (kind === 'syllable-read') {
     const ds = distractors(s.translit, preferred, candidates, (x) => x.translit, 3, rng);
     return {
-      ...base, prompt: 'Come si legge questa sillaba?',
+      ...base, prompt: say(rng, 'Come si legge questa sillaba?', 'Leggi questa sillaba:', 'Qual è la pronuncia giusta?'),
       stimulus: { text: s.text, hebrew: true, size: 'xl' }, speak: s.text,
       options: options(opt(s.translit), ds.map((d) => opt(d.translit)), rng),
       answer: s.translit,
@@ -425,7 +465,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
       const ds = distractors(w.translit, near, [...similar, ...others.map((x) => x.translit)],
         (x) => x, 3, rng, (x) => accepted.has(normalizeTranslit(x)));
       return {
-        ...base, prompt: 'Come si legge questa parola?',
+        ...base, prompt: say(rng, 'Come si legge questa parola?', 'Leggi la parola: quale pronuncia è giusta?', 'Qual è la lettura corretta?'),
         stimulus: { text: w.he, hebrew: true, size: 'lg' }, speak: w.he,
         options: options(opt(w.translit), ds.map((d) => opt(d)), rng),
         answer: w.translit, explanation: expl,
@@ -434,7 +474,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
     case 'word-meaning': {
       const ds = distractors(w.it, others, WORDS, (x) => x.it, 3, rng);
       return {
-        ...base, prompt: 'Che cosa significa questa parola?',
+        ...base, prompt: say(rng, 'Che cosa significa questa parola?', 'Qual è il significato?', 'Leggi e scegli la traduzione'),
         stimulus: { text: w.he, hebrew: true, size: 'lg' }, speak: w.he,
         options: options(opt(w.it), ds.map((d) => opt(d.it)), rng),
         answer: w.it, explanation: expl,
@@ -450,7 +490,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
     }
     case 'word-type':
       return {
-        ...base, prompt: 'Scrivi come si legge (in lettere latine)',
+        ...base, prompt: say(rng, 'Scrivi come si legge (in lettere latine)', 'Come si pronuncia? Scrivilo in lettere latine', 'Leggi e scrivi la pronuncia'),
         stimulus: { text: w.he, hebrew: true, size: 'lg' }, speak: w.he,
         answer: w.translit, accepted: acceptedReadings(w), explanation: expl,
       };
@@ -532,31 +572,44 @@ export function buildQuiz(spec: QuizSpec, rng: Rng, o: QuizOptions = {}): Questi
   const wk = only(allowedKinds(WORD_KINDS, o));
   const out: Question[] = [];
   const keys = new Set<string>();
+  const usedItems = new Set<string>();
   const totalWeight = available.reduce((s, c) => s + weights[c], 0);
+  const nextGlyph = spec.focusGlyphs.length ? rotation(spec.focusGlyphs, rng) : null;
+  const nextVowel = spec.focusVowels.length ? rotation(spec.focusVowels, rng) : null;
+  const nextWord = spec.focusWords.length ? rotation(spec.focusWords, rng) : null;
+  const nextSylGlyph = sylGlyphs.length ? rotation(sylGlyphs, rng) : null;
+  const nextSylVowel = sylVowels.length ? rotation(sylVowels, rng) : null;
+  const budget = spec.count * 40;
 
-  for (let attempt = 0; out.length < spec.count && attempt < spec.count * 40; attempt++) {
+  for (let attempt = 0; out.length < spec.count && attempt < budget; attempt++) {
+    // Più si fatica a trovare domande nuove, più si allentano i vincoli anti-ripetizione
+    const strict = attempt < budget / 2;
+    const veryStrict = attempt < budget / 4;
     let r = rng() * totalWeight;
     let cat = available[0];
     for (const c of available) { r -= weights[c]; if (r <= 0) { cat = c; break; } }
 
     let q: Question | null = null;
-    if (cat === 'glyph') q = glyphQuestion(pick(spec.focusGlyphs, rng), pick(gk, rng), spec.pool, rng);
-    else if (cat === 'vowel') q = vowelQuestion(pick(spec.focusVowels, rng), pick(vk, rng), spec.pool, rng);
-    else if (cat === 'word') q = wordQuestion(pick(spec.focusWords, rng), pick(wk, rng), { ...spec.pool, listening: !!o.audio }, rng);
+    if (cat === 'glyph') q = glyphQuestion(nextGlyph!(), pick(gk, rng), spec.pool, rng);
+    else if (cat === 'vowel') q = vowelQuestion(nextVowel!(), pick(vk, rng), spec.pool, rng);
+    else if (cat === 'word') q = wordQuestion(nextWord!(), pick(wk, rng), { ...spec.pool, listening: !!o.audio }, rng);
     else {
       // Almeno uno tra consonante e vocale è "in focus"; l'altro viene dal pool.
       const poolConsonants = spec.pool.glyphs.filter((x) => !x.finalOf);
       const glyphFocus = spec.focusGlyphs.length > 0 && (!spec.focusVowels.length || rng() < 0.5);
-      const g = glyphFocus ? pick(sylGlyphs, rng) : pick(poolConsonants.length ? poolConsonants : sylGlyphs, rng);
-      const v = glyphFocus ? pick(spec.pool.vowels, rng) : pick(sylVowels, rng);
+      const g = glyphFocus ? nextSylGlyph!() : pick(poolConsonants.length ? poolConsonants : sylGlyphs, rng);
+      const v = glyphFocus ? pick(spec.pool.vowels, rng) : nextSylVowel!();
       if (g && v) q = syllableQuestion(g, v, pick(SYLLABLE_KINDS, rng), spec.pool, rng);
     }
     if (!q || keys.has(q.key)) continue;
     if (q.options && q.options.length < 2) continue;
+    if (veryStrict && o.avoid?.has(q.key)) continue;
+    if (strict && q.itemIds.some((id) => usedItems.has(id))) continue;
     keys.add(q.key);
+    q.itemIds.forEach((id) => usedItems.add(id));
     out.push(q);
   }
-  return out;
+  return spread(out);
 }
 
 export function poolUpTo(lesson: number): Pool {
@@ -581,13 +634,17 @@ export function buildLessonQuiz(lessonId: number, count: number, rng: Rng, o: Qu
     weights: lessonId === LAST_LESSON ? { word: 6, syllable: 2 } : undefined,
   }, rng, o);
 
-  const review = reviewShare ? buildQuiz({
-    focusGlyphs: pool.glyphs, focusVowels: pool.vowels, focusWords: pool.words, pool, count: reviewShare * 2,
+  // ripasso: elementi diversi da quelli già usati negli esercizi principali, se possibile
+  const mainItems = new Set(main.flatMap((q) => q.itemIds));
+  const reviewAll = reviewShare ? buildQuiz({
+    focusGlyphs: pool.glyphs, focusVowels: pool.vowels, focusWords: pool.words, pool, count: reviewShare * 3,
   }, rng, o).filter((q) => !main.some((m) => m.key === q.key)) : [];
+  const fresh = reviewAll.filter((q) => !q.itemIds.some((id) => mainItems.has(id)));
+  const review = [...fresh, ...reviewAll.filter((q) => !fresh.includes(q))];
 
   const all = [...main, ...review];
   // se la lezione ha pochi elementi, completa con il ripasso
-  return shuffle(all.slice(0, count), rng);
+  return spread(shuffle(all.slice(0, count), rng));
 }
 
 export interface ExamDef {
@@ -634,7 +691,9 @@ export function buildReview(itemIds: string[], maxLesson: number, rng: Rng, o: Q
   for (const id of itemIds) {
     const [type, key] = [id.slice(0, 1), id.slice(2)];
     let q: Question | null = null;
-    for (let attempt = 0; !q && attempt < 8; attempt++) {
+    // una domanda già vista di recente si usa solo se non se ne trova un'altra
+    let fallback: Question | null = null;
+    for (let attempt = 0; !q && attempt < 12; attempt++) {
       if (type === 'g' && GLYPH_BY_ID[key]) q = glyphQuestion(GLYPH_BY_ID[key], pick(allowedKinds(GLYPH_KINDS, o), rng), pool, rng);
       else if (type === 'v' && VOWEL_BY_ID[key]) {
         const v = VOWEL_BY_ID[key];
@@ -647,10 +706,12 @@ export function buildReview(itemIds: string[], maxLesson: number, rng: Rng, o: Q
         if (w) q = wordQuestion(w, pick(allowedKinds(WORD_KINDS, o), rng), { ...pool, listening: !!o.audio }, rng);
         else break;
       } else break;
+      if (q && o.avoid?.has(q.key) && attempt < 11) { fallback ??= q; q = null; }
     }
+    q ??= fallback;
     if (q) out.push({ ...q, itemIds: [id] });
   }
-  return shuffle(out, rng);
+  return spread(shuffle(out, rng));
 }
 
 /** Dettato: componi le parole con le tessere. */
