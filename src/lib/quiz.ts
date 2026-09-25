@@ -3,6 +3,7 @@ import { VOWELS, VOWEL_BY_ID, withVowel, type Vowel } from '../data/nikud';
 import { WORDS, type Word } from '../data/words';
 import { clusters, normalizeTranslit } from './hebrew';
 import { MARKS } from '../data/nikud';
+import { ktivMale } from './ktiv';
 import {
   LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON,
 } from '../data/curriculum';
@@ -834,6 +835,18 @@ export const EXAMS: ExamDef[] = [
       const decoding = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS, pool: FULL_POOL, count: 18, categories: ['word'], kinds: DECODING_KINDS }, rng, o);
       const meaning = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS.filter((w) => w.core), pool: FULL_POOL, count: 7, categories: ['word'], kinds: ['word-meaning', 'meaning-word'] }, rng, o);
       return spread(shuffle([...decoding, ...meaning], rng));
+    },
+  },
+  {
+    id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: 10,
+    description: 'Parole scritte come su giornali e cartelli: senza vocali, in grafia piena (שולחן, סיפור).',
+    build: (rng, o) => {
+      const qs = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS.filter((w) => w.core), pool: FULL_POOL, count: 20, categories: ['word'], kinds: ['word-meaning', 'word-read', 'word-type'] }, rng, o);
+      return qs.map((q) => q.stimulus ? {
+        ...q, key: `plain:${q.key}`,
+        stimulus: { ...q.stimulus, text: ktivMale(q.stimulus.text) },
+        explanation: `${ktivMale(q.stimulus.text)} = ${q.explanation}`,
+      } : q);
     },
   },
   {

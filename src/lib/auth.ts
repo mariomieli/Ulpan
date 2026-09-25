@@ -250,7 +250,8 @@ export async function signIn(email: string, password: string): Promise<string | 
 export async function signUp(name: string, email: string, password: string): Promise<{ error?: string; confirm?: boolean }> {
   const { data, error } = await (await getSupabase()).auth.signUp({
     email: email.trim(), password,
-    options: { data: { name: name.trim() }, emailRedirectTo: redirectTo() },
+    // consensi registrati sul server insieme all'account (età / genitore e informativa)
+    options: { data: { name: name.trim(), age_confirmed_at: new Date().toISOString(), privacy_accepted_at: new Date().toISOString() }, emailRedirectTo: redirectTo() },
   });
   if (error) return { error: italian(error.message) };
   return { confirm: !data.session };

@@ -10,12 +10,19 @@ export interface TextLine {
   it: string;
 }
 
+/** Domanda di comprensione: la prima opzione è quella giusta (l'ordine si mescola a schermo). */
+export interface TextQuestion {
+  q: string;
+  options: [string, string, string, string];
+}
+
 export interface ReadingText {
   id: string;
   title: string;
   category: TextCategory;
   intro?: string;
   lines: TextLine[];
+  questions?: TextQuestion[];
 }
 
 export const TEXT_CATEGORY_LABELS: Record<TextCategory, string> = {
@@ -33,6 +40,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'יֵשׁ לִי כֶּלֶב.', translit: 'Yesh li kelev.', it: 'Ho un cane.' },
       { he: 'הַכֶּלֶב גָּדוֹל.', translit: 'Hakelev gadol.', it: 'Il cane è grande.' },
     ],
+    questions: [
+      { q: 'Che animale ha Dani?', options: ['Un cane', 'Un gatto', 'Un pesce', 'Un uccello'] },
+      { q: 'Com’è il cane?', options: ['Grande', 'Piccolo', 'Nero', 'Vecchio'] },
+    ],
   },
   {
     id: 'mishpacha', title: 'La mia famiglia', category: 'storia',
@@ -42,6 +53,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'יֵשׁ לִי אָח וְאָחוֹת.', translit: 'Yesh li ach ve’achot.', it: 'Ho un fratello e una sorella.' },
       { he: 'סַבָּא וְסַבְתָּא גָּרִים בִּירוּשָׁלַיִם.', translit: 'Saba vesavta garim biYerushalayim.', it: 'Il nonno e la nonna abitano a Gerusalemme.' },
     ],
+    questions: [
+      { q: 'Chi ha il narratore oltre ai genitori?', options: ['Un fratello e una sorella', 'Due fratelli', 'Due sorelle', 'Nessuno'] },
+      { q: 'Dove abitano i nonni?', options: ['A Gerusalemme', 'A Tel Aviv', 'A Haifa', 'A Roma'] },
+    ],
   },
   {
     id: 'boker', title: 'La mattina', category: 'storia',
@@ -49,6 +64,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'בַּבֹּקֶר אֲנִי קָם.', translit: 'Baboker ani kam.', it: 'La mattina mi alzo.' },
       { he: 'אֲנִי שׁוֹתֶה קָפֶה וְאוֹכֵל לֶחֶם.', translit: 'Ani shote kafe ve’ochel lechem.', it: 'Bevo un caffè e mangio del pane.' },
       { he: 'אַחַר כָּךְ אֲנִי הוֹלֵךְ לָעֲבוֹדָה.', translit: 'Achar kach ani holech la’avoda.', it: 'Poi vado al lavoro.' },
+    ],
+    questions: [
+      { q: 'Che cosa beve la mattina?', options: ['Caffè', 'Tè', 'Latte', 'Acqua'] },
+      { q: 'Dove va dopo colazione?', options: ['Al lavoro', 'A scuola', 'Al mare', 'A casa'] },
     ],
   },
   {
@@ -58,6 +77,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'אֲנַחְנוּ הוֹלְכִים לַיָּם.', translit: 'Anachnu holchim layam.', it: 'Andiamo al mare.' },
       { he: 'הַמַּיִם קָרִים, אֲבָל טוֹב לָנוּ.', translit: 'Hamayim karim, aval tov lanu.', it: 'L’acqua è fredda, ma stiamo bene.' },
     ],
+    questions: [
+      { q: 'Com’è l’acqua?', options: ['Fredda', 'Calda', 'Sporca', 'Profonda'] },
+      { q: 'Che tempo fa?', options: ['C’è il sole', 'Piove', 'Nevica', 'C’è vento'] },
+    ],
   },
   {
     id: 'kita', title: 'In classe', category: 'storia',
@@ -66,6 +89,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'אֲנַחְנוּ לוֹמְדִים עִבְרִית.', translit: 'Anachnu lomdim ivrit.', it: 'Studiamo l’ebraico.' },
       { he: 'אֲנִי כּוֹתֵב מִלָּה: סֵפֶר.', translit: 'Ani kotev mila: sefer.', it: 'Scrivo una parola: libro.' },
     ],
+    questions: [
+      { q: 'Che cosa studiano?', options: ['L’ebraico', 'L’inglese', 'La matematica', 'L’italiano'] },
+      { q: 'Quale parola scrive?', options: ['Libro', 'Casa', 'Cane', 'Pane'] },
+    ],
   },
   {
     id: 'shabat', title: 'Arriva Shabbat', category: 'storia',
@@ -73,6 +100,61 @@ export const TEXTS: ReadingText[] = [
       { he: 'בְּיוֹם שִׁשִּׁי בָּעֶרֶב מַתְחִילָה שַׁבָּת.', translit: 'Beyom shishi ba’erev matchila shabat.', it: 'Il venerdì sera comincia lo Shabbat.' },
       { he: 'אִמָּא מַדְלִיקָה נֵרוֹת.', translit: 'Ima madlika nerot.', it: 'La mamma accende le candele.' },
       { he: 'כֻּלָּם אוֹמְרִים: שַׁבָּת שָׁלוֹם!', translit: 'Kulam omrim: shabat shalom!', it: 'Tutti dicono: shabbat shalom!' },
+    ],
+    questions: [
+      { q: 'Quando comincia lo Shabbat?', options: ['Il venerdì sera', 'Il sabato mattina', 'La domenica', 'Il giovedì sera'] },
+      { q: 'Che cosa accende la mamma?', options: ['Le candele', 'La luce', 'Il forno', 'Il fuoco del barbecue'] },
+    ],
+  },
+  {
+    id: 'supermarket', title: 'Al supermercato', category: 'storia',
+    lines: [
+      { he: 'אֲנִי הוֹלֶכֶת לַסּוּפֶּרְמַרְקֶט.', translit: 'Ani holechet lasupermarket.', it: 'Vado al supermercato.' },
+      { he: 'אֲנִי קוֹנָה חָלָב, לֶחֶם וְתַפּוּחִים.', translit: 'Ani kona chalav, lechem vetapuchim.', it: 'Compro latte, pane e mele.' },
+      { he: 'הַכֹּל עוֹלֶה חֲמִשִּׁים שֶׁקֶל.', translit: 'Hakol ole chamishim shekel.', it: 'Tutto costa cinquanta shekel.' },
+      { he: 'תּוֹדָה רַבָּה וּלְהִתְרָאוֹת!', translit: 'Toda raba ulehitraot!', it: 'Grazie mille e arrivederci!' },
+    ],
+    questions: [
+      { q: 'Che cosa compra?', options: ['Latte, pane e mele', 'Caffè e pane', 'Pesce e riso', 'Acqua e formaggio'] },
+      { q: 'Quanto costa tutto?', options: ['50 shekel', '15 shekel', '5 shekel', '100 shekel'] },
+    ],
+  },
+  {
+    id: 'chaver', title: 'Un nuovo amico', category: 'storia',
+    lines: [
+      { he: 'יֵשׁ לִי חָבֵר חָדָשׁ.', translit: 'Yesh li chaver chadash.', it: 'Ho un nuovo amico.' },
+      { he: 'קוֹרְאִים לוֹ יוֹסִי.', translit: 'Korim lo Yosi.', it: 'Si chiama Yossi.' },
+      { he: 'הוּא גָּר בְּתֵל אָבִיב.', translit: 'Hu gar beTel Aviv.', it: 'Abita a Tel Aviv.' },
+      { he: 'אֲנַחְנוּ מְשַׂחֲקִים כַּדּוּרֶגֶל בַּפַּארְק.', translit: 'Anachnu mesachakim kaduregel bapark.', it: 'Giochiamo a calcio al parco.' },
+    ],
+    questions: [
+      { q: 'Dove abita Yossi?', options: ['A Tel Aviv', 'A Gerusalemme', 'A Haifa', 'A Eilat'] },
+      { q: 'Che cosa fanno al parco?', options: ['Giocano a calcio', 'Leggono', 'Mangiano', 'Dormono'] },
+    ],
+  },
+  {
+    id: 'mezeg', title: 'Che tempo fa?', category: 'storia',
+    lines: [
+      { he: 'הַיּוֹם קַר וְיֵשׁ גֶּשֶׁם.', translit: 'Hayom kar veyesh geshem.', it: 'Oggi fa freddo e piove.' },
+      { he: 'אֲנִי לוֹקֵחַ מְעִיל וּמִטְרִיָּה.', translit: 'Ani lokeach meil umitriya.', it: 'Prendo il cappotto e l’ombrello.' },
+      { he: 'מָחָר יִהְיֶה חַם.', translit: 'Machar yihye cham.', it: 'Domani farà caldo.' },
+    ],
+    questions: [
+      { q: 'Che tempo fa oggi?', options: ['Fa freddo e piove', 'Fa caldo e c’è il sole', 'Nevica', 'C’è vento'] },
+      { q: 'E domani?', options: ['Farà caldo', 'Pioverà', 'Nevicherà', 'Farà freddo'] },
+    ],
+  },
+  {
+    id: 'misada', title: 'Al ristorante', category: 'storia',
+    lines: [
+      { he: 'אֲנַחְנוּ בַּמִּסְעָדָה.', translit: 'Anachnu bamis’ada.', it: 'Siamo al ristorante.' },
+      { he: 'הַמֶּלְצַר שׁוֹאֵל: מָה אַתֶּם רוֹצִים?', translit: 'Hameltsar shoel: ma atem rotsim?', it: 'Il cameriere chiede: che cosa volete?' },
+      { he: 'אַבָּא רוֹצֶה דָּג, וַאֲנִי רוֹצָה פָלָאפֶל.', translit: 'Aba rotse dag, va’ani rotsa falafel.', it: 'Papà vuole il pesce e io voglio il falafel.' },
+      { he: 'הָאֹכֶל טָעִים מְאֹד!', translit: 'Haochel ta’im meod!', it: 'Il cibo è buonissimo!' },
+    ],
+    questions: [
+      { q: 'Chi chiede che cosa vogliono?', options: ['Il cameriere', 'Il papà', 'La mamma', 'Il cuoco'] },
+      { q: 'Che cosa vuole il papà?', options: ['Il pesce', 'Il falafel', 'Il pane', 'L’insalata'] },
     ],
   },
   {
@@ -113,6 +195,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'זְהִירוּת', translit: 'zehirut', it: 'Attenzione' },
       { he: 'תַּחֲנַת אוֹטוֹבּוּס', translit: 'tachanat otobus', it: 'Fermata dell’autobus' },
     ],
+    questions: [
+      { q: 'Su una porta leggi אֵין כְּנִיסָה: che cosa significa?', options: ['Vietato l’ingresso', 'Ingresso', 'Uscita', 'Attenzione'] },
+      { q: 'Stai cercando l’autobus: quale cartello segui?', options: ['תַּחֲנַת אוֹטוֹבּוּס', 'יְצִיאָה', 'עֲצֹר', 'זְהִירוּת'] },
+    ],
   },
   {
     id: 'cartelli-negozi', title: 'Negozi e servizi', category: 'cartelli',
@@ -123,6 +209,10 @@ export const TEXTS: ReadingText[] = [
       { he: 'בֵּית קָפֶה', translit: 'beit kafe', it: 'Caffetteria' },
       { he: 'מִשְׁטָרָה', translit: 'mishtara', it: 'Polizia' },
       { he: 'בֵּית חוֹלִים', translit: 'beit cholim', it: 'Ospedale' },
+    ],
+    questions: [
+      { q: 'Sulla porta del negozio c’è scritto סָגוּר: puoi entrare?', options: ['No, è chiuso', 'Sì, è aperto', 'È la caffetteria', 'È la polizia'] },
+      { q: 'Ti senti male: quale insegna cerchi?', options: ['בֵּית חוֹלִים', 'בֵּית קָפֶה', 'שֵׁרוּתִים', 'פָּתוּחַ'] },
     ],
   },
 ];

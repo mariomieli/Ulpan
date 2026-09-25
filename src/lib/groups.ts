@@ -20,6 +20,7 @@ export class GroupError extends Error {}
 
 const MESSAGES: [RegExp, string][] = [
   [/could not find the function|does not exist|PGRST202|PGRST205/i, 'I gruppi non sono ancora attivi sul server.'],
+  [/consenso richiesto/i, 'Per entrare in una classe serve il consenso a mostrare i progressi all’insegnante.'],
   [/codice non valido/i, 'Codice non valido: controlla le lettere e riprova.'],
   [/troppi tentativi/i, 'Troppi tentativi con i codici: riprova tra un’ora.'],
   [/gruppo pieno/i, 'Il gruppo ha raggiunto il numero massimo di membri.'],
@@ -50,8 +51,14 @@ export async function createGroup(name: string, kind: GroupKind = 'group'): Prom
   return data;
 }
 
-export async function joinGroup(code: string): Promise<Pick<Group, 'id' | 'name' | 'code'>> {
-  const { data, error } = await (await getSupabase()).rpc('join_group', { p_code: code.trim().toUpperCase() });
+export async function joinGroup(code: string, consent = false): Promise<Pick<Group, 'id' | 'name' | 'code'>> {
+  const client = await getSupabase();
+  const p_code = code.trim().toUpperCase();
+  let { data, error } = await client.rpc('join_group', { p_code, p_consent: consent });
+  // server non ancora aggiornato con fase4.sql: funzione senza il parametro del consenso
+  if (error && /PGRST202|could not find/i.test(`${error.code} ${error.message}`)) {
+    ({ data, error } = await client.rpc('join_group', { p_code }));
+  }
   if (error) fail(error);
   return data;
 }

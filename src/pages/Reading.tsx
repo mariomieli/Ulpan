@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { WORDS, type Word, type WordCategory } from '../data/words';
 import { LESSONS, sentencesUpTo, textLevel, wordLesson } from '../data/curriculum';
 import { TEXTS, TEXT_CATEGORY_LABELS, type ReadingText, type TextCategory } from '../data/texts';
-import { buildDictation } from '../lib/quiz';
+import { buildDictation, shuffle } from '../lib/quiz';
 import { flashcardOrder } from '../lib/flashcards';
 import { listeningEnabled } from '../lib/speech';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { stripNikud } from '../lib/hebrew';
+import { ktivMale } from '../lib/ktiv';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
@@ -42,7 +43,7 @@ export function ReadingPage() {
     (!q || w.it.toLowerCase().includes(q.toLowerCase()) || w.translit.includes(q.toLowerCase()) || stripNikud(w.he).includes(stripNikud(q)))),
   [level, cat, q]);
 
-  const show = (w: string) => (nikud ? w : stripNikud(w));
+  const show = (w: string) => (nikud ? w : ktivMale(w));
   const matches = (it: string, tr: string, he: string) =>
     !q || it.toLowerCase().includes(q.toLowerCase()) || tr.toLowerCase().includes(q.toLowerCase()) || stripNikud(he).includes(stripNikud(q));
   const sentences = sentencesUpTo(level).filter((x) => matches(x.it, x.translit, x.he));
@@ -76,6 +77,7 @@ export function ReadingPage() {
           <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
         </>}
       </div>
+      {!nikud && mode !== 'dettato' && <p className="small muted">Senza nikud l’ebraico si scrive in <b>grafia piena</b>: si aggiungono ו per “o/u” e י per “i” (שֻׁלְחָן → שולחן), come su giornali e cartelli.</p>}
       {level > unlocked && <p className="small muted">Nota: stai guardando parole con lettere che non hai ancora studiato.</p>}
 
       {(mode === 'parole' || mode === 'frasi') && (
@@ -176,7 +178,7 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
     if (i + 1 >= d.length) { setDeck(build()); setI(0); } else { setDeck(d); setI(i + 1); }
   };
 
-  const hebrew = <He>{nikud ? w.he : stripNikud(w.he)}</He>;
+  const hebrew = <He>{nikud ? w.he : ktivMale(w.he)}</He>;
 
   return (
     <div className="quiz">
@@ -287,7 +289,7 @@ function TextReader({ t, nikud, translit, meaning, onBack }: {
           return (
             <div key={i} className="sentence text-line" role="button" tabIndex={0} onClick={() => toggle(i)}
               onKeyDown={(e) => e.key === 'Enter' && toggle(i)}>
-              <He>{nikud ? l.he : stripNikud(l.he)}</He>
+              <He>{nikud ? l.he : ktivMale(l.he)}</He>
               <div style={{ minWidth: 160 }}>
                 {(translit || open) && <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{l.translit}</div>}
                 {(meaning || open) && <div className="muted small">{l.it}</div>}
@@ -296,6 +298,7 @@ function TextReader({ t, nikud, translit, meaning, onBack }: {
             </div>
           );
         })}
+        {t.questions && <Comprehension key={t.id} t={t} />}
         <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
           {done
             ? <span className="pill pill-ok">Letto il {done.split('-').reverse().join('/')}</span>
@@ -303,6 +306,41 @@ function TextReader({ t, nikud, translit, meaning, onBack }: {
         </div>
       </div>
     </div>
+  );
+}
+
+function Comprehension({ t }: { t: ReadingText }) {
+  // ordine delle risposte mescolato una volta per lettura; la giusta è sempre options[0] nei dati
+  const orders = useMemo(() => t.questions!.map((q) => shuffle(q.options.map((_, i) => i), Math.random)), [t]);
+  const [picked, setPicked] = useState<Record<number, number>>({});
+  const answered = Object.keys(picked).length;
+  const right = Object.values(picked).filter((v) => v === 0).length;
+  return (
+    <section className="comprehension" aria-labelledby={`cq-${t.id}`}>
+      <h3 id={`cq-${t.id}`}>Hai capito?</h3>
+      {t.questions!.map((q, qi) => (
+        <fieldset key={qi} className="cq">
+          <legend><Rich text={q.q} /></legend>
+          <div className="cq-options">
+            {orders[qi].map((oi) => {
+              const chosen = picked[qi] !== undefined;
+              const state = !chosen ? '' : oi === 0 ? 'correct' : picked[qi] === oi ? 'wrong' : '';
+              return (
+                <button key={oi} type="button" className={`option ${state}`} disabled={chosen}
+                  onClick={() => setPicked((p) => ({ ...p, [qi]: oi }))}>
+                  <Rich text={q.options[oi]} />
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      ))}
+      {answered === t.questions!.length && (
+        <p className={`feedback ${right === answered ? 'ok' : 'bad'}`} role="status">
+          {right === answered ? 'Perfetto, hai capito tutto!' : `${right === 1 ? '1 risposta giusta' : `${right} risposte giuste`} su ${answered}: rileggi il testo e tocca le righe per controllare.`}
+        </p>
+      )}
+    </section>
   );
 }
 

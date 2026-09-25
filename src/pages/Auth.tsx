@@ -11,6 +11,8 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [ageOk, setAgeOk] = useState(false);
+  const [privacyOk, setPrivacyOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -112,6 +114,19 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
             </div>
           )}
 
+          {mode === 'register' && (
+            <>
+              <label className="consent">
+                <input type="checkbox" checked={ageOk} onChange={(e) => setAgeOk(e.target.checked)} required />
+                <span>Ho almeno 14 anni, oppure un genitore ha acconsentito alla mia iscrizione.</span>
+              </label>
+              <label className="consent">
+                <input type="checkbox" checked={privacyOk} onChange={(e) => setPrivacyOk(e.target.checked)} required />
+                <span>Ho letto l’<a href="#/privacy" target="_blank" rel="noopener">informativa sulla privacy</a>.</span>
+              </label>
+            </>
+          )}
+
           {error && <div className="feedback bad small" role="alert" style={{ marginTop: 0 }}>{error}</div>}
           {info && <div className="feedback ok small" role="status" style={{ marginTop: 0 }}>{info}</div>}
 
@@ -121,6 +136,7 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
         </form>
 
         <div className="center small" style={{ marginTop: 14, display: 'grid', gap: 8 }}>
+          <a href="#/privacy" className="muted">Privacy</a>
           {mode === 'login' && <button type="button" className="link-btn" onClick={() => go('forgot')}>Password dimenticata?</button>}
           {mode === 'forgot' && <button type="button" className="link-btn" onClick={() => go('login')}>← Torna all’accesso</button>}
           {mode !== 'newPassword' && (

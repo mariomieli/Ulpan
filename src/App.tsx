@@ -6,7 +6,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFocusMode } from './lib/focus';
 import { useAuth, showLogin, signOut } from './lib/auth';
 import { cloudEnabled } from './lib/supabase';
-import { AuthPage } from './pages/Auth';
 import { HomePage } from './pages/Home';
 
 /* Le pagine diverse dalla Home si caricano solo quando servono. */
@@ -20,6 +19,7 @@ const loaders = {
   tests: () => import('./pages/Tests'),
   progress: () => import('./pages/Progress'),
   settings: () => import('./pages/Settings'),
+  privacy: () => import('./pages/Privacy'),
   groups: () => import('./pages/Groups'),
 };
 const LessonsPage = lazy(() => loaders.lessons().then((m) => ({ default: m.LessonsPage })));
@@ -33,6 +33,8 @@ const PlacementPage = lazy(() => loaders.tests().then((m) => ({ default: m.Place
 const ExamPage = lazy(() => loaders.tests().then((m) => ({ default: m.ExamPage })));
 const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.ProgressPage })));
 const GroupsPage = lazy(() => loaders.groups().then((m) => ({ default: m.GroupsPage })));
+const AuthPage = lazy(() => import('./pages/Auth').then((m) => ({ default: m.AuthPage })));
+const PrivacyPage = lazy(() => loaders.privacy().then((m) => ({ default: m.PrivacyPage })));
 const SettingsPage = lazy(() => loaders.settings().then((m) => ({ default: m.SettingsPage })));
 
 /** Dopo il primo avvio scarica in background le altre pagine (navigazione istantanea e uso offline). */
@@ -85,6 +87,7 @@ function Page({ path }: { path: string }) {
     case '/gruppi': return <GroupsPage path={path} />;
     case '/progressi': return <ProgressPage />;
     case '/impostazioni': return <SettingsPage />;
+    case '/privacy': return <PrivacyPage />;
     default: return <HomePage />;
   }
 }
@@ -139,8 +142,12 @@ export function App() {
   if (auth.status === 'loading') {
     return <div className="auth-wrap"><span className="brand-mark" aria-hidden="true" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
   }
-  if (auth.status === 'signedOut') return <AuthPage />;
-  if (auth.status === 'recovery') return <AuthPage recovery />;
+  if (auth.status === 'signedOut') {
+    return path === '/privacy'
+      ? <main className="main"><Suspense fallback={null}><PrivacyPage /></Suspense></main>
+      : <Suspense fallback={null}><AuthPage /></Suspense>;
+  }
+  if (auth.status === 'recovery') return <Suspense fallback={null}><AuthPage recovery /></Suspense>;
 
   return (
     <div className={`app ${focus ? 'focus-mode' : ''}`}>

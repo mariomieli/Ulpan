@@ -44,7 +44,39 @@ function warnNoVoice() {
   }));
 }
 
+/**
+ * Audio registrato da una persona (facoltativo): public/audio/index.json associa il testo ebraico
+ * (con nikud, identico ai dati) al file audio. Se una registrazione esiste ha la precedenza sulla sintesi vocale.
+ */
+let recordings: Record<string, string> | null = null;
+let recordingsLoad: Promise<void> | null = null;
+let player: HTMLAudioElement | null = null;
+
+function loadRecordings(): Promise<void> {
+  recordingsLoad ??= fetch('./audio/index.json')
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((m: unknown) => { recordings = m && typeof m === 'object' ? m as Record<string, string> : {}; })
+    .catch(() => { recordings = {}; });
+  return recordingsLoad;
+}
+if (typeof window !== 'undefined') void loadRecordings();
+
+function playRecording(text: string): boolean {
+  const file = recordings?.[text.trim()];
+  if (!file || !/^[\w.-]+\.(mp3|m4a|ogg|opus|webm)$/.test(file)) return false;
+  if (supported()) window.speechSynthesis.cancel();
+  player?.pause();
+  player = new Audio(`./audio/${file}`);
+  player.play().catch(() => { player = null; speakSynth(text, 0.8); });
+  return true;
+}
+
 export function speak(text: string, rate = 0.8) {
+  if (playRecording(text)) return;
+  speakSynth(text, rate);
+}
+
+function speakSynth(text: string, rate: number) {
   if (!supported()) return;
   const synth = window.speechSynthesis;
   loadVoices();

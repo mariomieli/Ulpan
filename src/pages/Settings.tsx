@@ -129,7 +129,7 @@ export function SettingsPage() {
         {msg && <p className="small" style={{ margin: 0 }}>{msg}</p>}
       </div>
 
-      <p className="center small muted">Ulpan · fatto per imparare a leggere l’ebraico con metodo.</p>
+      <p className="center small muted">Ulpan · fatto per imparare a leggere l’ebraico con metodo. · <a href="#/privacy">Privacy</a></p>
     </div>
   );
 }

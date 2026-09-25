@@ -267,10 +267,11 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
     setBusy(true);
     try {
       const info = await groupInfo(code);
-      if (info?.kind === 'class' && !confirm(
-        `Stai entrando nella classe «${info.name}».\n\nL’insegnante potrà vedere i tuoi progressi dettagliati: lezioni, risultati dei test, punti deboli e giorni di attività (non la tua email).\n\nVuoi continuare?`,
+      const isClass = info?.kind === 'class';
+      if (isClass && !confirm(
+        `Stai entrando nella classe «${info.name}».\n\nL’insegnante potrà vedere i tuoi progressi dettagliati: lezioni, risultati dei test, punti deboli e giorni di attività (non la tua email).\n\nSe hai meno di 14 anni serve il consenso di un genitore.\n\nAcconsenti e vuoi continuare?`,
       )) return;
-      const g = await joinGroup(code);
+      const g = await joinGroup(code, isClass);
       setCode(''); await load(); navigate(`/gruppi/${g.id}`);
     } catch (err) { setError(errorText(err)); } finally { setBusy(false); }
   };
