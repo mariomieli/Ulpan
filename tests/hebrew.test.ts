@@ -26,6 +26,15 @@ describe('traslitterazione', () => {
     expect(normalizeTranslit('etz')).toBe('ets');
   });
 
+  it('y e i sono equivalenti', () => {
+    expect(translitMatches('ieled', ['yeled'])).toBe(true);
+    expect(translitMatches('iom', ['yom'])).toBe(true);
+    expect(translitMatches('baiit', ['bayit'])).toBe(true);
+    expect(translitMatches('eyfo', ['eifo'])).toBe(true);
+    expect(translitMatches('Yerushalaim', ['yerushalayim'])).toBe(true);
+    expect(translitMatches('yeled', ['yalda'])).toBe(false);
+  });
+
   it('confronta con le risposte accettate', () => {
     expect(translitMatches('  Ima ', ['ima'])).toBe(true);
     expect(translitMatches('aba', ['ima'])).toBe(false);

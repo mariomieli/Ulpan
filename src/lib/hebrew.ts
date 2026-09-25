@@ -96,6 +96,8 @@ export function normalizeTranslit(s: string): string {
     .replace(/kh/g, 'ch')
     .replace(/x/g, 'ch')
     .replace(/tz/g, 'ts')
+    // y e i hanno lo stesso suono per un italiano (yeled = ieled, yom = iom)
+    .replace(/y/g, 'i')
     .replace(/(.)\1+/g, '$1')
     .replace(/([aeiou])h$/, '$1');
 }
