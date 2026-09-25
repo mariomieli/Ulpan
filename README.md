@@ -47,8 +47,7 @@ Con [Supabase](https://supabase.com) (piano gratuito) ogni persona si registra c
 2. In **SQL Editor** esegui `supabase/schema.sql` (tabella `progress` con Row Level Security: ognuno vede solo i propri dati).
 3. In **Authentication → URL Configuration** imposta *Site URL* e *Redirect URLs* all'indirizzo dell'app (es. `https://mariomieli.github.io/Ulpan/`).
 4. Da **Project Settings → API** copia *Project URL* e *anon public key* e impostale:
-   - per GitHub Pages: variabili del repository `SUPABASE_URL` e `SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions → Variables);
-   - in locale: file `.env.local` con `VITE_SUPABASE_URL=...` e `VITE_SUPABASE_ANON_KEY=...`.
+   nel file `.env.production` (usato dalla build pubblicata); per lo sviluppo locale copia gli stessi valori in `.env.local`.
 
 La chiave *anon* è pubblica per progettazione: la sicurezza dei dati è garantita dalle regole RLS.
 
