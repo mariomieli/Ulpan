@@ -837,3 +837,148 @@ dialog[open]::backdrop { animation: backdrop-in var(--dur-m) var(--ease-out); }
 
 /* coriandoli */
 .confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 200; }
+
+/* =====================================================================
+   Fase C · schermate più curate
+   ===================================================================== */
+/* copertine delle lezioni: le lettere della lezione in grande */
+.cover {
+  --c1: var(--primary); --c2: var(--hero-b);
+  position: relative; flex: none; display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(145deg, var(--c1), var(--c2)); color: #fff; border-radius: var(--r-md);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18);
+}
+.cover-vowels { --c1: #C99A3E; --c2: #8C6414; }
+.cover-rules { --c1: #2E8A5E; --c2: #1B5E3E; }
+:root[data-theme='dark'] .cover-vowels { --c1: #8C6A26; --c2: #5A4212; }
+:root[data-theme='dark'] .cover-rules { --c1: #226A48; --c2: #154530; }
+:root[data-theme='dark'] .cover-letters { --c1: #2A5A94; --c2: #1A3558; }
+.cover::after { /* un punto oro, come un segno del nikud */
+  content: ''; position: absolute; width: 14%; aspect-ratio: 1; border-radius: 50%; background: var(--accent);
+  right: 12%; top: 12%; opacity: .9;
+}
+.cover-glyph { font-family: var(--he-font); direction: rtl; line-height: 1; font-weight: 500; text-shadow: 0 2px 0 rgba(0, 0, 0, .15); }
+.cover-sm { width: 52px; height: 52px; }
+.cover-sm .cover-glyph { font-size: 1.9rem; }
+.cover-sm .cover-glyph[data-len='2'] { font-size: 1.5rem; }
+.cover-sm .cover-glyph[data-len='3'] { font-size: 1.1rem; }
+.cover-md { width: 72px; height: 72px; border-radius: var(--radius); }
+.cover-md .cover-glyph { font-size: 2.7rem; }
+.cover-md .cover-glyph[data-len='2'] { font-size: 2.1rem; }
+.cover-md .cover-glyph[data-len='3'] { font-size: 1.5rem; }
+.cover-lg { width: 92px; height: 92px; border-radius: var(--radius); background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); }
+.cover-lg .cover-glyph { font-size: 3.4rem; }
+.cover-lg .cover-glyph[data-len='2'] { font-size: 2.6rem; }
+.cover-lg .cover-glyph[data-len='3'] { font-size: 1.9rem; }
+.lesson-row.locked .cover { filter: grayscale(1); opacity: .6; }
+
+/* percorso delle lezioni */
+.lesson-cover-wrap { position: relative; flex: none; }
+.cover-check {
+  position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--ok); color: #fff; box-shadow: 0 0 0 3px var(--surface);
+}
+.lesson-step { display: block; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); }
+.lesson-row.current { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft), var(--e1); }
+.lesson-row.current .lesson-step { color: var(--primary); }
+.lesson-head { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+
+/* Home: riquadro principale */
+.hero { display: block; }
+.hero-main { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.hero-kicker { margin: 0; font-size: var(--fs-sm); color: rgba(255, 255, 255, .8); }
+.hero h2 { margin: 2px 0 2px; font-size: var(--fs-xl); }
+.hero-sub { margin: 0; color: rgba(255, 255, 255, .85); }
+.hero-path { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: var(--fs-sm); color: rgba(255, 255, 255, .85); }
+.hero-path .progress { flex: 1; background: rgba(255, 255, 255, .18); }
+.hero-path .progress-fill { background: linear-gradient(90deg, var(--accent), #F2D39A); }
+.hero-steps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 14px; counter-reset: step; }
+.hero-steps li {
+  counter-increment: step; font-size: var(--fs-xs); font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, .14); color: #fff;
+}
+.hero-steps li::before { content: counter(step) ' · '; opacity: .7; }
+.hero-link { color: #fff; text-decoration: underline; text-underline-offset: 3px; font-size: var(--fs-sm); }
+
+/* Home: scorciatoie con glifo */
+.card.feature { color: inherit; position: relative; overflow: hidden; }
+.card.feature:hover { box-shadow: var(--e2); }
+.feature-glyph { display: block; font-family: var(--he-font); font-size: 2rem; line-height: 1.2; color: var(--primary); direction: rtl; text-align: left; margin-bottom: 4px; }
+
+/* test delle lezioni: righe compatte (niente tabella che trabocca) */
+.test-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.test-row { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--r-md); }
+.test-row:nth-child(odd) { background: var(--surface-2); }
+.test-row .cover-sm { width: 40px; height: 40px; }
+.test-row .cover-sm .cover-glyph { font-size: 1.4rem; }
+.test-row.locked .cover { filter: grayscale(1); opacity: .6; }
+.test-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.test-info b { font-weight: 600; }
+
+/* schede su una riga, scorrevoli (niente griglia 2×2) */
+@media (max-width: 600px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 1 0 auto; scroll-snap-align: start; padding-inline: 14px; }
+}
+.chips-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-inline: -4px; padding-inline: 4px; }
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chips-scroll .chip { flex: none; }
+
+/* quiz: su telefono la risposta resta visibile in basso mentre si scorre */
+@media (max-width: 600px) {
+  .quiz-card .feedback {
+    position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 5;
+    margin-inline: -8px; box-shadow: var(--e3);
+  }
+  .app.focus-mode .quiz-card .feedback { bottom: 12px; }
+}
+:root[data-theme='dark'] .feedback.bad { background: color-mix(in srgb, var(--bad) 14%, var(--surface)); }
+:root[data-theme='dark'] .feedback.ok { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); }
+.btn:disabled { opacity: .55; }
+
+/* stati vuoti: titolo leggibile e illustrazione */
+.empty h2, .empty h3 { color: var(--text); }
+.letter-art { position: relative; width: 132px; height: 84px; margin: 0 auto 12px; }
+.la-tile {
+  position: absolute; top: 12px; width: 56px; height: 64px; display: grid; place-items: center; border-radius: 14px;
+  font-family: var(--he-font); font-size: 2.2rem; line-height: 1; background: var(--surface); color: var(--primary);
+  border: 1px solid var(--border); box-shadow: 0 3px 0 var(--border), var(--e1);
+}
+.la-0 { right: 0; transform: rotate(8deg); }
+.la-1 { left: 38px; top: 0; z-index: 1; background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 3px 0 color-mix(in srgb, var(--primary) 65%, #000), var(--e2); }
+.la-2 { left: 0; transform: rotate(-8deg); color: var(--accent-text); }
+
+/* sezioni richiudibili */
+details.collapsible > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+details.collapsible > summary::-webkit-details-marker { display: none; }
+details.collapsible > summary h2 { margin: 0; }
+details.collapsible > summary::after { content: '▾'; margin-left: auto; color: var(--text-2); transition: transform var(--dur-s) var(--ease-out); }
+details.collapsible[open] > summary::after { transform: rotate(180deg); }
+details.collapsible[open] > summary { margin-bottom: 12px; }
+
+/* barra in basso: etichette più leggibili */
+@media (max-width: 860px) { .bottom-nav a, .bottom-nav button { font-size: .75rem; } }
+.inline-icon { vertical-align: -2px; color: var(--accent-text); }
+img.brand-mark { background: none; width: auto; height: auto; border-radius: 22%; }
+
+/* =====================================================================
+   Fase D · traguardi
+   ===================================================================== */
+.badge-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px 10px; }
+.badge-grid li { display: grid; justify-items: center; text-align: center; gap: 2px; }
+.badge-grid li b { font-size: var(--fs-sm); line-height: 1.3; margin-top: 4px; }
+.badge-grid li .small { font-size: var(--fs-xs); line-height: 1.35; }
+.medal { overflow: visible; }
+.medal .medal-bg { fill: var(--m1); }
+.medal .medal-inner { fill: rgba(255, 255, 255, .22); }
+.medal .medal-glyph { font-family: var(--he-font); font-weight: 700; fill: #fff; }
+.medal-gold .medal-bg { fill: #B8862B; }
+.medal-blue .medal-bg { fill: #1F4E8C; }
+.medal-green .medal-bg { fill: #1E7A4F; }
+.medal.earned { filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .18)); }
+.badge-grid li.earned .medal { animation: pop-in var(--dur-l) var(--ease-spring) both; }
+.medal.locked .medal-bg { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; }
+.medal.locked .medal-inner { fill: var(--bg); }
+.medal.locked .medal-glyph { fill: var(--text-2); }
+.medal .medal-progress { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }

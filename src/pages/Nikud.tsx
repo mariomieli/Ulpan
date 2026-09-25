@@ -75,9 +75,9 @@ export function NikudPage() {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-title"><h2>Tabella completa</h2></div>
-        <p className="muted small">Ogni lettera con ogni vocale: leggi una riga alla volta da destra a sinistra, poi una colonna. Tocca una sillaba per ascoltarla.</p>
+      <details className="card collapsible">
+        <summary><h2>Tabella completa delle sillabe</h2><span className="muted small">Ogni lettera con ogni vocale</span></summary>
+        <p className="muted small">Leggi una riga alla volta da destra a sinistra, poi una colonna. Tocca una sillaba per ascoltarla.</p>
         <div className="table-wrap" dir="rtl">
           <table className="data syl-table">
             <thead>
@@ -112,7 +112,7 @@ export function NikudPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </details>
     </div>
   );
 }

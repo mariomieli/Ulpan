@@ -5,6 +5,7 @@ import { LESSONS, LESSON_BY_ID } from '../data/curriculum';
 import { actions, isLessonUnlocked, useAppState } from '../lib/store';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { Icon } from '../components/Icon';
+import { LessonCover } from '../components/LessonArt';
 import { navigate } from '../lib/router';
 
 function examUnlocked(state: ReturnType<typeof useAppState>, requires: number) {
@@ -57,25 +58,25 @@ export function TestsPage() {
 
       <div className="card">
         <div className="card-title"><h2>Test delle lezioni</h2></div>
-        <div className="table-wrap">
-          <table className="data">
-            <thead><tr><th>Lezione</th><th>Stato</th><th>Migliore</th><th /></tr></thead>
-            <tbody>
-              {LESSONS.map((l) => {
-                const p = state.lessons[l.id];
-                const unlocked = isLessonUnlocked(state, l.id);
-                return (
-                  <tr key={l.id}>
-                    <td><b>{l.id}.</b> {l.title}</td>
-                    <td>{p?.passed ? <span className="pill pill-ok">Superato</span> : unlocked ? <span className="pill">Da fare</span> : <span className="pill"><Icon name="lock" size={12} className="" /> Bloccato</span>}</td>
-                    <td>{p?.attempts ? `${p.bestScore}%` : '—'}</td>
-                    <td style={{ textAlign: 'right' }}>{unlocked && <a className="btn btn-sm" href={`#/lezioni/${l.id}`}>Apri</a>}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ul className="test-list">
+          {LESSONS.map((l) => {
+            const p = state.lessons[l.id];
+            const unlocked = isLessonUnlocked(state, l.id);
+            return (
+              <li key={l.id} className={`test-row ${unlocked ? '' : 'locked'}`}>
+                <LessonCover lesson={l} done={p?.passed} />
+                <div className="test-info">
+                  <b>{l.id}. {l.title}</b>
+                  <span className="small">
+                    {p?.passed ? <span className="pill pill-ok">Superato</span> : unlocked ? <span className="pill">Da fare</span> : <span className="pill"><Icon name="lock" size={12} className="" /> Bloccato</span>}
+                    {p?.attempts ? <span className="muted"> · migliore {p.bestScore}%</span> : null}
+                  </span>
+                </div>
+                {unlocked && <a className="btn btn-sm" href={`#/lezioni/${l.id}`} aria-label={`Apri la lezione ${l.id}`}>Apri</a>}
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

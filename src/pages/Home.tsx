@@ -7,6 +7,8 @@ import { WORDS } from '../data/words';
 import { mastery } from '../lib/srs';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
+import { LessonCover } from '../components/LessonArt';
+import { Rich } from '../components/Hebrew';
 
 const HomeAssignments = lazy(() => import('../components/HomeAssignments'));
 
@@ -37,6 +39,7 @@ export function HomePage() {
 
   const next = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed);
   const done = LESSONS.filter((l) => state.lessons[l.id]?.passed).length;
+  const isNew = done === 0 && Object.keys(state.srs).length === 0;
 
   const learned = useMemo(() => {
     const count = (prefix: string, ids: string[]) =>
@@ -70,45 +73,42 @@ export function HomePage() {
       </div>
 
       <div className="card hero">
-        <div>
-          {next ? (
-            <>
-              <p style={{ margin: 0 }}>Lezione {next.id} di {LESSONS.length}</p>
-              <h2>{next.title}</h2>
-              <p>{next.subtitle}</p>
+        {next ? (
+          <>
+            <div className="hero-main">
+              <LessonCover lesson={next} size="lg" />
+              <div style={{ minWidth: 0 }}>
+                <p className="hero-kicker">Lezione {next.id} di {LESSONS.length}</p>
+                <h2>{next.title}</h2>
+                <p className="hero-sub"><Rich text={next.subtitle} /></p>
+              </div>
+            </div>
+            <div className="hero-path" aria-label={`${done} lezioni superate su ${LESSONS.length}`}>
+              <div className="progress"><div className="progress-fill" style={{ transform: `scaleX(${done / LESSONS.length})` }} /></div>
+              <span>{done}/{LESSONS.length}</span>
+            </div>
+            {isNew && (
+              <ol className="hero-steps" aria-label="Come funziona">
+                <li>Teoria</li><li>Studio</li><li>Esercizi</li><li>Test</li><li>Ripasso</li>
+              </ol>
+            )}
+            <div className="row">
               <a className="btn btn-lg" href={`#/lezioni/${next.id}`}>
                 {state.lessons[next.id]?.studied ? 'Continua' : 'Inizia'} la lezione <Icon name="arrowRight" size={18} className="" />
               </a>
-            </>
-          ) : (
-            <>
-              <h2>Hai completato tutte le lezioni! 🎉</h2>
-              <p>Metti alla prova le tue abilità con l’esame finale e continua il ripasso quotidiano.</p>
-              <a className="btn btn-lg" href="#/test/finale">Esame finale <Icon name="arrowRight" size={18} className="" /></a>
-            </>
-          )}
-        </div>
-        <div className="hero-letter" aria-hidden="true">אב</div>
+              {isNew && <a className="hero-link" href="#/test/ingresso">Sai già un po’ di ebraico? Test d’ingresso</a>}
+            </div>
+          </>
+        ) : (
+          <div>
+            <h2><Icon name="trophy" size={22} className="" /> Hai completato tutte le lezioni!</h2>
+            <p>Metti alla prova le tue abilità con l’esame finale e continua il ripasso quotidiano.</p>
+            <a className="btn btn-lg" href="#/test/finale">Esame finale <Icon name="arrowRight" size={18} className="" /></a>
+          </div>
+        )}
       </div>
 
       {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
-
-      {done === 0 && Object.keys(state.srs).length === 0 && (
-        <div className="card welcome">
-          <h2 style={{ marginTop: 0 }}>Benvenuto! Ecco come funziona</h2>
-          <ol>
-            <li><b>Teoria</b>: ogni lezione spiega poche lettere o vocali alla volta.</li>
-            <li><b>Studio</b>: le schede con suono ed esempi, da ascoltare.</li>
-            <li><b>Esercizi</b>: domande brevi finché le riconosci senza esitare.</li>
-            <li><b>Test</b>: con almeno l’80% si sblocca la lezione successiva.</li>
-            <li><b>Ripasso</b>: ogni giorno ripeti ciò che stai per dimenticare.</li>
-          </ol>
-          <div className="row">
-            <a className="btn btn-primary" href="#/lezioni/1">Inizia la lezione 1</a>
-            <a className="btn" href="#/test/ingresso">Sai già un po’ di ebraico? Test d’ingresso</a>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-3">
         <div className="card row">
@@ -135,14 +135,16 @@ export function HomePage() {
             <span className="stat-value">{state.streak} {state.streak === 1 ? 'giorno' : 'giorni'}</span>
             <span className="stat-label">{state.xp} XP totali · {done}/{LESSONS.length} lezioni superate</span>
           </div>
-          <div className="bars" style={{ marginTop: 10 }}>
-            {week.map((d, i) => (
-              <div key={d.key} title={`${d.n} risposte`}>
-                <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%`, ['--i' as string]: i }} />
-                <span>{d.label}</span>
-              </div>
-            ))}
-          </div>
+          {week.some((d) => d.n) ? (
+            <div className="bars" style={{ marginTop: 10 }}>
+              {week.map((d, i) => (
+                <div key={d.key} title={`${d.n} risposte`}>
+                  <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%`, ['--i' as string]: i }} />
+                  <span>{d.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : <p className="small muted" style={{ margin: '10px 0 0' }}>Rispondi ad almeno una domanda al giorno per far crescere la serie.</p>}
         </div>
       </div>
 
@@ -166,15 +168,18 @@ export function HomePage() {
       </div>
 
       <div className="grid grid-3">
-        <a className="card" href="#/alfabeto" style={{ color: 'inherit' }}>
+        <a className="card feature" href="#/alfabeto">
+          <span className="feature-glyph" lang="he" aria-hidden="true">אבג</span>
           <h3>Alfabeto</h3>
           <p className="muted small">Tutte le 22 lettere, le forme finali e come distinguerle.</p>
         </a>
-        <a className="card" href="#/nikud" style={{ color: 'inherit' }}>
+        <a className="card feature" href="#/nikud">
+          <span className="feature-glyph" lang="he" aria-hidden="true">אָ</span>
           <h3>Nikud</h3>
           <p className="muted small">I segni vocalici e una tabella interattiva delle sillabe.</p>
         </a>
-        <a className="card" href="#/lettura" style={{ color: 'inherit' }}>
+        <a className="card feature" href="#/lettura">
+          <span className="feature-glyph" lang="he" aria-hidden="true">שָׁלוֹם</span>
           <h3>Lettura</h3>
           <p className="muted small">Parole e frasi da leggere, con e senza vocali.</p>
         </a>

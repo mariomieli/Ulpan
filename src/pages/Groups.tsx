@@ -99,7 +99,7 @@ export function Leaderboard({ group, canRemove, onChanged }: { group: Group; can
               <span className="lb-name">
                 <b>{r.display_name}{me && <span className="muted"> (tu)</span>}</b>
                 <span className="small muted">
-                  {r.currentStreak > 0 ? `🔥 ${r.currentStreak} ${r.currentStreak === 1 ? 'giorno' : 'giorni'} · ` : ''}
+                  {r.currentStreak > 0 && <><Icon name="flame" size={13} className="inline-icon" /> {r.currentStreak} {r.currentStreak === 1 ? 'giorno' : 'giorni'} · </>}
                   {r.lessons_passed} {r.lessons_passed === 1 ? 'lezione' : 'lezioni'}
                 </span>
               </span>
@@ -235,11 +235,14 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
   if (!cloudEnabled) return <div className="card empty">I gruppi richiedono gli account online.</div>;
   if (auth.status !== 'signedIn') {
     return (
+      <div className="fade-in">
+      <div className="page-head"><div><h1>Gruppi e classi</h1><p>Studia insieme ad altri e confronta i progressi.</p></div></div>
       <div className="card empty">
         <Icon name="users" size={36} className="" />
         <h2>Studia in gruppo o in classe</h2>
         <p>Crea un gruppo con amici e famiglia, oppure una classe se sei un insegnante. Serve un account.</p>
         <button className="btn btn-primary" onClick={showLogin}>Accedi o registrati</button>
+      </div>
       </div>
     );
   }

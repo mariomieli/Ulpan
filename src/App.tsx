@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { match, useRoute } from './lib/router';
+import { badges } from './lib/badges';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -131,6 +132,22 @@ export function App() {
   useEffect(() => setDrawer(false), [path]);
   useEffect(prefetchPages, []);
   const [toast, setToast] = useState<string | null>(null);
+  // nuovo traguardo ottenuto durante l'uso: avviso e piccola festa
+  const earnedRef = useRef<{ uid: string | null; ids: Set<string> } | null>(null);
+  const uid = auth.user?.id ?? null;
+  useEffect(() => {
+    const list = badges(state).filter((b) => b.earned);
+    const prev = earnedRef.current;
+    earnedRef.current = { uid, ids: new Set(list.map((b) => b.id)) };
+    // al cambio di utente o dopo una sincronizzazione che porta più traguardi insieme: nessun avviso
+    if (!prev || prev.uid !== uid) return;
+    const fresh = list.filter((b) => !prev.ids.has(b.id));
+    if (fresh.length === 1) {
+      const [f] = fresh;
+      window.dispatchEvent(new CustomEvent('ulpan-toast', { detail: `Nuovo traguardo: ${f.title}!` }));
+      void import('./lib/fx').then((fx) => { fx.confetti(); fx.feedback('win'); });
+    }
+  }, [state, uid]);
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
     const on = (e: Event) => {
@@ -143,7 +160,7 @@ export function App() {
   }, []);
 
   if (auth.status === 'loading') {
-    return <div className="auth-wrap"><span className="brand-mark" aria-hidden="true" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
+    return <div className="auth-wrap"><img className="brand-mark" src="./favicon.svg" alt="" width={56} height={56} /></div>;
   }
   if (auth.status === 'signedOut') {
     return path === '/privacy'
@@ -156,7 +173,7 @@ export function App() {
     <div className={`app ${focus ? 'focus-mode' : ''}`}>
       <nav className="sidebar" aria-label="Navigazione principale">
         <a href="#/" className="brand" style={{ color: 'inherit' }}>
-          <span className="brand-mark" aria-hidden="true">א</span>
+          <img className="brand-mark" src="./favicon.svg" alt="" width={36} height={36} />
           <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
         </a>
         {NAV.map((n) => (

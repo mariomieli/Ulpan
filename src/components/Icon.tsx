@@ -1,8 +1,10 @@
 const PATHS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
   book: 'M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5zM4 21.5A2.5 2.5 0 0 0 6.5 24H20',
-  alef: 'M5 4l14 16M7 12c0-4 2-6 4-6M13 18c4 0 6-2 6-6',
-  dots: 'M8 17h.01M12 17h.01M16 17h.01M12 7v6',
+  // una tessera con la א: diagonale, braccio in alto a destra, gamba in basso a sinistra
+  alef: 'M4 6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3zM8.5 7.5l7 9M15.5 7.5c0 2.2-.9 3.4-2.6 4.1M8.5 16.5c0-2.2.9-3.4 2.6-4.1',
+  // una ב con il kamatz sotto: i segni vocalici
+  dots: 'M6 4h8.5a2.5 2.5 0 0 1 2.5 2.5V13M5 13h14M9 17.5h6M12 17.5V21',
   read: 'M2 6s3-2 10-2 10 2 10 2v13s-3-2-10-2-10 2-10 2zM12 4v15',
   repeat: 'M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3',
   test: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',

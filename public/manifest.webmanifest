@@ -1,11 +1,23 @@
 {
   "name": "Ulpan · Impara a leggere l'ebraico",
   "short_name": "Ulpan",
+  "description": "Impara a leggere l'ebraico: vocali, lettere, esercizi, test e ripasso quotidiano.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#FAF7F2",
   "theme_color": "#1F4E8C",
   "lang": "it",
-  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "categories": ["education"],
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ripasso di oggi", "short_name": "Ripasso", "url": "./#/ripasso", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Lezioni", "short_name": "Lezioni", "url": "./#/lezioni", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Flashcard e lettura", "short_name": "Lettura", "url": "./#/lettura", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
 }

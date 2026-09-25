@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { buildReview, type Question } from '../lib/quiz';
 import { dueItems, maxUnlockedLesson, useAppState, weakestItems } from '../lib/store';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
+import { LetterArt } from '../components/LessonArt';
 import { Icon } from '../components/Icon';
 
 const SESSION = 20;
@@ -52,7 +53,7 @@ export function ReviewPage() {
       </div>
       {deckSize === 0 ? (
         <div className="card empty">
-          <span className="he">א</span>
+          <LetterArt letters="אבג" />
           <h2>Il tuo mazzo è vuoto</h2>
           <p>Studia la prima lezione: lettere, vocali e parole entreranno automaticamente nel ripasso.</p>
           <a className="btn btn-primary" href="#/lezioni/1">Inizia la lezione 1</a>

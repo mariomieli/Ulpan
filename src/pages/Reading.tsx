@@ -10,6 +10,7 @@ import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { stripNikud } from '../lib/hebrew';
 import { ktivMale } from '../lib/ktiv';
 import { syllabify } from '../lib/syllables';
+import { LetterArt } from '../components/LessonArt';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
@@ -20,6 +21,8 @@ const MODE_LABELS: Record<Mode, string> = { parole: 'Parole', frasi: 'Frasi', te
 
 const PAGE = 60;
 
+/** Prima lezione in cui si possono leggere almeno 3 parole. */
+const firstWordLesson = LESSONS.find((l) => WORDS.filter((w) => wordLesson(w) <= l.id).length >= 3)?.id ?? 1;
 const CATEGORIES = [...new Set(WORDS.map((w) => w.category))] as WordCategory[];
 
 export function ReadingPage() {
@@ -91,14 +94,28 @@ export function ReadingPage() {
 
       {mode === 'parole' && (
         <>
-          <div className="chips" style={{ marginBottom: 16 }}>
+          <div className="chips chips-scroll" style={{ marginBottom: 16 }}>
             <button className={`chip ${cat === 'tutte' ? 'active' : ''}`} onClick={() => setCat('tutte')}>Tutte</button>
             {CATEGORIES.map((c) => (
               <button key={c} className={`chip ${cat === c ? 'active' : ''}`} onClick={() => setCat(c)}>{c}</button>
             ))}
           </div>
           {words.length === 0 ? (
-            <div className="card empty">Nessuna parola con questi filtri.</div>
+            <div className="card empty">
+              <LetterArt letters="אבג" />
+              {q || cat !== 'tutte' ? (
+                <>
+                  <h3>Nessuna parola con questi filtri</h3>
+                  <button className="btn" onClick={() => { setQ(''); setCat('tutte'); }}>Mostra tutte</button>
+                </>
+              ) : (
+                <>
+                  <h3>Qui arriveranno le tue parole</h3>
+                  <p>Con le lettere della lezione {level} non si formano ancora parole: le prime arrivano dalla lezione {firstWordLesson}.</p>
+                  <button className="btn btn-primary" onClick={() => setLevel(firstWordLesson)}>Mostra le parole fino alla lezione {firstWordLesson}</button>
+                </>
+              )}
+            </div>
           ) : (
             <div className="word-grid">
               {words.slice(0, shown).map((w) => <WordCard key={w.id} w={w} he={show(w.he)} translit={translit} meaning={meaning} />)}

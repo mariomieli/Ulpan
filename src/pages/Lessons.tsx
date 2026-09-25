@@ -1,11 +1,14 @@
 import { LESSONS } from '../data/curriculum';
 import { GLYPH_BY_ID } from '../data/alphabet';
+import { LessonCover } from '../components/LessonArt';
 import { isLessonUnlocked, useAppState } from '../lib/store';
 import { Icon } from '../components/Icon';
 
 export function LessonsPage() {
   const state = useAppState();
   const done = LESSONS.filter((l) => state.lessons[l.id]?.passed).length;
+  // la tappa a cui sei arrivato: la prima sbloccata non ancora superata
+  const current = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed)?.id;
   return (
     <div className="fade-in">
       <div className="page-head">
@@ -21,9 +24,14 @@ export function LessonsPage() {
           const p = state.lessons[l.id];
           return (
             <a key={l.id} href={unlocked ? `#/lezioni/${l.id}` : undefined}
-              className={`lesson-row ${unlocked ? '' : 'locked'} ${p?.passed ? 'done' : ''}`} aria-disabled={!unlocked}>
-              <div className="lesson-num">{p?.passed ? <Icon name="check" size={22} className="" /> : l.id}</div>
+              className={`lesson-row ${unlocked ? '' : 'locked'} ${p?.passed ? 'done' : ''} ${l.id === current ? 'current' : ''}`} aria-disabled={!unlocked}
+              aria-current={l.id === current ? 'step' : undefined}>
+              <div className="lesson-cover-wrap">
+                <LessonCover lesson={l} done={p?.passed} />
+                {p?.passed && <span className="cover-check" aria-label="Superata"><Icon name="check" size={14} className="" /></span>}
+              </div>
               <div className="lesson-info">
+                <span className="lesson-step">Lezione {l.id}{l.id === current ? ' · sei qui' : ''}</span>
                 <h3>{l.title}</h3>
                 <p>{l.subtitle}</p>
                 {p && p.attempts > 0 && <p className="small">Miglior punteggio: {p.bestScore}%</p>}

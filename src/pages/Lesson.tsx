@@ -13,6 +13,7 @@ import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { navigate } from '../lib/router';
+import { LessonCover } from '../components/LessonArt';
 import { showLogin, useAuth } from '../lib/auth';
 import { cloudEnabled } from '../lib/supabase';
 
@@ -263,8 +264,14 @@ export function LessonPage({ id }: { id: number }) {
       <div className="page-head">
         <div>
           <a href="#/lezioni" className="small">← Tutte le lezioni</a>
-          <h1 style={{ marginTop: 6 }}>Lezione {id}: {lesson.title}</h1>
-          <p><Rich text={lesson.subtitle} /></p>
+          <div className="lesson-head">
+            <LessonCover lesson={lesson} size="md" done={p?.passed} />
+            <div>
+              <span className="lesson-step">Lezione {id} di {LESSONS.length}</span>
+              <h1 style={{ margin: 0 }}>{lesson.title}</h1>
+              <p style={{ margin: 0 }}><Rich text={lesson.subtitle} /></p>
+            </div>
+          </div>
         </div>
       </div>
       <div className="tabs" role="tablist">

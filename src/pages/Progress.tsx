@@ -7,6 +7,7 @@ import { EXAMS } from '../lib/quiz';
 import { MASTERY_LABELS, mastery } from '../lib/srs';
 import { dayKey, useAppState } from '../lib/store';
 
+import { Badges } from '../components/Badges';
 import { vowelDisplay } from '../lib/quiz';
 
 function Legend() {
@@ -70,6 +71,8 @@ export function ProgressPage() {
         <div className="card stat"><span className="stat-value">{totals.answered ? Math.round((totals.correct / totals.answered) * 100) : 0}%</span><span className="stat-label">precisione</span></div>
       </div>
 
+      <Badges />
+
       <div className="card">
         <div className="card-title"><h2>Attività (30 giorni)</h2><span className="muted small">{totals.activeDays} giorni attivi in totale</span></div>
         <div className="bars" style={{ height: 120 }}>
@@ -119,16 +122,24 @@ export function ProgressPage() {
       <div className="grid grid-2">
         <div className="card">
           <div className="card-title"><h2>Lezioni ed esami</h2></div>
-          <table className="data">
-            <tbody>
-              {LESSONS.map((l) => (
-                <tr key={l.id}><td>Lezione {l.id}</td><td>{state.lessons[l.id]?.passed ? <span className="pill pill-ok">{state.lessons[l.id].bestScore}%</span> : state.lessons[l.id]?.attempts ? `${state.lessons[l.id].bestScore}%` : '—'}</td></tr>
-              ))}
-              {EXAMS.map((e) => (
-                <tr key={e.id}><td>{e.title}</td><td>{state.exams[e.id] ? <span className={`pill ${state.exams[e.id].bestScore >= 80 ? 'pill-ok' : 'pill-warn'}`}>{state.exams[e.id].bestScore}%</span> : '—'}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          {(() => {
+            // solo ciò che hai già provato: niente elenco di trattini
+            const lessons = LESSONS.filter((l) => state.lessons[l.id]?.attempts || state.lessons[l.id]?.passed);
+            const exams = EXAMS.filter((e) => state.exams[e.id]);
+            if (!lessons.length && !exams.length) return <p className="muted">Nessun test ancora: i risultati compariranno qui dopo il primo test di lezione.</p>;
+            return (
+              <table className="data">
+                <tbody>
+                  {lessons.map((l) => (
+                    <tr key={l.id}><td>Lezione {l.id} · {l.title}</td><td>{state.lessons[l.id]?.passed ? <span className="pill pill-ok">{state.lessons[l.id].bestScore}%</span> : `${state.lessons[l.id].bestScore}%`}</td></tr>
+                  ))}
+                  {exams.map((e) => (
+                    <tr key={e.id}><td>{e.title}</td><td><span className={`pill ${state.exams[e.id].bestScore >= 80 ? 'pill-ok' : 'pill-warn'}`}>{state.exams[e.id].bestScore}%</span></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            );
+          })()}
         </div>
         <div className="card">
           <div className="card-title"><h2>Punti deboli</h2></div>
