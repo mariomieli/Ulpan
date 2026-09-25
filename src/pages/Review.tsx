@@ -8,6 +8,14 @@ import { Icon } from '../components/Icon';
 
 const SESSION = 20;
 
+/** Sceglie a caso tra i punti deboli, mettendo in fondo quelli appena ripassati. */
+function practicePick(ids: string[], n: number): string[] {
+  const recent = recentQuestions();
+  const seen = (id: string) => [...recent].some((k) => k.endsWith(`:${id.slice(2)}`) || k.includes(`:${id.slice(2)}+`) || k.includes(`+${id.slice(2)}`));
+  const shuffled = [...ids].sort(() => Math.random() - 0.5);
+  return [...shuffled.filter((id) => !seen(id)), ...shuffled.filter(seen)].slice(0, n);
+}
+
 export function ReviewPage() {
   const state = useAppState();
   const [questions, setQuestions] = useState<Question[] | null>(null);
@@ -61,7 +69,7 @@ export function ReviewPage() {
           <div className="card">
             <div className="card-title"><h2>Ripasso libero</h2><Icon name="star" /></div>
             <p className="muted">Allenati sugli elementi in cui sbagli di più, anche se non sono in scadenza.</p>
-            <button className="btn btn-block btn-lg" onClick={() => start(weakestItems(state, 15))}>Allenati sui punti deboli</button>
+            <button className="btn btn-block btn-lg" onClick={() => start(practicePick(weakestItems(state, 40), 15))}>Allenati sui punti deboli</button>
           </div>
         </div>
       )}

@@ -1,9 +1,10 @@
-import { recentQuestions } from '../lib/recent';
-import { useMemo, useState } from 'react';
+import { recentQuestions, rememberQuestion } from '../lib/recent';
+import { useEffect, useMemo, useState } from 'react';
 import { WORDS, type Word, type WordCategory } from '../data/words';
 import { LESSONS, sentencesUpTo, textLevel, wordLesson } from '../data/curriculum';
 import { TEXTS, TEXT_CATEGORY_LABELS, type ReadingText, type TextCategory } from '../data/texts';
 import { buildDictation } from '../lib/quiz';
+import { flashcardOrder } from '../lib/flashcards';
 import { listeningEnabled } from '../lib/speech';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { stripNikud } from '../lib/hebrew';
@@ -127,19 +128,31 @@ function WordCard({ w, he, translit, meaning }: { w: Word; he: string; translit:
 }
 
 function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
-  const [order, setOrder] = useState(() => shuffleIdx(words.length));
+  const { srs } = useAppState();
+  const build = () => flashcardOrder(words, srs, recentQuestions(), Date.now(), Math.random);
+  const [deck, setDeck] = useState<Word[]>(build);
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [reverse, setReverse] = useState(false);
   const [score, setScore] = useState({ ok: 0, ko: 0 });
-  if (!words.length) return <div className="card empty">Nessuna parola disponibile.</div>;
-  const w = words[(order[i % order.length] ?? 0) % words.length];
+  const w = deck[i];
+
+  // la carta mostrata diventa "vista di recente": la prossima sessione partirà da altre parole
+  useEffect(() => { if (w) rememberQuestion(`flash:${w.id}`); }, [w]);
+
+  if (!words.length || !w) return <div className="card empty">Nessuna parola disponibile.</div>;
 
   const next = (known: boolean) => {
     actions.answer([`w:${w.id}`], known);
     setScore((s) => (known ? { ...s, ok: s.ok + 1 } : { ...s, ko: s.ko + 1 }));
     setFlipped(false);
-    setI(i + 1);
+    let d = deck;
+    // una parola sbagliata torna qualche carta più avanti, non subito
+    if (!known) { d = [...deck]; d.splice(Math.min(deck.length, i + 6), 0, w); }
+    if (i + 1 >= d.length) { setDeck(build()); setI(0); } else { setDeck(d); setI(i + 1); }
   };
+
+  const hebrew = <He>{nikud ? w.he : stripNikud(w.he)}</He>;
 
   return (
     <div className="quiz">
@@ -147,21 +160,30 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
         <span className="pill pill-ok">Lo sapevo: {score.ok}</span>
         <span className="pill pill-bad">Da rivedere: {score.ko}</span>
         <span className="spacer" />
-        <button className="btn btn-sm" onClick={() => { setOrder(shuffleIdx(words.length)); setI(0); }}>
-          <Icon name="shuffle" size={16} className="" /> Mescola
+        <span className="small muted">{i + 1}/{deck.length}</span>
+      </div>
+      <div className="row" style={{ marginBottom: 12 }}>
+        <div className="chips" role="radiogroup" aria-label="Direzione">
+          <button type="button" role="radio" aria-checked={!reverse} className={`chip ${!reverse ? 'active' : ''}`} onClick={() => { setReverse(false); setFlipped(false); }}>Ebraico → italiano</button>
+          <button type="button" role="radio" aria-checked={reverse} className={`chip ${reverse ? 'active' : ''}`} onClick={() => { setReverse(true); setFlipped(false); }}>Italiano → ebraico</button>
+        </div>
+        <span className="spacer" />
+        <button className="btn btn-sm" onClick={() => { setDeck(build()); setI(0); setFlipped(false); }}>
+          <Icon name="shuffle" size={16} className="" /> Nuovo mazzo
         </button>
       </div>
       <div className="card flash" onClick={() => setFlipped(true)} role="button" tabIndex={0}
         onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && setFlipped(true)}>
-        <He>{nikud ? w.he : stripNikud(w.he)}</He>
+        {reverse ? <h2 style={{ margin: 0 }}>{w.it}</h2> : hebrew}
         {flipped ? (
           <div className="fade-in">
+            {reverse && hebrew}
             <h2 style={{ color: 'var(--primary)', margin: '8px 0 0' }}>{w.translit}</h2>
-            <p className="muted">{w.it}</p>
+            {!reverse && <p className="muted">{w.it}</p>}
             <SpeakButton text={w.he} label="Ascolta" />
           </div>
         ) : (
-          <p className="muted">Leggila ad alta voce, poi tocca per controllare</p>
+          <p className="muted">{reverse ? 'Come si dice in ebraico? Pensaci, poi tocca per controllare' : 'Leggila ad alta voce, poi tocca per controllare'}</p>
         )}
       </div>
       {flipped && (
@@ -170,17 +192,9 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
           <button className="btn btn-primary btn-lg" onClick={() => next(true)}>La sapevo</button>
         </div>
       )}
+      <p className="center small muted">Prima le parole su cui sbagli, poi quelle nuove; quelle viste di recente arrivano per ultime.</p>
     </div>
   );
-}
-
-function shuffleIdx(n: number): number[] {
-  const a = Array.from({ length: n }, (_, i) => i);
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 function TextsView({ level, nikud, translit, meaning }: { level: number; nikud: boolean; translit: boolean; meaning: boolean }) {

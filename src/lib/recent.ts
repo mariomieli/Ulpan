@@ -1,6 +1,6 @@
 /** Memoria delle domande viste di recente (per non riproporle subito). */
 const KEY = 'ulpan:recent';
-const MAX = 150;
+const MAX = 400;
 
 function read(): string[] {
   try {
