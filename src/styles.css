@@ -494,3 +494,15 @@ input[type='email'], input[type='password'] {
 .drawer-user { display: flex; align-items: center; gap: 10px; padding: 12px; margin-top: 8px; border-top: 1px solid var(--border); }
 .drawer-user .who { flex: 1; min-width: 0; line-height: 1.25; }
 .drawer-user .who b, .drawer-user .who span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 60;
+  width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 10px;
+  background: var(--text); color: var(--bg); border-radius: 14px; padding: 10px 10px 10px 16px;
+  box-shadow: var(--shadow); font-size: .9rem;
+}
+.toast span { flex: 1; }
+.toast .btn { background: var(--bg); color: var(--text); border-color: transparent; }
+.toast .btn-ghost { background: transparent; color: var(--bg); }
+@media (max-width: 860px) { .toast { bottom: calc(76px + env(safe-area-inset-bottom)); flex-wrap: wrap; } }
+.voice-help summary { cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--primary); }
+.voice-help ul { margin: 10px 0; padding-left: 1.2em; display: grid; gap: 6px; }

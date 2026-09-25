@@ -106,6 +106,17 @@ export function App() {
 
   useEffect(() => setDrawer(false), [path]);
   useEffect(prefetchPages, []);
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const on = (e: Event) => {
+      setToast((e as CustomEvent<string>).detail);
+      clearTimeout(t);
+      t = setTimeout(() => setToast(null), 7000);
+    };
+    window.addEventListener('ulpan-toast', on);
+    return () => { window.removeEventListener('ulpan-toast', on); clearTimeout(t); };
+  }, []);
 
   if (auth.status === 'loading') {
     return <div className="auth-wrap"><span className="brand-mark" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
@@ -162,6 +173,14 @@ export function App() {
           <Icon name="menu" size={22} className="" /> Altro
         </button>
       </nav>
+
+      {toast && (
+        <div className="toast fade-in" role="status">
+          <span>{toast}</span>
+          <a href="#/impostazioni" className="btn btn-sm" onClick={() => setToast(null)}>Come risolvere</a>
+          <button className="btn btn-ghost btn-icon" onClick={() => setToast(null)} aria-label="Chiudi"><Icon name="x" size={16} className="" /></button>
+        </div>
+      )}
 
       {drawer && (
         <>

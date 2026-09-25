@@ -83,13 +83,19 @@ export function SettingsPage() {
             : voice === false ? <span className="pill pill-warn">Nessuna voce ebraica installata</span>
             : voice ? <span className="pill pill-ok">Voce ebraica disponibile</span> : null}
         </div>
-        {voice === false && (
-          <p className="small muted" style={{ margin: 0 }}>
-            Per ascoltare la pronuncia installa una voce ebraica nel sistema operativo (Windows: Impostazioni → Ora e lingua → Voce;
-            macOS/iOS: Accessibilità → Contenuti letti → Voci; Android: Sintesi vocale Google → Ebraico). Chrome e Edge spesso la includono già.
-            Le domande di ascolto compaiono solo con l’audio attivo.
-          </p>
-        )}
+        <details className="voice-help" open={voice === false}>
+          <summary>Non senti l’audio? Come installare la voce ebraica</summary>
+          <ul className="small">
+            <li><b>Samsung / Android</b>: Impostazioni → Gestione generale → Lingua → <i>Sintesi vocale</i>.
+              Come motore scegli <b>Google</b> (non “Samsung TTS”, che non ha l’ebraico), poi ⚙️ accanto a Google →
+              <i>Installa dati vocali</i> → <b>Ebraico (Israele)</b>. Riapri l’app.</li>
+            <li>Su Android usa <b>Chrome</b>: Samsung Internet a volte non riproduce la sintesi vocale.</li>
+            <li>Controlla che il <b>volume multimediale</b> sia alto e la modalità silenziosa non blocchi i suoni.</li>
+            <li><b>iPhone/iPad</b>: Impostazioni → Accessibilità → Contenuti letti → Voci → Ebraico.</li>
+            <li><b>Windows</b>: Impostazioni → Ora e lingua → Voce → aggiungi Ebraico. <b>Mac</b>: Impostazioni di Sistema → Accessibilità → Contenuti letti.</li>
+          </ul>
+          <p className="small muted" style={{ margin: 0 }}>Le domande di solo ascolto compaiono solo se c’è una voce ebraica.</p>
+        </details>
       </div>
 
       <div className="card stack">
