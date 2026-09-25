@@ -81,11 +81,12 @@ describe('vocabolario', () => {
 
   it('assegna le lezioni corrette ad alcune parole note', () => {
     const find = (t: string) => WORDS.find((w) => w.translit === t)!;
-    expect(wordLesson(find('aba'))).toBe(1);
-    expect(wordLesson(find('shabat'))).toBe(2);
-    expect(wordLesson(find('shalom'))).toBe(4);
+    expect(wordLesson(find('aba'))).toBe(2);
+    expect(wordLesson(find('dag'))).toBe(2);
+    expect(wordLesson(find('shabat'))).toBe(9);
+    expect(wordLesson(find('shalom'))).toBe(9);
     expect(wordLesson(find('sus'))).toBe(6);
-    expect(wordLesson(find('kafe'))).toBe(9);
+    expect(wordLesson(find('kafe'))).toBe(8);
   });
 });
 

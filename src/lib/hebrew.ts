@@ -61,17 +61,27 @@ export interface Requirements {
 export function requirements(text: string): Requirements {
   const glyphs = new Set<string>();
   const vowels = new Set<string>();
-  for (const c of clusters(text)) {
-    const g = glyphOf(c);
-    if (g) glyphs.add(g);
+  const cs = clusters(text);
+  cs.forEach((c, i) => {
+    const prev = cs[i - 1];
+    const prevVowel = !!prev && prev.marks.some((m) => MARK_TO_VOWEL[m] && m !== MARKS.SHEVA);
     let hasVowel = false;
     for (const m of c.marks) {
       const v = MARK_TO_VOWEL[m];
       if (v) { vowels.add(v); hasVowel = true; }
     }
     // Vav con dagesh e senza altre vocali = shuruk (וּ)
-    if (c.letter === 'ו' && c.marks.includes(MARKS.DAGESH) && !hasVowel) vowels.add('shuruk');
-  }
+    const shuruk = c.letter === 'ו' && c.marks.includes(MARKS.DAGESH) && !hasVowel;
+    if (shuruk) vowels.add('shuruk');
+    // Lettere che fanno da vocale (matres lectionis) non contano come lettere da conoscere:
+    // וּ shuruk, וֹ cholam malè, י muta dopo chirik/tsere/segol (אִי, אֵי)
+    const holamMale = c.letter === 'ו' && c.marks.length === 1 && c.marks[0] === MARKS.HOLAM && !prevVowel;
+    const yodMater = c.letter === 'י' && c.marks.length === 0 && !!prev
+      && [MARKS.HIRIQ, MARKS.TSERE, MARKS.SEGOL].some((m) => prev.marks.includes(m));
+    if ((shuruk && !prevVowel) || holamMale || yodMater) return;
+    const g = glyphOf(c);
+    if (g) glyphs.add(g);
+  });
   return { glyphs, vowels };
 }
 

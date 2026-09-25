@@ -48,6 +48,8 @@ export interface DeviceContrib {
 
 export interface AppState {
   version: 1;
+  /** Ordine del corso: 2 = vocali nella lezione 1, poi lettere in ordine alfabetico. */
+  curriculum?: 2;
   settings: Settings;
   lessons: Record<number, LessonProgress>;
   exams: Record<string, ExamResult>;
@@ -94,7 +96,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function initialState(): AppState {
   return {
-    version: 1, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
+    version: 1, curriculum: 2, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
     xp: 0, streak: 0, lastActive: null, days: {}, texts: {}, contrib: {},
   };
 }
@@ -210,8 +212,11 @@ export function sanitize(raw: unknown): AppState {
   }
   return {
     version: 1,
+    curriculum: 2,
     settings: sanitizeSettings(r.settings),
-    lessons, exams, srs, texts, contrib,
+    // progressi salvati con il vecchio ordine delle lezioni: si convertono
+    lessons: r.version === 1 && r.curriculum !== 2 ? migrateLessons(lessons) : lessons,
+    exams, srs, texts, contrib,
     ...totals(contrib),
     streak: num(r.streak, 0, 0, 1e5),
     lastActive: typeof r.lastActive === 'string' && DATE_RE.test(r.lastActive) ? r.lastActive : null,
@@ -219,6 +224,44 @@ export function sanitize(raw: unknown): AppState {
     resetAt: r.resetAt === undefined ? undefined : num(r.resetAt),
     settingsUpdatedAt: r.settingsUpdatedAt === undefined ? undefined : num(r.settingsUpdatedAt),
   };
+}
+
+/** In quale lezione si studiava ogni lettera e vocale nel vecchio ordine del corso. */
+const OLD_LESSON: Record<string, number> = {
+  'g:alef': 1, 'g:bet': 1, 'g:vet': 1, 'g:lamed': 1, 'g:mem': 1, 'g:mem-sofit': 1,
+  'g:shin': 2, 'g:tav': 2, 'g:dalet': 2,
+  'g:yod': 3, 'g:nun': 3, 'g:nun-sofit': 3, 'g:gimel': 3,
+  'g:he': 4, 'g:vav': 4,
+  'g:resh': 5, 'g:kaf': 5, 'g:khaf': 5, 'g:khaf-sofit': 5,
+  'g:samekh': 6, 'g:kuf': 6, 'g:sin': 6,
+  'g:chet': 7, 'g:ayin': 7,
+  'g:zayin': 8, 'g:tet': 8, 'g:tsadi': 8, 'g:tsadi-sofit': 8,
+  'g:pe': 9, 'g:fe': 9, 'g:fe-sofit': 9,
+  'v:kamatz': 1, 'v:patach': 1, 'v:hiriq': 2, 'v:hiriq-male': 3, 'v:sheva': 3,
+  'v:holam': 4, 'v:holam-male': 4, 'v:tsere': 5, 'v:tsere-male': 5, 'v:segol': 5,
+  'v:kubutz': 6, 'v:shuruk': 6, 'v:hataf-patach': 7, 'v:hataf-segol': 7, 'v:hataf-kamatz': 7,
+};
+
+/**
+ * Vecchio ordine → nuovo: una lezione nuova risulta superata (o studiata) se tutte le sue
+ * lettere e vocali stavano in lezioni già superate (o studiate) nel vecchio ordine.
+ */
+export function migrateLessons(old: AppState['lessons']): AppState['lessons'] {
+  const out: AppState['lessons'] = {};
+  for (const lesson of Object.values(LESSON_BY_ID)) {
+    const oldIds = lesson.glyphs.length + lesson.vowels.length
+      ? [...new Set([...lesson.glyphs.map((g) => OLD_LESSON[`g:${g}`]), ...lesson.vowels.map((v) => OLD_LESSON[`v:${v}`])])]
+      : [lesson.id];
+    const prev = oldIds.map((n) => old[n]);
+    if (!prev.every((p) => p?.studied || p?.passed)) continue;
+    const passed = prev.every((p) => p?.passed);
+    out[lesson.id] = {
+      studied: true, passed,
+      bestScore: passed ? Math.min(...prev.map((p) => p!.bestScore)) : 0,
+      attempts: passed ? 1 : 0,
+    };
+  }
+  return out;
 }
 
 /** Controlla che un file importato sia davvero un backup di Ulpan. */
@@ -384,6 +427,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 
   return {
     version: 1,
+    curriculum: 2,
     settings: { ...newerSettings.settings },
     settingsUpdatedAt: Math.max(a.settingsUpdatedAt ?? 0, b.settingsUpdatedAt ?? 0) || undefined,
     lessons, exams, srs, contrib, ...totals(contrib),
@@ -507,7 +551,7 @@ export function applyExam(s: AppState, examId: string, score: number, timeSec: n
 }
 
 export function isLessonUnlocked(s: AppState, lessonId: number): boolean {
-  if (s.settings.unlockAll || lessonId === 1) return true;
+  if (s.settings.unlockAll || lessonId === 1 || s.lessons[lessonId]?.passed) return true;
   return !!s.lessons[lessonId - 1]?.passed;
 }
 

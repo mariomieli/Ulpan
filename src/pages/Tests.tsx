@@ -191,7 +191,7 @@ export function PlacementPage() {
           ) : (
             <>
               <h1 style={{ marginTop: 8 }}>Partiamo dall’inizio</h1>
-              <p>Nessun problema: la lezione 1 ti guida passo passo, dalle prime lettere.</p>
+              <p>Nessun problema: la lezione 1 ti guida passo passo, partendo dalle vocali.</p>
             </>
           )}
           <a className="btn btn-primary btn-lg" href={`#/lezioni/${nextLesson}`}>Vai alla lezione {nextLesson}</a>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
+import { sanitize,
   initialState, applyAnswer, applyLessonTest, applyStudied, applyExam, isLessonUnlocked,
   maxUnlockedLesson, dueItems, lessonItemIds,
 } from '../src/lib/store';
@@ -55,8 +55,9 @@ describe('store', () => {
     const now = d('2026-01-01');
     const s = applyStudied(initialState(), 1, now);
     const ids = lessonItemIds(1);
-    expect(ids).toContain('g:bet');
+    expect(ids).toContain('g:alef');
     expect(ids).toContain('v:kamatz');
+    expect(ids).toContain('v:shuruk');
     expect(dueItems(s, now.getTime()).sort()).toEqual([...ids].sort());
   });
 
@@ -199,5 +200,23 @@ describe('fase 2: test d’ingresso e flashcard', () => {
     expect(s.xp).toBe(0);
     expect(s.days).toEqual({});
     expect(s.srs['w:shalom'].seen).toBe(1);
+  });
+});
+
+describe('nuovo ordine del corso', () => {
+  it('converte i progressi salvati con il vecchio ordine', () => {
+    const old = { ...initialState(), curriculum: undefined, lessons: {
+      1: { studied: true, passed: true, bestScore: 90, attempts: 2 },
+      2: { studied: true, passed: true, bestScore: 85, attempts: 1 },
+      3: { studied: true, passed: true, bestScore: 95, attempts: 1 },
+    } };
+    const s = sanitize(JSON.parse(JSON.stringify(old)));
+    expect(s.curriculum).toBe(2);
+    // vecchie lezioni 1-3: א בּ ב ל מ ם שׁ ת ד י נ ן ג → nuova lezione 2 (בּ ב ג ד) superata
+    expect(s.lessons[2]).toMatchObject({ passed: true, bestScore: 85 });
+    // la nuova lezione 1 (tutte le vocali) richiedeva le vecchie 1-7
+    expect(s.lessons[1]).toBeUndefined();
+    // già convertito: non si converte di nuovo
+    expect(sanitize(JSON.parse(JSON.stringify(s))).lessons).toEqual(s.lessons);
   });
 });

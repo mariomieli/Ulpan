@@ -652,6 +652,8 @@ export function buildLessonQuiz(
   lessonId: number, count: number, rng: Rng, o: QuizOptions = {}, mode: 'practice' | 'test' = 'practice',
 ): Question[] {
   const lesson = LESSON_BY_ID[lessonId];
+  // nel test ogni elemento nuovo va chiesto almeno due volte (la lezione delle vocali ne ha molti)
+  if (mode === 'test') count = Math.max(count, 2 * (lesson.glyphs.length + lesson.vowels.length) + 2);
   const pool = poolUpTo(lessonId);
   const newWords = wordsOfLesson(lessonId);
   const focusGlyphs = lesson.glyphs.map((id) => GLYPH_BY_ID[id]);
@@ -664,6 +666,7 @@ export function buildLessonQuiz(
     out.push(q);
     return true;
   };
+  const usedIds = () => new Set(out.flatMap((q) => q.itemIds));
 
   if (mode === 'test') {
     const gk = allowedKinds(GLYPH_KINDS, o);
@@ -689,19 +692,22 @@ export function buildLessonQuiz(
   if (readable.length) {
     for (const q of buildQuiz({
       focusGlyphs: [], focusVowels: [], focusWords: readable, pool, count: decodeTarget, categories: ['word'], kinds: DECODING_KINDS,
-    }, rng, o)) if (out.length < count) add(q);
+    }, rng, o)) if (out.length < count && !q.itemIds.some((id) => usedIds().has(id))) add(q);
   }
 
   // Resto: domande sugli elementi nuovi (compresi i significati delle parole di base) e ripasso
   const reviewShare = lessonId === 1 ? 0 : Math.round(count * 0.25);
   const mainCount = Math.max(0, count - out.length - reviewShare);
   const coreNew = newWords.filter((w) => w.core);
-  for (const q of buildQuiz({
+  const main = [...buildQuiz({
     focusGlyphs, focusVowels,
     focusWords: coreNew.length >= 3 ? coreNew : pool.words.filter((w) => w.core),
     pool, count: mainCount * 2,
     weights: lessonId === LAST_LESSON ? { word: 6, syllable: 2 } : undefined,
-  }, rng, o)) if (out.length < count - reviewShare) add(q);
+  }, rng, o)];
+  // prima gli elementi non ancora chiesti, poi (se servono) le ripetizioni
+  for (const q of main) if (out.length < count - reviewShare && !q.itemIds.some((id) => usedIds().has(id))) add(q);
+  for (const q of main) if (out.length < count - reviewShare) add(q);
 
   const used = new Set(out.flatMap((q) => q.itemIds));
   const review = buildQuiz({
@@ -727,7 +733,7 @@ export function buildPlacementBlock(lessonId: number, rng: Rng): Question[] {
   };
   const readingKinds: QuestionKind[] = ['glyph-sound', 'sound-glyph', 'glyph-name'];
   for (const id of shuffle(lesson.glyphs, rng).slice(0, 3)) add(glyphQuestion(GLYPH_BY_ID[id], pick(readingKinds, rng), pool, rng));
-  for (const id of shuffle(lesson.vowels, rng).slice(0, 2)) {
+  for (const id of shuffle(lesson.vowels, rng).slice(0, lesson.glyphs.length <= 1 ? 4 : 2)) {
     const v = VOWEL_BY_ID[id];
     const g = pick(pool.glyphs.filter((x) => canCombine(x, v)), rng);
     if (g) add(syllableQuestion(g, v, 'syllable-read', pool, rng));
@@ -824,7 +830,7 @@ export const EXAMS: ExamDef[] = [
     build: (rng, o) => buildQuiz({ focusGlyphs: GLYPHS, focusVowels: [], focusWords: [], pool: FULL_POOL, count: 30, categories: ['glyph'] }, rng, o),
   },
   {
-    id: 'nikud', title: 'Esame: nikud', count: 25, requires: 7,
+    id: 'nikud', title: 'Esame: nikud', count: 25, requires: 1,
     description: 'Riconoscere i segni vocalici e leggere le sillabe.',
     build: (rng, o) => buildQuiz({ focusGlyphs: [], focusVowels: VOWELS, focusWords: [], pool: FULL_POOL, count: 25, categories: ['vowel', 'syllable'], weights: { vowel: 2, syllable: 3 } }, rng, o),
   },
