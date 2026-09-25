@@ -47,7 +47,7 @@ const NAV = [
   { path: '/lettura', label: 'Lettura', icon: 'read' },
   { path: '/ripasso', label: 'Ripasso', icon: 'repeat' },
   { path: '/test', label: 'Test ed esami', icon: 'test' },
-  { path: '/gruppi', label: 'Gruppi', icon: 'users' },
+  { path: '/gruppi', label: 'Gruppi e classi', icon: 'users' },
   { path: '/progressi', label: 'Progressi', icon: 'chart' },
   { path: '/impostazioni', label: 'Impostazioni', icon: 'settings' },
 ];

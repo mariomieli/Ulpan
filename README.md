@@ -12,6 +12,7 @@ Web app (PWA) in italiano per imparare a **leggere l'ebraico** da zero: alfabeto
 - **Quiz variati**: riconoscimento di lettere, suoni, vocali e forme finali, lettura di sillabe e parole, significato, risposta scritta in traslitterazione, domande di ascolto. I distrattori sono scelti tra lettere simili e letture “quasi giuste”.
 - **Esami**: alfabeto, nikud, lettura ed esame finale a tempo, con revisione degli errori.
 - **Ripasso intelligente** (algoritmo tipo SM-2): ogni lettera, vocale e parola torna quando stai per dimenticarla.
+- **Classi e pannello insegnante**: l'insegnante crea una classe, vede i progressi dettagliati e i punti deboli di ogni studente, assegna compiti con scadenza ed esporta i risultati in CSV; gli studenti danno il consenso all'ingresso.
 - **Gruppi e classifica**: crea un gruppo, invita con codice o link e confrontatevi (risposte corrette negli ultimi 7 giorni o XP totali).
 - **Progressi**: XP, serie di giorni, obiettivo giornaliero, mappa di padronanza, punti deboli.
 - **Audio** con la sintesi vocale del browser (voce ebraica), tema chiaro/scuro, due caratteri ebraici, dimensione regolabile, funzionamento offline, esportazione/importazione dei progressi.
@@ -46,7 +47,7 @@ tests/         test Vitest
 Con [Supabase](https://supabase.com) (piano gratuito) ogni persona si registra con email e password e ha il proprio avanzamento, salvato online e sincronizzato tra dispositivi. Senza configurazione l'app funziona in locale, senza account.
 
 1. Crea un progetto su supabase.com.
-2. In **SQL Editor** esegui `supabase/schema.sql` e poi `supabase/groups.sql` (gruppi e classifiche) (tabella `progress` con Row Level Security: ognuno vede solo i propri dati,, e la funzione `delete_my_account` per l'eliminazione dell'account da parte dell'utente).
+2. In **SQL Editor** esegui `supabase/schema.sql` poi `supabase/groups.sql` (gruppi e classifiche) e `supabase/classes.sql` (classi e pannello insegnante), in quest'ordine (tabella `progress` con Row Level Security: ognuno vede solo i propri dati,, e la funzione `delete_my_account` per l'eliminazione dell'account da parte dell'utente).
 3. In **Authentication → URL Configuration** imposta *Site URL* e *Redirect URLs* all'indirizzo dell'app (es. `https://mariomieli.github.io/Ulpan/`).
 4. Da **Project Settings → API** copia *Project URL* e *anon public key* e impostale:
    nel file `.env.production` (usato dalla build pubblicata); per lo sviluppo locale copia gli stessi valori in `.env.local`.

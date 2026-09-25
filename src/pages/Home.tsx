@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { dayKey, dueItems, isLessonUnlocked, useAppState } from '../lib/store';
 import { LESSONS } from '../data/curriculum';
 import { GLYPHS } from '../data/alphabet';
@@ -7,6 +7,8 @@ import { WORDS } from '../data/words';
 import { mastery } from '../lib/srs';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
+
+const HomeAssignments = lazy(() => import('../components/HomeAssignments'));
 
 function Ring({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(1, max ? value / max : 0);
@@ -85,6 +87,8 @@ export function HomePage() {
         </div>
         <div className="hero-letter" aria-hidden="true">אב</div>
       </div>
+
+      {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
 
       <div className="grid grid-3">
         <div className="card row">

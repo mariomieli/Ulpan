@@ -13,9 +13,9 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 
 ## Motivazione
 - [ ] **Promemoria giornaliero** con notifica sul telefono se il ripasso non è stato fatto.
-- [ ] **Pannello per l'insegnante**: progressi e punti deboli di ogni studente di una classe.
 
 ## Già fatto
+- [x] Classi con pannello insegnante (progressi per studente, difficoltà della classe, compiti con scadenza, esportazione CSV)
 - [x] Gruppi con codice d'invito e classifica (settimanale e totale)
 - [x] Testi di lettura graduati (storie, preghiere, cartelli)
 - [x] Dettato con tessere lettera+vocale
