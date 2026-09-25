@@ -338,11 +338,14 @@ export function dueItems(s: AppState, now: number): string[] {
 
 /** Elementi più deboli (per il ripasso libero quando nulla è in scadenza). */
 export function weakestItems(s: AppState, n: number): string[] {
+  // prima gli elementi sbagliati almeno una volta, poi quelli meno consolidati
   return Object.entries(s.srs)
     .sort((a, b) => {
       const ra = a[1].seen ? a[1].correct / a[1].seen : 0;
       const rb = b[1].seen ? b[1].correct / b[1].seen : 0;
-      return ra - rb || a[1].interval - b[1].interval;
+      const ea = a[1].correct < a[1].seen ? 0 : 1;
+      const eb = b[1].correct < b[1].seen ? 0 : 1;
+      return ea - eb || ra - rb || a[1].interval - b[1].interval;
     })
     .slice(0, n)
     .map(([id]) => id);

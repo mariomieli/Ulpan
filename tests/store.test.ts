@@ -99,3 +99,14 @@ describe('sincronizzazione', () => {
     expect(mergeStates(reset, later).lessons[3].passed).toBe(true);
   });
 });
+
+describe('punti deboli', () => {
+  it('il ripasso libero mette prima gli elementi sbagliati', async () => {
+    const { weakestItems } = await import('../src/lib/store');
+    let s = initialState();
+    for (let i = 0; i < 3; i++) s = applyAnswer(s, ['g:bet'], true, d('2026-01-01'));
+    s = applyAnswer(s, ['g:chet'], true, d('2026-01-01'));
+    s = applyAnswer(s, ['g:chet'], false, d('2026-01-01'));
+    expect(weakestItems(s, 1)).toEqual(['g:chet']);
+  });
+});

@@ -16,6 +16,9 @@ function Legend() {
   );
 }
 
+/** Sotto questa percentuale di risposte giuste un elemento è un punto debole. */
+const WEAK_THRESHOLD = 0.8;
+
 export function ProgressPage() {
   const state = useAppState();
   const totals = useMemo(() => {
@@ -26,10 +29,11 @@ export function ProgressPage() {
   }, [state.days]);
 
   const hardest = useMemo(() => Object.entries(state.srs)
-    .filter(([, s]) => s.seen >= 3)
+    .filter(([, s]) => s.seen >= 3 && s.correct / s.seen < WEAK_THRESHOLD)
     .map(([id, s]) => ({ id, rate: s.correct / s.seen, seen: s.seen }))
-    .sort((a, b) => a.rate - b.rate)
+    .sort((a, b) => a.rate - b.rate || b.seen - a.seen)
     .slice(0, 8), [state.srs]);
+  const answeredEnough = Object.values(state.srs).some((s) => s.seen >= 3);
 
   const labelOf = (id: string) => {
     const [t, k] = [id[0], id.slice(2)];
@@ -127,7 +131,9 @@ export function ProgressPage() {
         </div>
         <div className="card">
           <div className="card-title"><h2>Punti deboli</h2></div>
-          {hardest.length === 0 ? <p className="muted">Rispondi a qualche domanda in più per vedere dove sbagli di più.</p> : (
+          {hardest.length === 0 ? <p className="muted">{answeredEnough
+            ? 'Nessun punto debole: rispondi correttamente ad almeno l’80% su tutto. Ottimo lavoro!'
+            : 'Rispondi a qualche domanda in più per vedere dove sbagli di più.'}</p> : (
             <div className="review-list">
               {hardest.map((h) => {
                 const l = labelOf(h.id);
