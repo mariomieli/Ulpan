@@ -1,3 +1,4 @@
+import { LEAVE_MESSAGE } from '../lib/focus';
 import { recentQuestions } from '../lib/recent';
 import { listeningEnabled } from '../lib/speech';
 import { useMemo, useState, type ReactNode } from 'react';
@@ -12,6 +13,8 @@ import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { navigate } from '../lib/router';
+import { showLogin, useAuth } from '../lib/auth';
+import { cloudEnabled } from '../lib/supabase';
 
 type Tab = 'teoria' | 'studio' | 'esercizi' | 'test';
 
@@ -181,6 +184,7 @@ function Practice({ lessonId, onTest }: { lessonId: number; onTest: () => void }
 
 function LessonTest({ lessonId }: { lessonId: number }) {
   const state = useAppState();
+  const auth = useAuth();
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -193,7 +197,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
 
   if (phase === 'run') {
     return (
-      <QuizRunner key={round} questions={questions} mode="exam" onExit={() => setPhase('intro')}
+      <QuizRunner key={round} questions={questions} mode="exam" onExit={() => { if (confirm(LEAVE_MESSAGE)) setPhase('intro'); }}
         onFinish={(r) => { actions.lessonTest(lessonId, r.pct, PASS_THRESHOLD); setResult(r); setPhase('done'); }} />
     );
   }
@@ -208,6 +212,11 @@ function LessonTest({ lessonId }: { lessonId: number }) {
           </button>
         )}
         {passed && !nextLesson && <a className="btn btn-primary" href="#/test/finale">Esame finale</a>}
+        {passed && cloudEnabled && auth.status === 'guest' && (
+          <button className="btn" onClick={showLogin} title="Salva i progressi su tutti i dispositivi">
+            Crea un account gratuito per salvare i progressi
+          </button>
+        )}
       </QuizResults>
     );
   }

@@ -27,6 +27,7 @@ export function LessonsPage() {
                 <h3>{l.title}</h3>
                 <p>{l.subtitle}</p>
                 {p && p.attempts > 0 && <p className="small">Miglior punteggio: {p.bestScore}%</p>}
+                {!unlocked && <p className="lock-reason">Bloccata: supera il test della lezione {l.id - 1}</p>}
               </div>
               <div className="lesson-letters" aria-hidden="true">{l.glyphs.map((g) => GLYPH_BY_ID[g].char).join(' ')}</div>
               {!unlocked && <Icon name="lock" />}

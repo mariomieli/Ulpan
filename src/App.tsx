@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { useFocusMode } from './lib/focus';
 import { useAuth, showLogin, signOut } from './lib/auth';
 import { cloudEnabled } from './lib/supabase';
 import { AuthPage } from './pages/Auth';
@@ -93,6 +94,15 @@ export function App() {
   const state = useAppState();
   const { settings } = state;
   const [drawer, setDrawer] = useState(false);
+  const drawerRef = useRef<HTMLDialogElement>(null);
+  const focus = useFocusMode();
+  // Menu "Altro" come dialogo nativo: Esc per chiudere, focus intrappolato e restituito al pulsante
+  useEffect(() => {
+    const d = drawerRef.current;
+    if (!d) return;
+    if (drawer && !d.open) d.showModal();
+    if (!drawer && d.open) d.close();
+  }, [drawer]);
   const due = dueItems(state, Date.now()).length;
   const auth = useAuth();
 
@@ -127,16 +137,16 @@ export function App() {
   }, []);
 
   if (auth.status === 'loading') {
-    return <div className="auth-wrap"><span className="brand-mark" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
+    return <div className="auth-wrap"><span className="brand-mark" aria-hidden="true" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
   }
   if (auth.status === 'signedOut') return <AuthPage />;
   if (auth.status === 'recovery') return <AuthPage recovery />;
 
   return (
-    <div className="app">
+    <div className={`app ${focus ? 'focus-mode' : ''}`}>
       <nav className="sidebar" aria-label="Navigazione principale">
         <a href="#/" className="brand" style={{ color: 'inherit' }}>
-          <span className="brand-mark">א</span>
+          <span className="brand-mark" aria-hidden="true">א</span>
           <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
         </a>
         {NAV.map((n) => (
@@ -179,7 +189,7 @@ export function App() {
             {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
           </a>
         ))}
-        <button onClick={() => setDrawer(true)} aria-label="Altro">
+        <button onClick={() => setDrawer(true)} aria-label="Altre sezioni" aria-haspopup="dialog" aria-expanded={drawer}>
           <Icon name="menu" size={22} className="" /> Altro
         </button>
       </nav>
@@ -192,28 +202,32 @@ export function App() {
         </div>
       )}
 
-      {drawer && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setDrawer(false)} />
-          <div className="drawer fade-in" role="dialog" aria-label="Menu">
-            <div className="drawer-handle" />
-            {NAV.filter((n) => !MOBILE.includes(n.path)).map((n) => (
-              <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`}>
-                <Icon name={n.icon} /> {n.label}
-              </a>
-            ))}
-            {auth.user ? (
-              <div className="drawer-user">
-                <span className="avatar">{auth.user.name.slice(0, 1)}</span>
-                <span className="who"><b>{auth.user.name}</b><span className="small muted">{auth.user.email}</span></span>
-                <button className="btn btn-sm" onClick={logout}><Icon name="logout" size={16} className="" /> Esci</button>
-              </div>
-            ) : cloudEnabled && (
-              <button className="btn btn-block" style={{ marginTop: 8 }} onClick={showLogin}>Accedi o registrati</button>
-            )}
+      <dialog ref={drawerRef} className="drawer" aria-labelledby="drawer-title"
+        onClose={() => setDrawer(false)}
+        onClick={(e) => { if (e.target === e.currentTarget) setDrawer(false); }}>
+        <div className="drawer-handle" />
+        <div className="drawer-head">
+          <h2 id="drawer-title">Altre sezioni</h2>
+          <button className="btn btn-ghost btn-icon" onClick={() => setDrawer(false)} aria-label="Chiudi il menu">
+            <Icon name="x" size={20} className="" />
+          </button>
+        </div>
+        {NAV.filter((n) => !MOBILE.includes(n.path)).map((n) => (
+          <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`}
+            aria-current={isActive(n.path, path) ? 'page' : undefined}>
+            <Icon name={n.icon} /> {n.label}
+          </a>
+        ))}
+        {auth.user ? (
+          <div className="drawer-user">
+            <span className="avatar" aria-hidden="true">{auth.user.name.slice(0, 1)}</span>
+            <span className="who"><b>{auth.user.name}</b><span className="small muted">{auth.user.email}</span></span>
+            <button className="btn btn-sm" onClick={logout}><Icon name="logout" size={16} className="" /> Esci</button>
           </div>
-        </>
-      )}
+        ) : cloudEnabled && (
+          <button className="btn btn-block" style={{ marginTop: 8 }} onClick={() => { setDrawer(false); showLogin(); }}>Accedi o registrati</button>
+        )}
+      </dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { LESSONS } from '../data/curriculum';
 import { EXAMS } from '../lib/quiz';
 import { MASTERY_LABELS, mastery } from '../lib/srs';
 import { dayKey, useAppState } from '../lib/store';
+
 import { vowelDisplay } from '../lib/quiz';
 
 function Legend() {
@@ -85,7 +86,7 @@ export function ProgressPage() {
         <div className="card-title"><h2>Lettere</h2></div>
         <div className="mastery-grid">
           {BASE_LETTERS.flatMap((b) => [b, ...(LETTER_VARIANTS[b] ?? [])]).map((id) => (
-            <div key={id} className={`mcell m${mastery(state.srs[`g:${id}`])}`} title={GLYPH_BY_ID[id].name}>{GLYPH_BY_ID[id].char}</div>
+            <div key={id} className={`mcell m${mastery(state.srs[`g:${id}`])}`} title={GLYPH_BY_ID[id].name} lang="he" role="img" aria-label={`${GLYPH_BY_ID[id].name}: ${MASTERY_LABELS[mastery(state.srs[`g:${id}`])]}`}>{GLYPH_BY_ID[id].char}</div>
           ))}
         </div>
         <Legend />
@@ -99,7 +100,7 @@ export function ProgressPage() {
           <div className="card-title"><h2>Vocali</h2></div>
           <div className="mastery-grid">
             {VOWELS.map((v) => (
-              <div key={v.id} className={`mcell m${mastery(state.srs[`v:${v.id}`])}`} title={v.name}>{vowelDisplay(v)}</div>
+              <div key={v.id} className={`mcell m${mastery(state.srs[`v:${v.id}`])}`} title={v.name} lang="he" role="img" aria-label={`${v.name}: ${MASTERY_LABELS[mastery(state.srs[`v:${v.id}`])]}`}>{vowelDisplay(v)}</div>
             ))}
           </div>
           <Legend />

@@ -15,13 +15,13 @@ function Ring({ value, max, label }: { value: number; max: number; label: string
   const r = 36;
   const c = 2 * Math.PI * r;
   return (
-    <div className="ring" aria-label={label}>
-      <svg width="84" height="84">
+    <div className="ring" role="img" aria-label={`${label}: ${value} su ${max}`}>
+      <svg width="84" height="84" aria-hidden="true">
         <circle cx="42" cy="42" r={r} stroke="var(--surface-2)" strokeWidth="8" fill="none" />
         <circle cx="42" cy="42" r={r} stroke={pct >= 1 ? 'var(--ok)' : 'var(--primary)'} strokeWidth="8" fill="none"
           strokeDasharray={c} strokeDashoffset={c * (1 - pct)} strokeLinecap="round" />
       </svg>
-      <div className="ring-label">{value}/{max}</div>
+      <div className="ring-label" aria-hidden="true">{value}/{max}</div>
     </div>
   );
 }
@@ -61,7 +61,7 @@ export function HomePage() {
     <div className="stack fade-in">
       <div className="page-head">
         <div>
-          <h1><span className="he-inline">שָׁלוֹם</span> · Ciao{auth.user ? `, ${auth.user.name}` : ''}!</h1>
+          <h1><span className="he-inline" lang="he">שָׁלוֹם</span> · Ciao{auth.user ? `, ${auth.user.name}` : ''}!</h1>
           <p>Il tuo percorso per leggere l’ebraico, una lettera alla volta.</p>
         </div>
       </div>
@@ -91,13 +91,20 @@ export function HomePage() {
       {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
 
       {done === 0 && Object.keys(state.srs).length === 0 && (
-        <a className="card row" href="#/test/ingresso" style={{ color: 'inherit' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ margin: 0 }}>Sai già un po’ di ebraico?</h3>
-            <p className="muted small" style={{ margin: 0 }}>Fai il test d’ingresso (5–10 minuti) e salta le lezioni che conosci già.</p>
+        <div className="card welcome">
+          <h2 style={{ marginTop: 0 }}>Benvenuto! Ecco come funziona</h2>
+          <ol>
+            <li><b>Teoria</b>: ogni lezione spiega poche lettere o vocali alla volta.</li>
+            <li><b>Studio</b>: le schede con suono ed esempi, da ascoltare.</li>
+            <li><b>Esercizi</b>: domande brevi finché le riconosci senza esitare.</li>
+            <li><b>Test</b>: con almeno l’80% si sblocca la lezione successiva.</li>
+            <li><b>Ripasso</b>: ogni giorno ripeti ciò che stai per dimenticare.</li>
+          </ol>
+          <div className="row">
+            <a className="btn btn-primary" href="#/lezioni/1">Inizia la lezione 1</a>
+            <a className="btn" href="#/test/ingresso">Sai già un po’ di ebraico? Test d’ingresso</a>
           </div>
-          <Icon name="arrowRight" />
-        </a>
+        </div>
       )}
 
       <div className="grid grid-3">

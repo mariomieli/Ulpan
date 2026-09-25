@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isFocusMode, LEAVE_MESSAGE } from './focus';
 
 /** Router minimale basato sull'hash (funziona anche su hosting statico). */
 function current(): string {
@@ -6,16 +7,25 @@ function current(): string {
   return h || '/';
 }
 
+let skipNext = false;
+
 export function useRoute(): string {
   const [path, setPath] = useState(current);
   useEffect(() => {
     const on = () => {
+      if (skipNext) { skipNext = false; return; }
+      // Durante una prova si chiede conferma prima di cambiare pagina (anche con "Indietro")
+      if (isFocusMode() && !confirm(LEAVE_MESSAGE)) {
+        skipNext = true;
+        window.location.hash = path;
+        return;
+      }
       setPath(current());
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
-  }, []);
+  }, [path]);
   return path;
 }
 

@@ -18,7 +18,7 @@ export function NikudPage() {
     <div className="fade-in stack">
       <div className="page-head">
         <div>
-          <h1>Nikud · <span className="he-inline">נִקּוּד</span></h1>
+          <h1>Nikud · <span className="he-inline" lang="he">נִקּוּד</span></h1>
           <p>I segni vocalici. Nell’ebraico moderno più segni hanno lo stesso suono: per leggere basta riconoscere a quale gruppo appartengono.</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export function NikudPage() {
         <div className="chips" style={{ marginBottom: 16, direction: 'rtl' }}>
           {consonants.map((c) => (
             <button key={c.id} className={`chip ${cons === c.id ? 'active' : ''}`} onClick={() => setCons(c.id)} title={c.name}>
-              <span className="he-inline">{c.char}</span>
+              <span className="he-inline" lang="he">{c.char}</span>
             </button>
           ))}
         </div>

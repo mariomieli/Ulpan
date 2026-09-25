@@ -5,7 +5,8 @@ import { explainMistake, gradeLabel, gradeTyped } from '../lib/quiz';
 
 import { actions, useAppState } from '../lib/store';
 import { speak } from '../lib/speech';
-import { He, SpeakButton } from './Hebrew';
+import { He, Rich, SpeakButton } from './Hebrew';
+import { setFocusMode } from '../lib/focus';
 import { Icon } from './Icon';
 
 export interface AnswerRecord {
@@ -41,6 +42,16 @@ function fmtTime(sec: number) {
 
 export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: Props) {
   const { settings } = useAppState();
+
+  // Test ed esami: niente menu e conferma prima di chiudere la scheda
+  useEffect(() => {
+    if (mode !== 'exam') return;
+    setFocusMode(true);
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => { setFocusMode(false); window.removeEventListener('beforeunload', warn); };
+  }, [mode]);
+
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [typed, setTyped] = useState('');
@@ -226,12 +237,16 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
             <Icon name="x" size={20} className="" />
           </button>
         )}
-        <div className="progress" role="progressbar" aria-valuenow={idx} aria-valuemax={questions.length}>
+        <div className="progress" role="progressbar" aria-label="Avanzamento" aria-valuemin={0} aria-valuenow={idx + 1}
+          aria-valuemax={questions.length} aria-valuetext={`Domanda ${idx + 1} di ${questions.length}`}>
           <div style={{ width: `${(idx / questions.length) * 100}%` }} />
         </div>
         <span className="quiz-count">{idx + 1}/{questions.length}</span>
         {remaining !== undefined && (
-          <span className={`timer ${remaining < 60 ? 'low' : ''}`}><Icon name="clock" size={16} className="" /> {fmtTime(remaining)}</span>
+          <span className={`timer ${remaining < 60 ? 'low' : ''}`} aria-label={`Tempo rimasto ${fmtTime(remaining)}`}><Icon name="clock" size={16} className="" /> {fmtTime(remaining)}</span>
+        )}
+        {remaining !== undefined && (
+          <span className="sr-only" role="alert">{remaining <= 10 ? 'Mancano meno di 10 secondi' : remaining <= 60 ? 'Manca meno di un minuto' : ''}</span>
         )}
       </div>
 
@@ -275,10 +290,11 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
             )}
           </div>
         ) : q.options ? (
-          <div className="options">
+          <div className="options" role={mode === 'exam' ? 'radiogroup' : undefined} aria-label="Risposte">
             {q.options.map((o, i) => (
               <button key={o.value} className={optionClass(o.value)} onClick={() => choose(o.value)}
-                disabled={showFeedback} aria-pressed={selected === o.value}>
+                disabled={showFeedback} role={mode === 'exam' ? 'radio' : undefined}
+                aria-checked={mode === 'exam' ? selected === o.value : undefined}>
                 <span className="key">{i + 1}</span>
                 {o.hebrew ? <He>{o.label}</He> : o.label}
               </button>
@@ -297,7 +313,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
         )}
 
         {showFeedback && (
-          <div className={`feedback fade-in ${last.correct ? 'ok' : 'bad'}`}>
+          <div className={`feedback fade-in ${last.correct ? 'ok' : 'bad'}`} role="status" aria-live="polite">
             <div>
               <strong>{last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}</strong>
               {last.close && <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>}
@@ -305,7 +321,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
                 <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
               )}
               {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
-              <div className="small">{q.explanation}</div>
+              <div className="small"><Rich text={q.explanation} /></div>
             </div>
             <button className="btn btn-primary" onClick={() => goNext(answers)} autoFocus>
               {isLast ? 'Risultati' : 'Continua'} <Icon name="arrowRight" size={18} className="" />
@@ -321,8 +337,8 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
           </div>
         )}
       </div>
-      <p className="center muted small" style={{ marginTop: 12 }}>
-        Suggerimento: usa i tasti 1–4 per rispondere e Invio per continuare.
+      <p className="center muted small kbd-hint" style={{ marginTop: 12 }}>
+        Suggerimento: usa i tasti numerici per rispondere e Invio per continuare.
       </p>
     </div>
   );
@@ -340,9 +356,9 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
   const wrong = useMemo(() => result.answers.filter((a) => !a.correct), [result]);
   const labelOf = (a: AnswerRecord, value: string | null) => {
     if (value === null) return <i>nessuna risposta</i>;
-    if (a.question.compose) return <span className="he-inline">{value}</span>;
+    if (a.question.compose) return <span className="he-inline" lang="he">{value}</span>;
     const o = a.question.options?.find((x) => x.value === value);
-    if (o?.hebrew) return <span className="he-inline">{o.label}</span>;
+    if (o?.hebrew) return <span className="he-inline" lang="he">{o.label}</span>;
     return <b>{o?.label ?? value}</b>;
   };
 

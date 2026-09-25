@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BASE_LETTERS, CONFUSABLES, GLYPH_BY_ID, LETTER_VARIANTS, type Glyph } from '../data/alphabet';
 import { WORDS } from '../data/words';
 import { requirements } from '../lib/hebrew';
@@ -16,31 +16,33 @@ function LetterModal({ letterId, onClose }: { letterId: string; onClose: () => v
   const examples = WORDS.filter((w) => requirements(w.he).glyphs.has(g.id)).slice(0, 6);
   const similar = (CONFUSABLES[g.id] ?? []).map((id) => GLYPH_BY_ID[id]);
 
+  // Dialogo nativo: Esc chiude, il focus resta dentro e torna alla lettera alla chiusura
+  const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal fade-in" role="dialog" aria-modal="true" aria-label={g.name} onClick={(e) => e.stopPropagation()}>
+    <dialog ref={ref} className="modal-dialog" aria-labelledby="letter-title" onClose={onClose}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal fade-in">
         <div className="modal-head">
-          <h2 style={{ margin: 0 }}>{GLYPH_BY_ID[letterId].name}{ids.length > 1 ? ' e varianti' : ''}</h2>
+          <h2 id="letter-title" style={{ margin: 0 }}>{GLYPH_BY_ID[letterId].name}{ids.length > 1 ? ' e varianti' : ''}</h2>
           <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Chiudi"><Icon name="x" className="" /></button>
         </div>
         {ids.length > 1 && (
           <div className="chips" style={{ marginBottom: 8 }}>
             {ids.map((id) => (
               <button key={id} className={`chip ${sel === id ? 'active' : ''}`} onClick={() => setSel(id)}>
-                <span className="he-inline">{GLYPH_BY_ID[id].char}</span> {GLYPH_BY_ID[id].name}
+                <span className="he-inline" lang="he">{GLYPH_BY_ID[id].char}</span> {GLYPH_BY_ID[id].name}
               </button>
             ))}
           </div>
         )}
         <div className="center">
           <He size="xl">{g.char}</He>
-          <h3 style={{ marginBottom: 2 }}>{g.name} · <span className="he-inline">{g.hebrewName}</span></h3>
+          <h3 style={{ marginBottom: 2 }}>{g.name} · <span className="he-inline" lang="he">{g.hebrewName}</span></h3>
           <p className="muted">Suono <b style={{ color: 'var(--primary)' }}>{g.sound}</b> · valore numerico {g.gematria}</p>
           <div className="row" style={{ justifyContent: 'center' }}>
             <SpeakButton text={g.hebrewName} label="Ascolta il nome" />
@@ -76,7 +78,7 @@ function LetterModal({ letterId, onClose }: { letterId: string; onClose: () => v
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
 
@@ -93,7 +95,7 @@ export function AlphabetPage() {
     <div className="fade-in">
       <div className="page-head">
         <div>
-          <h1>Alfabeto · <span className="he-inline">אָלֶף־בֵּית</span></h1>
+          <h1>Alfabeto · <span className="he-inline" lang="he">אָלֶף־בֵּית</span></h1>
           <p>22 lettere, 5 forme finali e 4 varianti con puntino. Si legge da destra a sinistra. Tocca una lettera per i dettagli.</p>
         </div>
         <label className="toggle">

@@ -23,6 +23,8 @@ interface AuthState {
 
 const GUEST_FLAG = 'ulpan:guest';
 const USER_CACHE = 'ulpan:user';
+/** Impostato solo da un'uscita esplicita: al primo accesso si entra subito come ospite, senza muro di login. */
+const LOGGED_OUT = 'ulpan:loggedout';
 let supabase: SupabaseClient | null = null;
 let auth: AuthState = { status: cloudEnabled ? 'loading' : 'guest', user: null, sync: 'idle' };
 const listeners = new Set<() => void>();
@@ -132,6 +134,7 @@ async function activate(u: User) {
   const user = toUser(u);
   localStorage.setItem(USER_CACHE, JSON.stringify(user));
   localStorage.removeItem(GUEST_FLAG);
+  localStorage.removeItem(LOGGED_OUT);
   // Se l'utente era già attivo (avvio rapido dalla cache) basta sincronizzare
   if (!(auth.user?.id === u.id && auth.status === 'signedIn')) switchUser(u.id);
   setAuth({ status: 'signedIn', user });
@@ -168,7 +171,7 @@ export function initAuth() {
     switchUser(null);
     setAuth({ status: 'guest' });
   } else if (!localStorage.getItem(sessionStorageKey) && !hasCode) {
-    setAuth({ status: 'signedOut' });
+    startWithoutSession();
   }
 
   const load = () => getSupabase().then((client) => {
@@ -176,7 +179,7 @@ export function initAuth() {
     listen(client);
   }).catch(() => {
     // libreria non scaricabile (offline): si riprova al ritorno della connessione
-    if (auth.status === 'loading') setAuth({ status: 'signedOut' });
+    if (auth.status === 'loading') startWithoutSession();
     window.addEventListener('online', () => void load(), { once: true });
   });
   void load();
@@ -203,12 +206,12 @@ function listen(client: SupabaseClient) {
       setTimeout(() => { if (!recovering) void activate(session.user); }, 0);
     } else if (event === 'SIGNED_OUT') {
       localStorage.removeItem(USER_CACHE);
+      localStorage.setItem(LOGGED_OUT, '1');
       switchUser(null);
       setAuth({ status: 'signedOut', user: null, sync: 'idle' });
     } else if (event === 'INITIAL_SESSION' && !session) {
       localStorage.removeItem(USER_CACHE);
-      if (localStorage.getItem(GUEST_FLAG)) { switchUser(null); setAuth({ status: 'guest', user: null }); }
-      else setAuth({ status: 'signedOut', user: null });
+      startWithoutSession();
     } else if (event === 'USER_UPDATED' && session?.user) {
       localStorage.setItem(USER_CACHE, JSON.stringify(toUser(session.user)));
       setAuth({ user: toUser(session.user) });
@@ -300,8 +303,18 @@ export async function deleteAccount(): Promise<string | null> {
   return null;
 }
 
+/** Nessuna sessione: ospite, a meno che l'utente sia appena uscito esplicitamente. */
+function startWithoutSession() {
+  if (localStorage.getItem(LOGGED_OUT) && !localStorage.getItem(GUEST_FLAG)) {
+    setAuth({ status: 'signedOut', user: null });
+    return;
+  }
+  continueAsGuest();
+}
+
 export function continueAsGuest() {
   localStorage.setItem(GUEST_FLAG, '1');
+  localStorage.removeItem(LOGGED_OUT);
   switchUser(null);
   setAuth({ status: 'guest', user: null });
 }
