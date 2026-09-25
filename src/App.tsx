@@ -160,7 +160,7 @@ export function App() {
   }, []);
 
   if (auth.status === 'loading') {
-    return <div className="auth-wrap"><img className="brand-mark" src="./favicon.svg" alt="" width={56} height={56} /></div>;
+    return <div className="auth-wrap"><img className="brand-mark" src="./favicon.svg" alt="" width={56} height={56} style={{ width: 56, height: 56 }} /></div>;
   }
   if (auth.status === 'signedOut') {
     return path === '/privacy'

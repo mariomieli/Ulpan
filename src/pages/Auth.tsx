@@ -61,7 +61,7 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
     <div className="auth-wrap">
       <div className="auth-card card fade-in">
         <div className="brand" style={{ justifyContent: 'center', paddingBottom: 8 }}>
-          <img className="brand-mark" src="./favicon.svg" alt="" width={40} height={40} />
+          <img className="brand-mark" src="./favicon.svg" alt="" width={40} height={40} style={{ width: 40, height: 40 }} />
           <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
         </div>
 

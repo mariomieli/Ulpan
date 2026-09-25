@@ -721,11 +721,6 @@ h1 { font-family: var(--display-font); font-weight: 700; font-size: var(--fs-2xl
 .toast, dialog.drawer[open] { box-shadow: var(--e3); }
 .modal { box-shadow: var(--e3); }
 .hero { box-shadow: var(--e2); position: relative; overflow: hidden; }
-/* motivo di sfondo: una grande lettera sbiadita */
-.hero::after {
-  content: 'א'; position: absolute; left: -12px; bottom: -48px; font-family: var(--he-font);
-  font-size: 12rem; line-height: 1; color: #fff; opacity: .07; pointer-events: none;
-}
 .hero > * { position: relative; z-index: 1; }
 
 /* pulsanti e opzioni "tattili": un bordo inferiore che si schiaccia alla pressione */
@@ -960,7 +955,7 @@ details.collapsible[open] > summary { margin-bottom: 12px; }
 /* barra in basso: etichette più leggibili */
 @media (max-width: 860px) { .bottom-nav a, .bottom-nav button { font-size: .75rem; } }
 .inline-icon { vertical-align: -2px; color: var(--accent-text); }
-img.brand-mark { background: none; width: auto; height: auto; border-radius: 22%; }
+img.brand-mark { background: none; border-radius: 22%; object-fit: contain; flex: none; }
 
 /* =====================================================================
    Fase D · traguardi
