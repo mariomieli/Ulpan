@@ -9,6 +9,7 @@ const WORD_IDS = new Set(WORDS.map((w) => w.id));
 
 export type Theme = 'system' | 'light' | 'dark';
 export type HebrewFont = 'serif' | 'sans';
+export type MotionPref = 'system' | 'reduced' | 'full';
 
 export interface Settings {
   theme: Theme;
@@ -19,6 +20,12 @@ export interface Settings {
   typing: boolean;
   dailyGoal: number;
   unlockAll: boolean;
+  /** Animazioni: come il sistema, ridotte o complete. */
+  motion: MotionPref;
+  /** Effetti sonori brevi per risposte e traguardi. */
+  sfx: boolean;
+  /** Vibrazione del telefono per risposte e traguardi. */
+  haptics: boolean;
 }
 
 export interface LessonProgress {
@@ -92,6 +99,9 @@ export const DEFAULT_SETTINGS: Settings = {
   typing: true,
   dailyGoal: 30,
   unlockAll: false,
+  motion: 'system',
+  sfx: true,
+  haptics: true,
 };
 
 export function initialState(): AppState {
@@ -157,6 +167,9 @@ function sanitizeSettings(v: unknown): Settings {
     typing: typeof o.typing === 'boolean' ? o.typing : d.typing,
     dailyGoal: num(o.dailyGoal, d.dailyGoal, 1, 1000),
     unlockAll: typeof o.unlockAll === 'boolean' ? o.unlockAll : d.unlockAll,
+    motion: o.motion === 'reduced' || o.motion === 'full' || o.motion === 'system' ? o.motion : d.motion,
+    sfx: typeof o.sfx === 'boolean' ? o.sfx : d.sfx,
+    haptics: typeof o.haptics === 'boolean' ? o.haptics : d.haptics,
   };
 }
 

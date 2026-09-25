@@ -65,6 +65,14 @@ export function SettingsPage() {
             </select>
           </div>
           <div className="field">
+            <label htmlFor="motion">Animazioni</label>
+            <select id="motion" value={settings.motion} onChange={(e) => set({ motion: e.target.value as Settings['motion'] })}>
+              <option value="system">Come il sistema</option>
+              <option value="full">Complete</option>
+              <option value="reduced">Ridotte</option>
+            </select>
+          </div>
+          <div className="field">
             <label htmlFor="scale">Dimensione ebraico: {Math.round(settings.fontScale * 100)}%</label>
             <input id="scale" type="range" min={0.8} max={1.4} step={0.1} value={settings.fontScale}
               onChange={(e) => set({ fontScale: Number(e.target.value) })} />
@@ -76,6 +84,8 @@ export function SettingsPage() {
       <div className="card stack">
         <h2 style={{ margin: 0 }}>Audio</h2>
         <label className="toggle"><input type="checkbox" checked={settings.audio} onChange={(e) => set({ audio: e.target.checked })} /> Pronuncia con sintesi vocale</label>
+        <label className="toggle"><input type="checkbox" checked={settings.sfx} onChange={(e) => set({ sfx: e.target.checked })} /> Effetti sonori per risposte e traguardi</label>
+        <label className="toggle"><input type="checkbox" checked={settings.haptics} onChange={(e) => set({ haptics: e.target.checked })} /> Vibrazione (sui telefoni che la supportano)</label>
         <div className="field" style={{ maxWidth: 320 }}>
           <label htmlFor="rate">Velocità: {settings.speechRate.toFixed(1)}×</label>
           <input id="rate" type="range" min={0.5} max={1.2} step={0.1} value={settings.speechRate}

@@ -8,6 +8,10 @@ import { speak } from '../lib/speech';
 import { He, Rich, SpeakButton } from './Hebrew';
 import { setFocusMode } from '../lib/focus';
 import { Icon } from './Icon';
+import { confetti, feedback, useCountUp } from '../lib/fx';
+
+/** XP per risposta corretta (vedi applyAnswer nello store). */
+const XP_PER_ANSWER = 10;
 
 export interface AnswerRecord {
   question: Question;
@@ -58,6 +62,8 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   const [picked, setPicked] = useState<number[]>([]);
   const [checked, setChecked] = useState(false);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  // risposte giuste di fila (solo esercizi): da 3 in su compare il contatore
+  const [combo, setCombo] = useState(0);
   const startRef = useRef(Date.now());
   const [now, setNow] = useState(Date.now());
   const finishedRef = useRef(false);
@@ -121,8 +127,14 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     const rec: AnswerRecord = { question: q, given, correct, close };
     const next = [...answers, rec];
     setAnswers(next);
+    // negli esami nessun segnale di giusto/sbagliato prima della fine
+    if (mode === 'practice') {
+      const c = correct ? combo + 1 : 0;
+      setCombo(c);
+      feedback(!correct ? 'bad' : c >= 5 && c % 5 === 0 ? 'combo' : 'ok');
+    }
     return next;
-  }, [q, answers, evaluate]);
+  }, [q, answers, evaluate, mode, combo]);
 
   const goNext = useCallback((all: AnswerRecord[]) => {
     if (isLast) { finish(all); return; }
@@ -227,10 +239,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   };
 
   const correctLabel = q.options?.find((o) => o.value === q.answer);
+  // avanzamento: conta anche la domanda appena corretta, così alla fine arriva al 100%
+  const progress = (idx + (showFeedback ? 1 : 0)) / questions.length;
   const mistake = showFeedback && !last.correct ? explainMistake(q, last.given) : null;
 
   return (
-    <div className="quiz fade-in" key={q.key}>
+    <div className="quiz fade-in">
       <div className="quiz-top">
         {onExit && (
           <button className="btn btn-ghost btn-icon" onClick={onExit} aria-label="Esci dal quiz" title="Esci">
@@ -239,9 +253,15 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
         )}
         <div className="progress" role="progressbar" aria-label="Avanzamento" aria-valuemin={0} aria-valuenow={idx + 1}
           aria-valuemax={questions.length} aria-valuetext={`Domanda ${idx + 1} di ${questions.length}`}>
-          <div style={{ width: `${(idx / questions.length) * 100}%` }} />
+          <div className="progress-fill" style={{ transform: `scaleX(${progress})` }} />
         </div>
+        {mode === 'practice' && combo >= 3 && (
+          <span className="combo" key={combo} aria-label={`${combo} risposte giuste di fila`}>
+            <Icon name="flame" size={16} className="" /> ×{combo}
+          </span>
+        )}
         <span className="quiz-count">{idx + 1}/{questions.length}</span>
+        {showFeedback && last.correct && <span className="xp-float" aria-hidden="true" key={q.key}>+{XP_PER_ANSWER} XP</span>}
         {remaining !== undefined && (
           <span className={`timer ${remaining < 60 ? 'low' : ''}`} aria-label={`Tempo rimasto ${fmtTime(remaining)}`}><Icon name="clock" size={16} className="" /> {fmtTime(remaining)}</span>
         )}
@@ -250,7 +270,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
         )}
       </div>
 
-      <div className="card quiz-card">
+      <div className="card quiz-card q-enter" key={q.key}>
         <div className="quiz-prompt">{q.prompt}</div>
 
         {q.stimulus && (
@@ -315,7 +335,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
         {showFeedback && (
           <div className={`feedback fade-in ${last.correct ? 'ok' : 'bad'}`} role="status" aria-live="polite">
             <div>
-              <strong>{last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}</strong>
+              <strong className="feedback-title">
+                {last.correct
+                  ? <svg className="check-draw" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                  : <Icon name="x" size={20} className="" />}
+                {last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}
+              </strong>
               {last.close && <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>}
               {!last.correct && (
                 <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
@@ -353,6 +378,14 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
 }) {
   const grade = gradeLabel(result.pct);
   const passed = passThreshold === undefined ? undefined : result.pct >= passThreshold;
+  const shown = useCountUp(result.pct);
+  const celebrate = passed ?? result.pct >= 80;
+  // festa proporzionata: coriandoli solo per un test superato o un ottimo risultato
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = setTimeout(() => { confetti(); feedback('win'); }, 250);
+    return () => clearTimeout(t);
+  }, [celebrate]);
   const wrong = useMemo(() => result.answers.filter((a) => !a.correct), [result]);
   const labelOf = (a: AnswerRecord, value: string | null) => {
     if (value === null) return <i>nessuna risposta</i>;
@@ -366,11 +399,11 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
     <div className="quiz fade-in">
       <div className="card result-head">
         <p className="muted">{title}</p>
-        <div className="result-score" style={{ color: `var(--${grade.tone})` }}>{result.pct}%</div>
+        <div className="result-score" style={{ color: `var(--${grade.tone})` }} aria-label={`${result.pct}%`}>{shown}%</div>
         <p style={{ marginTop: 8 }}>
           <span className={`pill pill-${grade.tone}`}>{grade.label}</span>
           {passed !== undefined && (
-            <span className={`pill ${passed ? 'pill-ok' : 'pill-bad'}`} style={{ marginLeft: 8 }}>
+            <span className={`pill ${passed ? 'pill-ok pop-in' : 'pill-bad'}`} style={{ marginLeft: 8 }}>
               {passed ? 'Test superato' : `Serve almeno ${passThreshold}%`}
             </span>
           )}

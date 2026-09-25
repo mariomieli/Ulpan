@@ -116,14 +116,17 @@ export function App() {
       const dark = settings.theme === 'dark' ||
         (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       root.dataset.theme = dark ? 'dark' : 'light';
+      // colore della barra del browser coerente con il tema
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#12110F' : '#1F4E8C');
     };
     apply();
     root.dataset.font = settings.font;
+    root.dataset.motion = settings.motion;
     root.style.setProperty('--he-scale', String(settings.fontScale));
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, [settings.theme, settings.font, settings.fontScale]);
+  }, [settings.theme, settings.font, settings.fontScale, settings.motion]);
 
   useEffect(() => setDrawer(false), [path]);
   useEffect(prefetchPages, []);
@@ -202,7 +205,7 @@ export function App() {
       </nav>
 
       {toast && (
-        <div className="toast fade-in" role="status">
+        <div className="toast" role="status" key={toast}>
           <span>{toast}</span>
           <a href="#/impostazioni" className="btn btn-sm" onClick={() => setToast(null)}>Come risolvere</a>
           <button className="btn btn-ghost btn-icon" onClick={() => setToast(null)} aria-label="Chiudi"><Icon name="x" size={16} className="" /></button>

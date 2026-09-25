@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { dayKey, dueItems, isLessonUnlocked, useAppState } from '../lib/store';
 import { LESSONS } from '../data/curriculum';
 import { GLYPHS } from '../data/alphabet';
@@ -14,14 +14,17 @@ function Ring({ value, max, label }: { value: number; max: number; label: string
   const pct = Math.min(1, max ? value / max : 0);
   const r = 36;
   const c = 2 * Math.PI * r;
+  // l'anello si riempie all'apertura della pagina
+  const [on, setOn] = useState(false);
+  useEffect(() => { const f = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(f); }, []);
   return (
     <div className="ring" role="img" aria-label={`${label}: ${value} su ${max}`}>
       <svg width="84" height="84" aria-hidden="true">
         <circle cx="42" cy="42" r={r} stroke="var(--surface-2)" strokeWidth="8" fill="none" />
         <circle cx="42" cy="42" r={r} stroke={pct >= 1 ? 'var(--ok)' : 'var(--primary)'} strokeWidth="8" fill="none"
-          strokeDasharray={c} strokeDashoffset={c * (1 - pct)} strokeLinecap="round" />
+          className="ring-fill" strokeDasharray={c} strokeDashoffset={on ? c * (1 - pct) : c} strokeLinecap="round" />
       </svg>
-      <div className="ring-label" aria-hidden="true">{value >= max ? '✓' : `${value}/${max}`}</div>
+      <div className={`ring-label ${value >= max ? 'pop-in' : ''}`} aria-hidden="true">{value >= max ? '✓' : `${value}/${max}`}</div>
     </div>
   );
 }
@@ -133,9 +136,9 @@ export function HomePage() {
             <span className="stat-label">{state.xp} XP totali · {done}/{LESSONS.length} lezioni superate</span>
           </div>
           <div className="bars" style={{ marginTop: 10 }}>
-            {week.map((d) => (
+            {week.map((d, i) => (
               <div key={d.key} title={`${d.n} risposte`}>
-                <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%` }} />
+                <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%`, ['--i' as string]: i }} />
                 <span>{d.label}</span>
               </div>
             ))}

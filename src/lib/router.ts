@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { isFocusMode, LEAVE_MESSAGE } from './focus';
+import { reducedMotion } from './fx';
+
+type ViewTransitionDoc = Document & { startViewTransition?: (cb: () => void) => unknown };
 
 /** Router minimale basato sull'hash (funziona anche su hosting statico). */
 function current(): string {
@@ -20,8 +24,11 @@ export function useRoute(): string {
         window.location.hash = path;
         return;
       }
-      setPath(current());
-      window.scrollTo(0, 0);
+      const go = () => { setPath(current()); window.scrollTo(0, 0); };
+      // cambio di pagina con dissolvenza (View Transitions API) dove supportata
+      const doc = document as ViewTransitionDoc;
+      if (doc.startViewTransition && !reducedMotion()) doc.startViewTransition(() => flushSync(go));
+      else go();
     };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);

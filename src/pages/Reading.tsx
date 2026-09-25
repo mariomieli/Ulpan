@@ -201,19 +201,21 @@ function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string
           <Icon name="shuffle" size={16} className="" /> Nuovo mazzo
         </button>
       </div>
-      <div className="card flash" onClick={() => setFlipped(true)} role="button" tabIndex={0}
-        onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && setFlipped(true)}>
-        {reverse ? <h2 style={{ margin: 0 }}>{w.it}</h2> : hebrew}
-        {flipped ? (
-          <div className="fade-in">
-            {reverse && hebrew}
-            <h2 style={{ color: 'var(--primary)', margin: '8px 0 0' }}>{w.translit}</h2>
-            {!reverse && <p className="muted">{w.it}</p>}
-            <SpeakButton text={w.he} label="Ascolta" />
+      <div className="flash-scene q-enter" key={`${w.id}-${i}-${reverse}`}>
+        <div className={`flash-inner ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(true)} role="button" tabIndex={0}
+          aria-label={flipped ? undefined : 'Gira la carta'}
+          onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && setFlipped(true)}>
+          <div className="card flash flash-face" aria-hidden={flipped}>
+            {reverse ? <h2 style={{ margin: 0 }}>{w.it}</h2> : hebrew}
+            <p className="muted">{reverse ? 'Come si dice in ebraico? Pensaci, poi tocca per controllare' : 'Leggila ad alta voce, poi tocca per controllare'}</p>
           </div>
-        ) : (
-          <p className="muted">{reverse ? 'Come si dice in ebraico? Pensaci, poi tocca per controllare' : 'Leggila ad alta voce, poi tocca per controllare'}</p>
-        )}
+          <div className="card flash flash-face flash-back" aria-hidden={!flipped}>
+            {hebrew}
+            <h2 style={{ color: 'var(--primary)', margin: '8px 0 0' }}>{w.translit}</h2>
+            <p className="muted" style={{ margin: '4px 0 8px' }}>{w.it}</p>
+            {flipped && <SpeakButton text={w.he} label="Ascolta" />}
+          </div>
+        </div>
       </div>
       {flipped && (
         <div className="quiz-actions">

@@ -5,6 +5,7 @@ import { App } from './App';
 import '@fontsource/frank-ruhl-libre/hebrew-400.css';
 import '@fontsource/frank-ruhl-libre/hebrew-500.css';
 import '@fontsource/frank-ruhl-libre/hebrew-700.css';
+import '@fontsource/frank-ruhl-libre/latin-700.css';
 import '@fontsource/noto-sans-hebrew/hebrew-400.css';
 import '@fontsource/noto-sans-hebrew/hebrew-700.css';
 import '@fontsource/inter/latin-400.css';
