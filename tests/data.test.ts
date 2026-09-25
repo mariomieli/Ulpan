@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { GLYPHS, BASE_LETTERS, GLYPH_BY_ID, CONFUSABLES } from '../src/data/alphabet';
 import { VOWELS } from '../src/data/nikud';
 import { WORDS, SENTENCES } from '../src/data/words';
-import { LESSONS, lessonForText, wordLesson, wordsOfLesson } from '../src/data/curriculum';
+import { TEXTS } from '../src/data/texts';
+import { LESSONS, lessonForText, textLevel, wordLesson, wordsOfLesson } from '../src/data/curriculum';
 import { clusters, glyphOf, requirements } from '../src/lib/hebrew';
 
 describe('alfabeto', () => {
@@ -85,5 +86,21 @@ describe('vocabolario', () => {
     expect(wordLesson(find('shalom'))).toBe(4);
     expect(wordLesson(find('sus'))).toBe(6);
     expect(wordLesson(find('kafe'))).toBe(9);
+  });
+});
+
+describe('testi di lettura', () => {
+  it('id unici, righe vocalizzate e livello calcolabile', () => {
+    expect(new Set(TEXTS.map((t) => t.id)).size).toBe(TEXTS.length);
+    for (const t of TEXTS) {
+      expect(t.lines.length).toBeGreaterThan(0);
+      for (const l of t.lines) {
+        const req = requirements(l.he);
+        expect(req.vowels.size, l.he).toBeGreaterThan(0);
+        for (const c of clusters(l.he)) expect(glyphOf(c), l.he).toBeDefined();
+        expect(l.translit.length && l.it.length).toBeTruthy();
+      }
+      expect(Number.isFinite(textLevel(t)), t.id).toBe(true);
+    }
   });
 });

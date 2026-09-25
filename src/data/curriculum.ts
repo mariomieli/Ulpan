@@ -2,6 +2,7 @@ import { GLYPHS, GLYPH_BY_ID } from './alphabet';
 import { VOWELS, VOWEL_BY_ID } from './nikud';
 import { WORDS, SENTENCES, type Word, type Sentence } from './words';
 import { requirements } from '../lib/hebrew';
+import type { ReadingText } from './texts';
 
 export type TheoryBlock =
   | { type: 'p'; text: string }
@@ -214,4 +215,9 @@ export function glyphsUpTo(lesson: number) {
 
 export function vowelsUpTo(lesson: number) {
   return VOWELS.filter((v) => v.lesson <= lesson);
+}
+
+/** Lezione a partire dalla quale un testo di lettura è leggibile. */
+export function textLevel(t: ReadingText): number {
+  return Math.max(...t.lines.map((l) => lessonForText(l.he)));
 }

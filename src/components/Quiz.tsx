@@ -41,6 +41,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [typed, setTyped] = useState('');
+  const [picked, setPicked] = useState<number[]>([]);
   const [checked, setChecked] = useState(false);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const startRef = useRef(Date.now());
@@ -108,6 +109,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     setIdx((i) => i + 1);
     setSelected(null);
     setTyped('');
+    setPicked([]);
     setChecked(false);
   }, [isLast, finish]);
 
@@ -134,6 +136,25 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     }
   }, [typed, checked, mode, commit, goNext]);
 
+  const composed = q?.compose ? picked.map((i) => q.compose!.tiles[i]).join('') : '';
+
+  const submitCompose = useCallback(() => {
+    if (!picked.length || checked) return;
+    if (mode === 'practice') {
+      setChecked(true);
+      commit(composed);
+      if (q?.speak && settings.audio) speak(q.speak, settings.speechRate);
+    } else {
+      const all = commit(composed);
+      if (all) goNext(all);
+    }
+  }, [picked, checked, mode, commit, composed, goNext, q, settings.audio, settings.speechRate]);
+
+  const pickTile = useCallback((i: number) => {
+    if (checked || !q?.compose || picked.includes(i) || i >= q.compose.tiles.length) return;
+    setPicked((p) => [...p, i]);
+  }, [checked, q, picked]);
+
   const confirmExam = useCallback(() => {
     if (selected === null) return;
     const all = commit(selected);
@@ -146,6 +167,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
       if (!q) return;
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT') return;
+      if (q.compose && !checked) {
+        if (/^[1-9]$/.test(e.key)) pickTile(Number(e.key) - 1);
+        else if (e.key === 'Backspace') setPicked((p) => p.slice(0, -1));
+        else if (e.key === 'Enter') { e.preventDefault(); submitCompose(); }
+        return;
+      }
       if (q.options && /^[1-9]$/.test(e.key)) {
         const o = q.options[Number(e.key) - 1];
         if (o) choose(o.value);
@@ -157,7 +184,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [q, choose, mode, checked, goNext, answers, confirmExam]);
+  }, [q, choose, mode, checked, goNext, answers, confirmExam, pickTile, submitCompose]);
 
   if (!q) return null;
   const last = answers[answers.length - 1];
@@ -206,7 +233,29 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
           </div>
         )}
 
-        {q.options ? (
+        {q.compose ? (
+          <div className="compose">
+            <div className={`compose-answer ${showFeedback ? (last.correct ? 'correct' : 'wrong') : ''}`} aria-live="polite">
+              {composed ? <He size="lg">{composed}</He> : <span className="muted small">Tocca le tessere nell’ordine giusto (da destra a sinistra)</span>}
+            </div>
+            <div className="compose-tiles">
+              {q.compose.tiles.map((t, i) => (
+                <button key={i} className="option tile" disabled={showFeedback || picked.includes(i)} onClick={() => pickTile(i)}>
+                  <span className="key">{i + 1}</span>
+                  <He>{t}</He>
+                </button>
+              ))}
+            </div>
+            {!showFeedback && (
+              <div className="quiz-actions">
+                <button className="btn" disabled={!picked.length} onClick={() => setPicked((p) => p.slice(0, -1))}>⌫ Cancella</button>
+                <button className="btn btn-primary" disabled={!picked.length} onClick={submitCompose}>
+                  {mode === 'exam' ? (isLast ? 'Consegna' : 'Conferma') : 'Verifica'}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : q.options ? (
           <div className="options">
             {q.options.map((o, i) => (
               <button key={o.value} className={optionClass(o.value)} onClick={() => choose(o.value)}
@@ -233,7 +282,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
             <div>
               <strong>{last.correct ? 'Esatto!' : 'Non proprio…'}</strong>
               {!last.correct && (
-                <div>Risposta corretta: {correctLabel?.hebrew ? <He size="sm">{correctLabel.label}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
+                <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
               )}
               <div className="small">{q.explanation}</div>
             </div>
@@ -270,6 +319,7 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
   const wrong = useMemo(() => result.answers.filter((a) => !a.correct), [result]);
   const labelOf = (a: AnswerRecord, value: string | null) => {
     if (value === null) return <i>nessuna risposta</i>;
+    if (a.question.compose) return <span className="he-inline">{value}</span>;
     const o = a.question.options?.find((x) => x.value === value);
     if (o?.hebrew) return <span className="he-inline">{o.label}</span>;
     return <b>{o?.label ?? value}</b>;

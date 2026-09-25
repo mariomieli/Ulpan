@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { WORDS, type Word, type WordCategory } from '../data/words';
-import { LESSONS, sentencesUpTo, wordLesson } from '../data/curriculum';
+import { LESSONS, sentencesUpTo, textLevel, wordLesson } from '../data/curriculum';
+import { TEXTS, TEXT_CATEGORY_LABELS, type ReadingText, type TextCategory } from '../data/texts';
+import { buildDictation } from '../lib/quiz';
+import { listeningEnabled } from '../lib/speech';
+import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { stripNikud } from '../lib/hebrew';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
-import { He, SpeakButton } from '../components/Hebrew';
+import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 
-type Mode = 'parole' | 'frasi' | 'flashcard';
+type Mode = 'parole' | 'frasi' | 'testi' | 'flashcard' | 'dettato';
+
+const MODE_LABELS: Record<Mode, string> = { parole: 'Parole', frasi: 'Frasi', testi: 'Testi', flashcard: 'Flashcard', dettato: 'Dettato' };
 
 const CATEGORIES = [...new Set(WORDS.map((w) => w.category))] as WordCategory[];
 
@@ -34,13 +40,13 @@ export function ReadingPage() {
       <div className="page-head">
         <div>
           <h1>Lettura</h1>
-          <p>Allenati a leggere parole e frasi. Nascondi la traslitterazione per metterti alla prova, togli il nikud per la sfida finale.</p>
+          <p>Allenati a leggere parole, frasi e testi, e prova il dettato. Nascondi la traslitterazione per metterti alla prova, togli il nikud per la sfida finale.</p>
         </div>
       </div>
       <div className="tabs" role="tablist">
-        {(['parole', 'frasi', 'flashcard'] as Mode[]).map((m) => (
+        {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} className={`tab ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
-            {m === 'parole' ? 'Parole' : m === 'frasi' ? 'Frasi' : 'Flashcard'}
+            {MODE_LABELS[m]}
           </button>
         ))}
       </div>
@@ -52,8 +58,8 @@ export function ReadingPage() {
             {LESSONS.map((l) => <option key={l.id} value={l.id}>{l.id} · {l.title}</option>)}
           </select>
         </div>
-        <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>
-        {mode !== 'flashcard' && <>
+        {mode !== 'dettato' && <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>}
+        {mode !== 'flashcard' && mode !== 'dettato' && <>
           <label className="toggle"><input type="checkbox" checked={translit} onChange={(e) => setTranslit(e.target.checked)} /> Traslitterazione</label>
           <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
         </>}
@@ -98,6 +104,8 @@ export function ReadingPage() {
         </div>
       )}
 
+      {mode === 'testi' && <TextsView level={level} nikud={nikud} translit={translit} meaning={meaning} />}
+      {mode === 'dettato' && <Dictation key={level} level={level} />}
       {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} nikud={nikud} />}
     </div>
   );
@@ -172,4 +180,112 @@ function shuffleIdx(n: number): number[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function TextsView({ level, nikud, translit, meaning }: { level: number; nikud: boolean; translit: boolean; meaning: boolean }) {
+  const state = useAppState();
+  const [open, setOpen] = useState<ReadingText | null>(null);
+  const [cat, setCat] = useState<TextCategory | 'tutti'>('tutti');
+
+  if (open) return <TextReader t={open} nikud={nikud} translit={translit} meaning={meaning} onBack={() => setOpen(null)} />;
+
+  const list = TEXTS.filter((t) => cat === 'tutti' || t.category === cat)
+    .sort((a, b) => textLevel(a) - textLevel(b));
+  return (
+    <>
+      <div className="chips" style={{ marginBottom: 16 }}>
+        <button className={`chip ${cat === 'tutti' ? 'active' : ''}`} onClick={() => setCat('tutti')}>Tutti</button>
+        {(Object.keys(TEXT_CATEGORY_LABELS) as TextCategory[]).map((c) => (
+          <button key={c} className={`chip ${cat === c ? 'active' : ''}`} onClick={() => setCat(c)}>{TEXT_CATEGORY_LABELS[c]}</button>
+        ))}
+      </div>
+      <div className="grid grid-2">
+        {list.map((t) => {
+          const lvl = textLevel(t);
+          const done = state.texts[t.id];
+          return (
+            <button key={t.id} className="card text-card" onClick={() => setOpen(t)}>
+              <div className="row">
+                <h3 style={{ margin: 0 }}>{t.title}</h3>
+                <span className="spacer" />
+                {done && <span className="pill pill-ok">Letto ✓</span>}
+              </div>
+              <He size="sm" className="text-preview">{t.lines[0].he}</He>
+              <div className="row small">
+                <span className="pill">{TEXT_CATEGORY_LABELS[t.category]}</span>
+                <span className={`pill ${lvl <= level ? 'pill-primary' : 'pill-warn'}`}>{lvl <= level ? `Lezione ${lvl}` : `Dalla lezione ${lvl}`}</span>
+                <span className="muted">{t.lines.length} righe</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function TextReader({ t, nikud, translit, meaning, onBack }: {
+  t: ReadingText; nikud: boolean; translit: boolean; meaning: boolean; onBack: () => void;
+}) {
+  const state = useAppState();
+  const [shown, setShown] = useState<Set<number>>(new Set());
+  const done = state.texts[t.id];
+  const toggle = (i: number) => setShown((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+
+  return (
+    <div className="fade-in">
+      <button className="link-btn" onClick={onBack}>← Tutti i testi</button>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="row">
+          <h2 style={{ margin: 0 }}>{t.title}</h2>
+          <span className="spacer" />
+          <span className="pill">{TEXT_CATEGORY_LABELS[t.category]}</span>
+        </div>
+        {t.intro && <p className="muted small" style={{ marginTop: 8 }}><Rich text={t.intro} /></p>}
+        <p className="small muted">Leggi ad alta voce, poi tocca una riga per controllare.</p>
+        {t.lines.map((l, i) => {
+          const open = shown.has(i);
+          return (
+            <div key={i} className="sentence text-line" role="button" tabIndex={0} onClick={() => toggle(i)}
+              onKeyDown={(e) => e.key === 'Enter' && toggle(i)}>
+              <He>{nikud ? l.he : stripNikud(l.he)}</He>
+              <div style={{ minWidth: 160 }}>
+                {(translit || open) && <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{l.translit}</div>}
+                {(meaning || open) && <div className="muted small">{l.it}</div>}
+              </div>
+              <SpeakButton text={l.he} />
+            </div>
+          );
+        })}
+        <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
+          {done
+            ? <span className="pill pill-ok">Letto il {done.split('-').reverse().join('/')}</span>
+            : <button className="btn btn-primary" onClick={() => actions.textRead(t.id)}>Ho finito di leggere (+20 XP)</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dictation({ level }: { level: number }) {
+  const { settings } = useAppState();
+  const [round, setRound] = useState(0);
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const questions = useMemo(
+    () => buildDictation(level, 10, Math.random, { audio: listeningEnabled(settings.audio) }),
+    [level, round, settings.audio],
+  );
+  if (result) {
+    return <QuizResults result={result} title="Dettato completato" onRetry={() => { setResult(null); setRound(round + 1); }} />;
+  }
+  return (
+    <>
+      <p className="small muted center">
+        {listeningEnabled(settings.audio)
+          ? 'Ascolta la parola e ricomponila scegliendo le tessere giuste: attenzione a vocali e lettere simili!'
+          : 'Ricomponi la parola scegliendo le tessere giuste. (Con una voce ebraica installata il dettato diventa ad ascolto.)'}
+      </p>
+      <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} />
+    </>
+  );
 }

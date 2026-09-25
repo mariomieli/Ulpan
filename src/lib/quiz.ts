@@ -1,7 +1,8 @@
 import { GLYPHS, GLYPH_BY_ID, CONFUSABLES, FINAL_GLYPHS, type Glyph } from '../data/alphabet';
 import { VOWELS, VOWEL_BY_ID, withVowel, type Vowel } from '../data/nikud';
 import { WORDS, type Word } from '../data/words';
-import { normalizeTranslit } from './hebrew';
+import { clusters, normalizeTranslit } from './hebrew';
+import { MARKS } from '../data/nikud';
 import {
   LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON,
 } from '../data/curriculum';
@@ -37,7 +38,7 @@ export type QuestionKind =
   | 'glyph-name' | 'glyph-sound' | 'name-glyph' | 'sound-glyph' | 'final-form' | 'listen-glyph'
   | 'vowel-sound' | 'vowel-name' | 'name-vowel'
   | 'syllable-read' | 'translit-syllable'
-  | 'word-read' | 'word-meaning' | 'meaning-word' | 'word-type' | 'listen-word';
+  | 'word-read' | 'word-meaning' | 'meaning-word' | 'word-type' | 'listen-word' | 'word-compose';
 
 export interface Option {
   value: string;
@@ -58,6 +59,8 @@ export interface Question {
   audioOnly?: boolean;
   options?: Option[];
   answer: string;
+  /** Dettato: tessere (lettera + segni) da mettere in ordine; la risposta è la loro concatenazione. */
+  compose?: { tiles: string[] };
   /** Risposte accettate per le domande a risposta scritta. */
   accepted?: string[];
   explanation: string;
@@ -67,6 +70,8 @@ export interface Pool {
   glyphs: Glyph[];
   vowels: Vowel[];
   words: Word[];
+  /** Voce ebraica disponibile: il dettato si fa ad ascolto. */
+  listening?: boolean;
 }
 
 export interface QuizOptions {
@@ -356,6 +361,52 @@ function nearbyWords(pool: Pool): Word[] {
   return WORDS;
 }
 
+/** Divide una parola in tessere: ogni lettera con i suoi segni. */
+export function graphemes(he: string): string[] {
+  return clusters(he).map((c) => c.letter + c.marks.join(''));
+}
+
+const VOWEL_MARKS = [MARKS.QAMATS, MARKS.PATAH, MARKS.TSERE, MARKS.SEGOL, MARKS.HIRIQ, MARKS.HOLAM, MARKS.QUBUTS, MARKS.SHEVA];
+const MARK_SOUND: Record<string, string> = {
+  [MARKS.QAMATS]: 'a', [MARKS.PATAH]: 'a', [MARKS.TSERE]: 'e', [MARKS.SEGOL]: 'e',
+  [MARKS.HIRIQ]: 'i', [MARKS.HOLAM]: 'o', [MARKS.QUBUTS]: 'u', [MARKS.SHEVA]: '',
+};
+const LETTER_SWAPS: Record<string, string[]> = {
+  'ב': ['כ', 'פ'], 'כ': ['ב', 'פ'], 'פ': ['ב', 'כ'], 'ד': ['ר'], 'ר': ['ד'], 'ה': ['ח', 'ת'], 'ח': ['ה', 'ת'],
+  'ת': ['ח', 'ה'], 'ו': ['ז', 'י'], 'ז': ['ו'], 'י': ['ו'], 'ג': ['נ'], 'נ': ['ג'], 'ט': ['מ'], 'מ': ['ט'],
+  'ס': ['ם'], 'ם': ['ס'], 'ע': ['צ', 'א'], 'צ': ['ע'], 'א': ['ע'], 'ש': ['ס'], 'ק': ['כ'], 'ל': ['ר'],
+  'ן': ['ו'], 'ך': ['ד', 'ן'], 'ף': ['ך'], 'ץ': ['ן'],
+};
+
+/** Tessere "trappola" plausibili: vocale di suono diverso o lettera simile. */
+export function trapTiles(tiles: string[], n: number, rng: Rng): string[] {
+  const out = new Set<string>();
+  const real = new Set(tiles);
+  for (let attempt = 0; out.size < n && attempt < 60; attempt++) {
+    const t = pick(tiles, rng);
+    const [letter, ...marks] = [...t];
+    let variant: string | null = null;
+    const vIdx = marks.findIndex((m) => VOWEL_MARKS.includes(m as never));
+    if (vIdx >= 0 && rng() < 0.6) {
+      const others = VOWEL_MARKS.filter((m) => MARK_SOUND[m] !== MARK_SOUND[marks[vIdx]]);
+      const copy = [...marks];
+      copy[vIdx] = pick(others, rng);
+      variant = letter + copy.join('');
+    } else if (LETTER_SWAPS[letter]) {
+      const l = pick(LETTER_SWAPS[letter], rng);
+      const keep = marks.filter((m) => m !== MARKS.SHIN_DOT && m !== MARKS.SIN_DOT);
+      variant = l + keep.join('');
+    }
+    if (variant && !real.has(variant)) out.add(variant);
+  }
+  return [...out];
+}
+
+export function canCompose(w: Word): boolean {
+  const g = graphemes(w.he);
+  return g.length >= 2 && g.length <= 7 && !/\s/.test(w.he);
+}
+
 function acceptedReadings(w: Word): string[] {
   return [w.translit, ...(w.alt ?? [])];
 }
@@ -403,6 +454,20 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
         stimulus: { text: w.he, hebrew: true, size: 'lg' }, speak: w.he,
         answer: w.translit, accepted: acceptedReadings(w), explanation: expl,
       };
+    case 'word-compose': {
+      if (!canCompose(w)) return null;
+      const tiles = graphemes(w.he);
+      const traps = trapTiles(tiles, Math.min(3, Math.max(2, 8 - tiles.length)), rng);
+      return {
+        ...base,
+        prompt: pool.listening
+          ? `Ascolta e componi la parola (significa «${w.it}»)`
+          : `Componi la parola «${w.translit}» (${w.it})`,
+        audioOnly: pool.listening, speak: w.he,
+        compose: { tiles: shuffle([...tiles, ...traps], rng) },
+        answer: tiles.join(''), explanation: expl,
+      };
+    }
     case 'listen-word': {
       const ds = distractors(w.he, others, WORDS, (x) => x.he, 3, rng);
       return {
@@ -424,7 +489,7 @@ function wordQuestion(w: Word, kind: QuestionKind, pool: Pool, rng: Rng): Questi
 const GLYPH_KINDS: QuestionKind[] = ['glyph-name', 'glyph-sound', 'name-glyph', 'sound-glyph', 'final-form', 'listen-glyph'];
 const VOWEL_KINDS: QuestionKind[] = ['vowel-sound', 'vowel-name', 'name-vowel'];
 const SYLLABLE_KINDS: QuestionKind[] = ['syllable-read', 'translit-syllable'];
-const WORD_KINDS: QuestionKind[] = ['word-read', 'word-meaning', 'meaning-word', 'word-type', 'listen-word'];
+const WORD_KINDS: QuestionKind[] = ['word-read', 'word-meaning', 'meaning-word', 'word-type', 'listen-word', 'word-compose'];
 
 function allowedKinds(kinds: QuestionKind[], o: QuizOptions): QuestionKind[] {
   return kinds.filter((k) => (o.audio || !k.startsWith('listen')) && (o.typing !== false || k !== 'word-type'));
@@ -440,6 +505,8 @@ export interface QuizSpec {
   count: number;
   categories?: Category[];
   weights?: Partial<Record<Category, number>>;
+  /** Limita i tipi di domanda (es. solo dettato). */
+  kinds?: QuestionKind[];
 }
 
 const DEFAULT_WEIGHTS: Record<Category, number> = { glyph: 3, vowel: 2, syllable: 2, word: 3 };
@@ -449,16 +516,20 @@ export function buildQuiz(spec: QuizSpec, rng: Rng, o: QuizOptions = {}): Questi
   const weights = { ...DEFAULT_WEIGHTS, ...spec.weights };
   const sylGlyphs = (spec.focusGlyphs.length ? spec.focusGlyphs : spec.pool.glyphs).filter((g) => !g.finalOf);
   const sylVowels = (spec.focusVowels.length ? spec.focusVowels : spec.pool.vowels);
-  const available: Category[] = cats.filter((c) =>
+  const kindsFor = (c: Category) => (spec.kinds ? spec.kinds.some((k) => ({
+    glyph: GLYPH_KINDS, vowel: VOWEL_KINDS, syllable: SYLLABLE_KINDS, word: WORD_KINDS,
+  })[c].includes(k)) : true);
+  const available: Category[] = cats.filter(kindsFor).filter((c) =>
     (c === 'glyph' && spec.focusGlyphs.length) ||
     (c === 'vowel' && spec.focusVowels.length) ||
     (c === 'word' && spec.focusWords.length) ||
     (c === 'syllable' && sylGlyphs.length && sylVowels.length && spec.pool.vowels.length));
   if (!available.length) return [];
 
-  const gk = allowedKinds(GLYPH_KINDS, o);
-  const vk = allowedKinds(VOWEL_KINDS, o);
-  const wk = allowedKinds(WORD_KINDS, o);
+  const only = (ks: QuestionKind[]) => (spec.kinds ? ks.filter((k) => spec.kinds!.includes(k)) : ks);
+  const gk = only(allowedKinds(GLYPH_KINDS, o));
+  const vk = only(allowedKinds(VOWEL_KINDS, o));
+  const wk = only(allowedKinds(WORD_KINDS, o));
   const out: Question[] = [];
   const keys = new Set<string>();
   const totalWeight = available.reduce((s, c) => s + weights[c], 0);
@@ -471,7 +542,7 @@ export function buildQuiz(spec: QuizSpec, rng: Rng, o: QuizOptions = {}): Questi
     let q: Question | null = null;
     if (cat === 'glyph') q = glyphQuestion(pick(spec.focusGlyphs, rng), pick(gk, rng), spec.pool, rng);
     else if (cat === 'vowel') q = vowelQuestion(pick(spec.focusVowels, rng), pick(vk, rng), spec.pool, rng);
-    else if (cat === 'word') q = wordQuestion(pick(spec.focusWords, rng), pick(wk, rng), spec.pool, rng);
+    else if (cat === 'word') q = wordQuestion(pick(spec.focusWords, rng), pick(wk, rng), { ...spec.pool, listening: !!o.audio }, rng);
     else {
       // Almeno uno tra consonante e vocale è "in focus"; l'altro viene dal pool.
       const poolConsonants = spec.pool.glyphs.filter((x) => !x.finalOf);
@@ -573,13 +644,23 @@ export function buildReview(itemIds: string[], maxLesson: number, rng: Rng, o: Q
           : vowelQuestion(v, pick(VOWEL_KINDS, rng), pool, rng);
       } else if (type === 'w') {
         const w = WORDS.find((x) => x.id === key);
-        if (w) q = wordQuestion(w, pick(allowedKinds(WORD_KINDS, o), rng), pool, rng);
+        if (w) q = wordQuestion(w, pick(allowedKinds(WORD_KINDS, o), rng), { ...pool, listening: !!o.audio }, rng);
         else break;
       } else break;
     }
     if (q) out.push({ ...q, itemIds: [id] });
   }
   return shuffle(out, rng);
+}
+
+/** Dettato: componi le parole con le tessere. */
+export function buildDictation(level: number, count: number, rng: Rng, o: QuizOptions = {}): Question[] {
+  const pool = poolUpTo(level);
+  const words = pool.words.filter(canCompose);
+  return buildQuiz({
+    focusGlyphs: [], focusVowels: [], focusWords: words.length ? words : WORDS.filter(canCompose),
+    pool, count, categories: ['word'], kinds: ['word-compose'],
+  }, rng, o);
 }
 
 export function gradeLabel(pct: number): { label: string; tone: 'ok' | 'warn' | 'bad' } {

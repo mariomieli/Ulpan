@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import type { User } from '@supabase/supabase-js';
-import { cloudEnabled, supabase } from './supabase';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { cloudEnabled, getSupabase, sessionStorageKey } from './supabase';
 import {
-  getState, hasProgress, mergeStates, readStored, replaceState, sanitize, subscribe as subscribeStore, switchUser,
+  getState, hasProgress, mergeStates, readStored, replaceState, sanitize, storageKeyFor, subscribe as subscribeStore, switchUser,
 } from './store';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn' | 'guest' | 'recovery';
@@ -21,6 +21,8 @@ interface AuthState {
 }
 
 const GUEST_FLAG = 'ulpan:guest';
+const USER_CACHE = 'ulpan:user';
+let supabase: SupabaseClient | null = null;
 let auth: AuthState = { status: cloudEnabled ? 'loading' : 'guest', user: null, sync: 'idle' };
 const listeners = new Set<() => void>();
 
@@ -95,27 +97,58 @@ export async function pull() {
 /* ------------------------------------------------------------------ */
 
 async function activate(u: User) {
-  if (auth.user?.id === u.id && auth.status === 'signedIn') return;
+  const user = toUser(u);
+  localStorage.setItem(USER_CACHE, JSON.stringify(user));
   localStorage.removeItem(GUEST_FLAG);
-  switchUser(u.id);
-  setAuth({ status: 'signedIn', user: toUser(u), sync: 'idle' });
+  // Se l'utente era già attivo (avvio rapido dalla cache) basta sincronizzare
+  if (!(auth.user?.id === u.id && auth.status === 'signedIn')) switchUser(u.id);
+  setAuth({ status: 'signedIn', user });
   await pull();
+}
+
+function cachedUser(): AuthUser | null {
+  try {
+    const u = JSON.parse(localStorage.getItem(USER_CACHE) ?? 'null') as AuthUser | null;
+    return u?.id && localStorage.getItem(sessionStorageKey) ? u : null;
+  } catch {
+    return null;
+  }
 }
 
 let started = false;
 let recovering = false;
 
 export function initAuth() {
-  if (started || !supabase) return;
+  if (started || !cloudEnabled) return;
   started = true;
 
+  // Avvio immediato senza aspettare la rete: utente già collegato, ospite o nuovo visitatore.
+  const hasCode = new URLSearchParams(location.search).has('code');
+  const cached = cachedUser();
+  if (cached && !hasCode) {
+    switchUser(cached.id);
+    setAuth({ status: 'signedIn', user: cached });
+  } else if (localStorage.getItem(GUEST_FLAG) && !hasCode) {
+    switchUser(null);
+    setAuth({ status: 'guest' });
+  } else if (!localStorage.getItem(sessionStorageKey) && !hasCode) {
+    setAuth({ status: 'signedOut' });
+  }
+
+  void getSupabase().then((client) => {
+    supabase = client;
+    listen(client);
+  });
+}
+
+function listen(client: SupabaseClient) {
   subscribeStore(schedulePush);
   window.addEventListener('online', () => void pull());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void pull();
   });
 
-  supabase.auth.onAuthStateChange((event, session) => {
+  client.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       recovering = true;
       if (session?.user) setAuth({ status: 'recovery', user: toUser(session.user) });
@@ -126,12 +159,15 @@ export function initAuth() {
       // evita chiamate a Supabase dentro il callback
       setTimeout(() => void activate(session.user), 0);
     } else if (event === 'SIGNED_OUT') {
+      localStorage.removeItem(USER_CACHE);
       switchUser(null);
       setAuth({ status: 'signedOut', user: null, sync: 'idle' });
     } else if (event === 'INITIAL_SESSION' && !session) {
-      if (localStorage.getItem(GUEST_FLAG)) { switchUser(null); setAuth({ status: 'guest' }); }
-      else setAuth({ status: 'signedOut' });
+      localStorage.removeItem(USER_CACHE);
+      if (localStorage.getItem(GUEST_FLAG)) { switchUser(null); setAuth({ status: 'guest', user: null }); }
+      else setAuth({ status: 'signedOut', user: null });
     } else if (event === 'USER_UPDATED' && session?.user) {
+      localStorage.setItem(USER_CACHE, JSON.stringify(toUser(session.user)));
       setAuth({ user: toUser(session.user) });
     }
   });
@@ -160,13 +196,13 @@ function italian(message: string): string {
 const redirectTo = () => location.origin + location.pathname;
 
 export async function signIn(email: string, password: string): Promise<string | null> {
-  const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
+  const { error } = await (await getSupabase()).auth.signInWithPassword({ email: email.trim(), password });
   return error ? italian(error.message) : null;
 }
 
 /** Restituisce un errore oppure `confirm: true` se serve confermare l'email. */
 export async function signUp(name: string, email: string, password: string): Promise<{ error?: string; confirm?: boolean }> {
-  const { data, error } = await supabase!.auth.signUp({
+  const { data, error } = await (await getSupabase()).auth.signUp({
     email: email.trim(), password,
     options: { data: { name: name.trim() }, emailRedirectTo: redirectTo() },
   });
@@ -175,12 +211,12 @@ export async function signUp(name: string, email: string, password: string): Pro
 }
 
 export async function resetPassword(email: string): Promise<string | null> {
-  const { error } = await supabase!.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectTo() });
+  const { error } = await (await getSupabase()).auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectTo() });
   return error ? italian(error.message) : null;
 }
 
 export async function updatePassword(password: string): Promise<string | null> {
-  const { data, error } = await supabase!.auth.updateUser({ password });
+  const { data, error } = await (await getSupabase()).auth.updateUser({ password });
   if (error) return italian(error.message);
   recovering = false;
   if (data.user) await activate(data.user);
@@ -188,14 +224,34 @@ export async function updatePassword(password: string): Promise<string | null> {
 }
 
 export async function updateName(name: string): Promise<string | null> {
-  const { error } = await supabase!.auth.updateUser({ data: { name: name.trim() } });
+  const { error } = await (await getSupabase()).auth.updateUser({ data: { name: name.trim() } });
   return error ? italian(error.message) : null;
 }
 
 export async function signOut() {
   clearTimeout(pushTimer);
   await push();
-  await supabase?.auth.signOut();
+  localStorage.removeItem(USER_CACHE);
+  await (await getSupabase()).auth.signOut();
+}
+
+/** Elimina definitivamente l'account e i progressi online; cancella anche la copia locale. */
+export async function deleteAccount(): Promise<string | null> {
+  if (!supabase || !auth.user) return 'Nessun account attivo.';
+  const id = auth.user.id;
+  clearTimeout(pushTimer);
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) {
+    return /could not find|does not exist|PGRST202/i.test(error.message + error.code)
+      ? 'Funzione di eliminazione non ancora configurata sul server.'
+      : italian(error.message);
+  }
+  localStorage.removeItem(storageKeyFor(id));
+  localStorage.removeItem(USER_CACHE);
+  await supabase.auth.signOut({ scope: 'local' });
+  switchUser(null);
+  setAuth({ status: 'signedOut', user: null, sync: 'idle' });
+  return null;
 }
 
 export function continueAsGuest() {

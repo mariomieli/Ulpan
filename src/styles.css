@@ -470,3 +470,22 @@ input[type='email'], input[type='password'] {
 .sync-dot.saved { background: var(--ok); }
 .sync-dot.saving { background: var(--warn); }
 .sync-dot.error, .sync-dot.offline { background: var(--bad); }
+
+/* ---------- Dettato ---------- */
+.compose-answer {
+  min-height: 84px; display: grid; place-items: center; border: 2px dashed var(--border); border-radius: 14px;
+  margin: 4px 0 14px; padding: 6px 10px;
+}
+.compose-answer.correct { border-style: solid; border-color: var(--ok); background: var(--ok-soft); }
+.compose-answer.wrong { border-style: solid; border-color: var(--bad); background: var(--bad-soft); }
+.compose-tiles { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; direction: rtl; }
+.option.tile { min-width: 64px; min-height: 64px; padding: 8px 12px; direction: ltr; }
+.option.tile:disabled { opacity: .25; }
+.text-card { text-align: left; cursor: pointer; display: grid; gap: 10px; font: inherit; color: inherit; width: 100%; }
+.text-card:hover { border-color: var(--primary); }
+.text-preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.text-line { cursor: pointer; }
+.danger-zone { border-top: 1px solid var(--border); padding-top: 12px; }
+.danger-zone summary { cursor: pointer; color: var(--bad); font-weight: 600; font-size: .9rem; }
+.danger-zone p { margin: 10px 0; }
+.page-loading { height: 40vh; }

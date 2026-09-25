@@ -46,6 +46,8 @@ export interface AppState {
   streak: number;
   lastActive: string | null;
   days: Record<string, DayStats>;
+  /** Testi di lettura completati: id → data. */
+  texts: Record<string, string>;
   /** Ultima modifica (ms): serve a scegliere le impostazioni più recenti in sincronizzazione. */
   updatedAt?: number;
   /** Momento dell'ultimo azzeramento/importazione: le copie più vecchie vengono scartate. */
@@ -75,7 +77,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export function initialState(): AppState {
   return {
     version: 1, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
-    xp: 0, streak: 0, lastActive: null, days: {},
+    xp: 0, streak: 0, lastActive: null, days: {}, texts: {},
   };
 }
 
@@ -105,6 +107,7 @@ export function sanitize(raw: unknown): AppState {
     exams: r.exams ?? {},
     srs: r.srs ?? {},
     days: r.days ?? {},
+    texts: r.texts ?? {},
   };
 }
 
@@ -226,6 +229,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
     version: 1,
     settings: { ...newer.settings },
     lessons, exams, srs, days,
+    texts: { ...b.texts, ...a.texts },
     xp: Math.max(a.xp, b.xp),
     streak: recent.streak,
     lastActive: recent.lastActive,
@@ -359,6 +363,10 @@ export const actions = {
     let next = applyLessonTest(state, lessonId, score, pass);
     if (score >= pass) next = applyStudied(next, lessonId, new Date());
     set(next);
+  },
+  textRead(textId: string) {
+    if (state.texts[textId]) return;
+    set({ ...state, xp: state.xp + 20, texts: { ...state.texts, [textId]: dayKey() } });
   },
   exam(examId: string, score: number, timeSec: number) {
     set(applyExam(state, examId, score, timeSec, new Date()));

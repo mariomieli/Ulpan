@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { pull, showLogin, signOut, updateName, useAuth } from '../lib/auth';
+import { deleteAccount, pull, showLogin, signOut, updateName, useAuth } from '../lib/auth';
 import { cloudEnabled } from '../lib/supabase';
 
 export function AccountCard() {
   const auth = useAuth();
   const [name, setName] = useState(auth.user?.name ?? '');
   const [msg, setMsg] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   if (!cloudEnabled) return null;
 
   if (!auth.user) {
@@ -20,6 +21,15 @@ export function AccountCard() {
       </div>
     );
   }
+
+  const remove = async () => {
+    const typed = prompt(`Per confermare scrivi ELIMINA`);
+    if (typed?.trim().toUpperCase() !== 'ELIMINA') return;
+    setDeleting(true);
+    const err = await deleteAccount();
+    setDeleting(false);
+    if (err) setMsg(err);
+  };
 
   const saveName = async () => {
     const err = await updateName(name);
@@ -51,6 +61,14 @@ export function AccountCard() {
         <button className="btn btn-danger" onClick={() => void signOut()}>Esci</button>
       </div>
       {msg && <p className="small" style={{ margin: 0 }}>{msg}</p>}
+      <details className="danger-zone">
+        <summary>Elimina account</summary>
+        <p className="small muted">
+          Cancella definitivamente l’account ({auth.user.email}) e tutti i progressi salvati, online e su questo dispositivo.
+          L’operazione non si può annullare.
+        </p>
+        <button className="btn btn-danger" disabled={deleting} onClick={remove}>{deleting ? 'Eliminazione…' : 'Elimina definitivamente'}</button>
+      </details>
     </div>
   );
 }

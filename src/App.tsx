@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
@@ -6,15 +6,36 @@ import { useAuth, showLogin } from './lib/auth';
 import { cloudEnabled } from './lib/supabase';
 import { AuthPage } from './pages/Auth';
 import { HomePage } from './pages/Home';
-import { LessonsPage } from './pages/Lessons';
-import { LessonPage } from './pages/Lesson';
-import { AlphabetPage } from './pages/Alphabet';
-import { NikudPage } from './pages/Nikud';
-import { ReadingPage } from './pages/Reading';
-import { ReviewPage } from './pages/Review';
-import { TestsPage, ExamPage } from './pages/Tests';
-import { ProgressPage } from './pages/Progress';
-import { SettingsPage } from './pages/Settings';
+
+/* Le pagine diverse dalla Home si caricano solo quando servono. */
+const loaders = {
+  lessons: () => import('./pages/Lessons'),
+  lesson: () => import('./pages/Lesson'),
+  alphabet: () => import('./pages/Alphabet'),
+  nikud: () => import('./pages/Nikud'),
+  reading: () => import('./pages/Reading'),
+  review: () => import('./pages/Review'),
+  tests: () => import('./pages/Tests'),
+  progress: () => import('./pages/Progress'),
+  settings: () => import('./pages/Settings'),
+};
+const LessonsPage = lazy(() => loaders.lessons().then((m) => ({ default: m.LessonsPage })));
+const LessonPage = lazy(() => loaders.lesson().then((m) => ({ default: m.LessonPage })));
+const AlphabetPage = lazy(() => loaders.alphabet().then((m) => ({ default: m.AlphabetPage })));
+const NikudPage = lazy(() => loaders.nikud().then((m) => ({ default: m.NikudPage })));
+const ReadingPage = lazy(() => loaders.reading().then((m) => ({ default: m.ReadingPage })));
+const ReviewPage = lazy(() => loaders.review().then((m) => ({ default: m.ReviewPage })));
+const TestsPage = lazy(() => loaders.tests().then((m) => ({ default: m.TestsPage })));
+const ExamPage = lazy(() => loaders.tests().then((m) => ({ default: m.ExamPage })));
+const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.ProgressPage })));
+const SettingsPage = lazy(() => loaders.settings().then((m) => ({ default: m.SettingsPage })));
+
+/** Dopo il primo avvio scarica in background le altre pagine (navigazione istantanea e uso offline). */
+function prefetchPages() {
+  const run = () => Object.values(loaders).forEach((load) => void load().catch(() => {}));
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 2500);
+}
 
 const NAV = [
   { path: '/', label: 'Home', icon: 'home' },
@@ -80,6 +101,7 @@ export function App() {
   }, [settings.theme, settings.font, settings.fontScale]);
 
   useEffect(() => setDrawer(false), [path]);
+  useEffect(prefetchPages, []);
 
   if (auth.status === 'loading') {
     return <div className="auth-wrap"><span className="brand-mark" style={{ width: 56, height: 56, fontSize: '2rem' }}>א</span></div>;
@@ -114,7 +136,9 @@ export function App() {
       </nav>
 
       <main className="main">
-        <Page path={path} />
+        <Suspense fallback={<div className="page-loading" aria-label="Caricamento" />}>
+          <Page path={path} />
+        </Suspense>
       </main>
 
       <nav className="bottom-nav" aria-label="Navigazione">

@@ -7,7 +7,8 @@ Web app (PWA) in italiano per imparare a **leggere l'ebraico** da zero: alfabeto
 - **10 lezioni progressive**: ogni lezione ha teoria, schede di studio, esercizi con correzione immediata e un test finale (soglia 80%) che sblocca la lezione successiva.
 - **Alfabeto completo**: 22 lettere, 5 forme finali, varianti con dagesh (בּ/ב, כּ/כ, פּ/פ) e shin/sin, con pronuncia spiegata per italiani, lettere da non confondere, valore numerico ed esempi.
 - **Nikud**: tutti i 15 segni vocalici raggruppati per suono e tabella interattiva delle sillabe.
-- **Lettura**: 140 parole e 16 frasi vocalizzate, filtrabili per lezione e categoria; nikud, traslitterazione e significato attivabili/disattivabili; modalità flashcard.
+- **Lettura**: 140 parole, 16 frasi e 11 testi graduati (storie, preghiere, cartelli reali), filtrabili per lezione; nikud, traslitterazione e significato attivabili/disattivabili; flashcard.
+- **Dettato**: ricomponi la parola con le tessere lettera+vocale, evitando le “trappole” (vocali e lettere simili); ad ascolto se c'è una voce ebraica.
 - **Quiz variati**: riconoscimento di lettere, suoni, vocali e forme finali, lettura di sillabe e parole, significato, risposta scritta in traslitterazione, domande di ascolto. I distrattori sono scelti tra lettere simili e letture “quasi giuste”.
 - **Esami**: alfabeto, nikud, lettura ed esame finale a tempo, con revisione degli errori.
 - **Ripasso intelligente** (algoritmo tipo SM-2): ogni lettera, vocale e parola torna quando stai per dimenticarla.
@@ -44,7 +45,7 @@ tests/         test Vitest
 Con [Supabase](https://supabase.com) (piano gratuito) ogni persona si registra con email e password e ha il proprio avanzamento, salvato online e sincronizzato tra dispositivi. Senza configurazione l'app funziona in locale, senza account.
 
 1. Crea un progetto su supabase.com.
-2. In **SQL Editor** esegui `supabase/schema.sql` (tabella `progress` con Row Level Security: ognuno vede solo i propri dati).
+2. In **SQL Editor** esegui `supabase/schema.sql` (tabella `progress` con Row Level Security: ognuno vede solo i propri dati, e la funzione `delete_my_account` per l'eliminazione dell'account da parte dell'utente).
 3. In **Authentication → URL Configuration** imposta *Site URL* e *Redirect URLs* all'indirizzo dell'app (es. `https://mariomieli.github.io/Ulpan/`).
 4. Da **Project Settings → API** copia *Project URL* e *anon public key* e impostale:
    nel file `.env.production` (usato dalla build pubblicata); per lo sviluppo locale copia gli stessi valori in `.env.local`.
