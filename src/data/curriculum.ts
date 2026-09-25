@@ -156,7 +156,7 @@ export const LESSONS: Lesson[] = [
       { type: 'example', he: 'שָׁלוֹם', translit: 'shalom', note: 'pace, ciao' },
       { type: 'example', he: 'שַׁבָּת', translit: 'shabat', note: 'sabato' },
       { type: 'tip', text: 'Suoni doppi: ס e שׂ = “s”; ק e כּ = “k”; ת e ט = “t”; ב (senza puntino) e ו = “v”; ח e כ (senza puntino) = “ch”; א e ע = mute. Nella lettura il suono è lo stesso, cambia solo l’ortografia.' },
-      { type: 'tip', text: 'Complimenti: conosci tutte le 22 lettere, le 5 forme finali e tutti i segni vocalici!' },
+      { type: 'tip', text: 'Complimenti: conosci tutte le 22 lettere, le 5 forme finali e tutti i segni vocalici! Ora prova a leggere i nomi delle lettere (אָלֶף, בֵּית, גִּימֶל…): trovi l’esercizio nella pagina Alfabeto.' },
     ],
   },
   {

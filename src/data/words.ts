@@ -8,7 +8,7 @@ import { EXTRA_WORDS } from './words-extra';
 export type WordCategory =
   | 'saluti' | 'famiglia' | 'persone' | 'casa' | 'cibo' | 'natura' | 'animali'
   | 'numeri' | 'colori' | 'corpo' | 'tempo' | 'scuola' | 'città' | 'aggettivi' | 'parole utili'
-  | 'verbi' | 'professioni' | 'vestiti' | 'tempo libero';
+  | 'verbi' | 'professioni' | 'vestiti' | 'tempo libero' | 'alfabeto';
 
 export interface Word {
   id: string;
@@ -311,9 +311,36 @@ const BASE_WORDS: Word[] = [
 ];
 
 /** Tutte le parole: base + vocabolario esteso, con id univoci (stabili: dipendono dall'ordine). */
+
+/** I nomi delle 22 lettere: un primo esercizio di lettura (come nei metodi tradizionali). */
+export const LETTER_NAMES: [string, string, string, WordCategory, string[]?][] = [
+  ['אָלֶף', 'alef', 'lettera Alef', 'alfabeto'],
+  ['בֵּית', 'beit', 'lettera Bet', 'alfabeto', ['bet']],
+  ['גִּימֶל', 'gimel', 'lettera Gimel', 'alfabeto'],
+  ['דָּלֶת', 'dalet', 'lettera Dalet', 'alfabeto'],
+  ['הֵא', 'he', 'lettera He', 'alfabeto'],
+  ['וָו', 'vav', 'lettera Vav', 'alfabeto'],
+  ['זַיִן', 'zayin', 'lettera Zayin', 'alfabeto'],
+  ['חֵית', 'cheit', 'lettera Chet', 'alfabeto', ['chet']],
+  ['טֵית', 'teit', 'lettera Tet', 'alfabeto', ['tet']],
+  ['יוֹד', 'yod', 'lettera Yod', 'alfabeto'],
+  ['כַּף', 'kaf', 'lettera Kaf', 'alfabeto'],
+  ['לָמֶד', 'lamed', 'lettera Lamed', 'alfabeto'],
+  ['מֵם', 'mem', 'lettera Mem', 'alfabeto'],
+  ['נוּן', 'nun', 'lettera Nun', 'alfabeto'],
+  ['סָמֶךְ', 'samech', 'lettera Samekh', 'alfabeto', ['samekh']],
+  ['עַיִן', 'ayin', 'lettera Ayin', 'alfabeto'],
+  ['פֵּא', 'pe', 'lettera Pe', 'alfabeto'],
+  ['צָדִי', 'tsadi', 'lettera Tsadi', 'alfabeto', ['tzadi']],
+  ['קוֹף', 'kof', 'lettera Kuf', 'alfabeto', ['kuf']],
+  ['רֵישׁ', 'reish', 'lettera Resh', 'alfabeto', ['resh']],
+  ['שִׁין', 'shin', 'lettera Shin', 'alfabeto'],
+  ['תָּו', 'tav', 'lettera Tav', 'alfabeto'],
+];
+
 export const WORDS: Word[] = (() => {
   const seen = new Set<string>();
-  return [...BASE_WORDS.map((b) => ({ ...b, core: true })), ...EXTRA_WORDS.map(([he, translit, it, category, alt]) => w(he, translit, it, category, alt))]
+  return [...BASE_WORDS.map((b) => ({ ...b, core: true })), ...[...EXTRA_WORDS, ...LETTER_NAMES.filter(([he]) => !BASE_WORDS.some((b) => b.he === he) && !EXTRA_WORDS.some((x) => x[0] === he))].map(([he, translit, it, category, alt]) => w(he, translit, it, category, alt))]
     .map((word) => {
       let id = word.id;
       for (let n = 2; seen.has(id); n++) id = `${word.id}-${n}`;

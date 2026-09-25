@@ -185,6 +185,55 @@ export const TEXTS: ReadingText[] = [
     ],
   },
   {
+    id: 'nerot-shabat', title: 'Accensione dei lumi di Shabbat', category: 'preghiera',
+    intro: 'Si recita il venerdì sera accendendo le candele. Le benedizioni per un precetto (mitzvà) continuano con אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו.',
+    lines: [
+      { he: 'בָּרוּךְ אַתָּה יְיָ', translit: 'Baruch ata Adonai', it: 'Benedetto sei Tu, Signore' },
+      { he: 'אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם,', translit: 'Eloheinu melech haolam,', it: 'nostro Dio, Re del mondo,' },
+      { he: 'אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו', translit: 'asher kideshanu bemitsvotav', it: 'che ci hai santificati con i Tuoi precetti' },
+      { he: 'וְצִוָּנוּ לְהַדְלִיק נֵר שֶׁל שַׁבָּת.', translit: 'vetsivanu lehadlik ner shel shabat.', it: 'e ci hai comandato di accendere il lume dello Shabbat.' },
+    ],
+  },
+  {
+    id: 'kiddush-yayin', title: 'Benedizione del vino', category: 'preghiera',
+    intro: 'Si recita sul vino, per esempio nel Kiddush di Shabbat e delle feste.',
+    lines: [
+      { he: 'בָּרוּךְ אַתָּה יְיָ', translit: 'Baruch ata Adonai', it: 'Benedetto sei Tu, Signore' },
+      { he: 'אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם,', translit: 'Eloheinu melech haolam,', it: 'nostro Dio, Re del mondo,' },
+      { he: 'בּוֹרֵא פְּרִי הַגָּפֶן.', translit: 'borei pri hagafen.', it: 'che crei il frutto della vite.' },
+    ],
+  },
+  {
+    id: 'shehecheyanu', title: 'Shehecheyanu', category: 'preghiera',
+    intro: 'La benedizione per le occasioni nuove e liete: l’inizio di una festa, un frutto di stagione, un abito nuovo.',
+    lines: [
+      { he: 'בָּרוּךְ אַתָּה יְיָ', translit: 'Baruch ata Adonai', it: 'Benedetto sei Tu, Signore' },
+      { he: 'אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם,', translit: 'Eloheinu melech haolam,', it: 'nostro Dio, Re del mondo,' },
+      { he: 'שֶׁהֶחֱיָנוּ וְקִיְּמָנוּ', translit: 'shehecheyanu vekiyemanu', it: 'che ci hai fatto vivere, ci hai sostenuti' },
+      { he: 'וְהִגִּיעָנוּ לַזְּמַן הַזֶּה.', translit: 'vehigianu lazman haze.', it: 'e ci hai fatto giungere a questo momento.' },
+    ],
+  },
+  {
+    id: 'veahavta', title: 'Veahavtà', category: 'preghiera',
+    intro: 'Segue lo Shemà (Deuteronomio 6,5). Il segno ׇ in בְּכׇל è un kamatz katan: si legge “o” (bechol).',
+    lines: [
+      { he: 'בָּרוּךְ שֵׁם כְּבוֹד מַלְכוּתוֹ לְעוֹלָם וָעֶד.', translit: 'Baruch shem kevod malchuto leolam vaed.', it: 'Benedetto il Nome della gloria del Suo regno per sempre.' },
+      { he: 'וְאָהַבְתָּ אֵת יְיָ אֱלֹהֶיךָ', translit: 'Veahavta et Adonai Elohecha', it: 'Amerai il Signore tuo Dio' },
+      { he: 'בְּכׇל־לְבָבְךָ וּבְכׇל־נַפְשְׁךָ', translit: 'bechol levavcha uvechol nafshecha', it: 'con tutto il tuo cuore e con tutta la tua anima' },
+      { he: 'וּבְכׇל־מְאֹדֶךָ.', translit: 'uvechol meodecha.', it: 'e con tutte le tue forze.' },
+    ],
+  },
+  {
+    id: 'adon-olam', title: 'Adon olam (prima strofa)', category: 'preghiera',
+    intro: 'Un inno cantato alla fine di molte funzioni.',
+    lines: [
+      { he: 'אֲדוֹן עוֹלָם אֲשֶׁר מָלַךְ', translit: 'Adon olam asher malach', it: 'Signore del mondo, che regnò' },
+      { he: 'בְּטֶרֶם כׇּל־יְצִיר נִבְרָא.', translit: 'beterem kol yetsir nivra.', it: 'prima che ogni creatura fosse creata.' },
+      { he: 'לְעֵת נַעֲשָׂה בְחֶפְצוֹ כֹּל,', translit: 'Le’et na’asa vecheftso kol,', it: 'Quando tutto fu fatto per Sua volontà,' },
+      { he: 'אֲזַי מֶלֶךְ שְׁמוֹ נִקְרָא.', translit: 'azai melech shemo nikra.', it: 'allora il Suo Nome fu proclamato Re.' },
+    ],
+  },
+  {
     id: 'cartelli-citta', title: 'In giro per la città', category: 'cartelli',
     intro: 'Sui cartelli veri il nikud non c’è: prova a leggerli anche disattivandolo.',
     lines: [

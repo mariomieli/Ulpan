@@ -9,6 +9,7 @@ import { listeningEnabled } from '../lib/speech';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { stripNikud } from '../lib/hebrew';
 import { ktivMale } from '../lib/ktiv';
+import { syllabify } from '../lib/syllables';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
@@ -29,6 +30,7 @@ export function ReadingPage() {
   const [cat, setCat] = useState<WordCategory | 'tutte'>('tutte');
   const [q, setQ] = useState('');
   const [nikud, setNikud] = useState(true);
+  const [syl, setSyl] = useState(false);
   const [translit, setTranslit] = useState(false);
   const [meaning, setMeaning] = useState(true);
   const [shown, setShown] = useState(PAGE);
@@ -43,7 +45,7 @@ export function ReadingPage() {
     (!q || w.it.toLowerCase().includes(q.toLowerCase()) || w.translit.includes(q.toLowerCase()) || stripNikud(w.he).includes(stripNikud(q)))),
   [level, cat, q]);
 
-  const show = (w: string) => (nikud ? w : ktivMale(w));
+  const show = (w: string) => (!nikud ? ktivMale(w) : syl ? syllabify(w) : w);
   const matches = (it: string, tr: string, he: string) =>
     !q || it.toLowerCase().includes(q.toLowerCase()) || tr.toLowerCase().includes(q.toLowerCase()) || stripNikud(he).includes(stripNikud(q));
   const sentences = sentencesUpTo(level).filter((x) => matches(x.it, x.translit, x.he));
@@ -72,6 +74,7 @@ export function ReadingPage() {
           </select>
         </div>
         {mode !== 'dettato' && <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>}
+        {mode !== 'dettato' && nikud && <label className="toggle"><input type="checkbox" checked={syl} onChange={(e) => setSyl(e.target.checked)} /> Dividi in sillabe</label>}
         {mode !== 'flashcard' && mode !== 'dettato' && <>
           <label className="toggle"><input type="checkbox" checked={translit} onChange={(e) => setTranslit(e.target.checked)} /> Traslitterazione</label>
           <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
@@ -132,9 +135,9 @@ export function ReadingPage() {
         </div>
       )}
 
-      {mode === 'testi' && <TextsView level={level} nikud={nikud} translit={translit} meaning={meaning} />}
+      {mode === 'testi' && <TextsView level={level} fmt={show} translit={translit} meaning={meaning} />}
       {mode === 'dettato' && <Dictation key={level} level={level} />}
-      {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} nikud={nikud} />}
+      {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} fmt={show} />}
     </div>
   );
 }
@@ -153,7 +156,7 @@ function WordCard({ w, he, translit, meaning }: { w: Word; he: string; translit:
   );
 }
 
-function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
+function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string }) {
   const { srs } = useAppState();
   const build = () => flashcardOrder(words, srs, recentQuestions(), Date.now(), Math.random);
   const [deck, setDeck] = useState<Word[]>(build);
@@ -178,7 +181,7 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
     if (i + 1 >= d.length) { setDeck(build()); setI(0); } else { setDeck(d); setI(i + 1); }
   };
 
-  const hebrew = <He>{nikud ? w.he : ktivMale(w.he)}</He>;
+  const hebrew = <He>{fmt(w.he)}</He>;
 
   return (
     <div className="quiz">
@@ -223,12 +226,12 @@ function Flashcards({ words, nikud }: { words: Word[]; nikud: boolean }) {
   );
 }
 
-function TextsView({ level, nikud, translit, meaning }: { level: number; nikud: boolean; translit: boolean; meaning: boolean }) {
+function TextsView({ level, fmt, translit, meaning }: { level: number; fmt: (he: string) => string; translit: boolean; meaning: boolean }) {
   const state = useAppState();
   const [open, setOpen] = useState<ReadingText | null>(null);
   const [cat, setCat] = useState<TextCategory | 'tutti'>('tutti');
 
-  if (open) return <TextReader t={open} nikud={nikud} translit={translit} meaning={meaning} onBack={() => setOpen(null)} />;
+  if (open) return <TextReader t={open} fmt={fmt} translit={translit} meaning={meaning} onBack={() => setOpen(null)} />;
 
   const list = TEXTS.filter((t) => cat === 'tutti' || t.category === cat)
     .sort((a, b) => textLevel(a) - textLevel(b));
@@ -265,8 +268,8 @@ function TextsView({ level, nikud, translit, meaning }: { level: number; nikud: 
   );
 }
 
-function TextReader({ t, nikud, translit, meaning, onBack }: {
-  t: ReadingText; nikud: boolean; translit: boolean; meaning: boolean; onBack: () => void;
+function TextReader({ t, fmt, translit, meaning, onBack }: {
+  t: ReadingText; fmt: (he: string) => string; translit: boolean; meaning: boolean; onBack: () => void;
 }) {
   const state = useAppState();
   const [shown, setShown] = useState<Set<number>>(new Set());
@@ -289,7 +292,7 @@ function TextReader({ t, nikud, translit, meaning, onBack }: {
           return (
             <div key={i} className="sentence text-line" role="button" tabIndex={0} onClick={() => toggle(i)}
               onKeyDown={(e) => e.key === 'Enter' && toggle(i)}>
-              <He>{nikud ? l.he : ktivMale(l.he)}</He>
+              <He>{fmt(l.he)}</He>
               <div style={{ minWidth: 160 }}>
                 {(translit || open) && <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{l.translit}</div>}
                 {(meaning || open) && <div className="muted small">{l.it}</div>}

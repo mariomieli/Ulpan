@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { GLYPHS, GLYPH_BY_ID } from '../data/alphabet';
-import { VOWELS, VOWEL_GROUP_LABELS, type VowelGroup } from '../data/nikud';
+import { VOWELS, VOWEL_BY_ID, VOWEL_GROUP_LABELS, type VowelGroup } from '../data/nikud';
 import { canCombine, syllable, vowelDisplay } from '../lib/quiz';
 import { speak } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 
 const GROUPS: VowelGroup[] = ['A', 'E', 'I', 'O', 'U', 'Sheva'];
+/** Colonne della tabella completa: una per ogni segno, raggruppate per suono. */
+const TABLE_VOWELS = ['kamatz', 'patach', 'tsere', 'segol', 'hiriq', 'hiriq-male', 'holam', 'holam-male', 'kubutz', 'shuruk'].map((id) => VOWEL_BY_ID[id]);
 
 export function NikudPage() {
   const { settings } = useAppState();
@@ -49,7 +51,7 @@ export function NikudPage() {
 
       <div className="card">
         <div className="card-title">
-          <h2>Tabella delle sillabe</h2>
+          <h2>Sillabe di una lettera</h2>
           <SpeakButton text={g.hebrewName} label={g.name} />
         </div>
         <p className="muted small">Scegli una consonante e tocca una sillaba per ascoltarla.</p>
@@ -70,6 +72,45 @@ export function NikudPage() {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><h2>Tabella completa</h2></div>
+        <p className="muted small">Ogni lettera con ogni vocale: leggi una riga alla volta da destra a sinistra, poi una colonna. Tocca una sillaba per ascoltarla.</p>
+        <div className="table-wrap" dir="rtl">
+          <table className="data syl-table">
+            <thead>
+              <tr>
+                <th scope="col"><span className="sr-only">Lettera</span></th>
+                {TABLE_VOWELS.map((v) => (
+                  <th key={v.id} scope="col" title={v.name}>
+                    <span className="he-inline" lang="he">{vowelDisplay(v)}</span>
+                    <small>{v.sound}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {consonants.map((c) => (
+                <tr key={c.id}>
+                  <th scope="row" title={c.name}><span className="he-inline" lang="he">{c.char}</span></th>
+                  {TABLE_VOWELS.map((v) => {
+                    if (!canCombine(c, v)) return <td key={v.id} aria-hidden="true" />;
+                    const s = syllable(c, v);
+                    return (
+                      <td key={v.id}>
+                        <button className="syl-cell" lang="he" aria-label={`${s.text}: ${s.translit}`}
+                          onClick={() => settings.audio && speak(s.text, settings.speechRate)}>
+                          {s.text}<small lang="it">{s.translit}</small>
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

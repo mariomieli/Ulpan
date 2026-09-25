@@ -1,6 +1,6 @@
 import { GLYPHS, GLYPH_BY_ID, CONFUSABLES, FINAL_GLYPHS, type Glyph } from '../data/alphabet';
 import { VOWELS, VOWEL_BY_ID, withVowel, type Vowel } from '../data/nikud';
-import { WORDS, type Word } from '../data/words';
+import { LETTER_NAMES, WORDS, type Word } from '../data/words';
 import { clusters, normalizeTranslit } from './hebrew';
 import { MARKS } from '../data/nikud';
 import { ktivMale } from './ktiv';
@@ -910,3 +910,19 @@ export function gradeLabel(pct: number): { label: string; tone: 'ok' | 'warn' | 
 }
 
 export const PASS_THRESHOLD = 80;
+
+/**
+ * Esercizio tradizionale: leggere i nomi delle 22 lettere (אָלֶף, בֵּית, גִּימֶל…).
+ * Non aggiorna il ripasso: serve a esercitare la lettura, non a misurare una singola lettera.
+ */
+export function buildLetterNameQuiz(rng: Rng, o: QuizOptions = {}, count = 12): Question[] {
+  return shuffle(LETTER_NAMES, rng).slice(0, count).map(([he, translit, it, , alt], i) => {
+    const base = { key: `letter-name:${translit}`, itemIds: [], stimulus: { text: he, hebrew: true, size: 'lg' as const }, speak: he,
+      answer: translit, explanation: `${he} si legge «${translit}»: è il nome della ${it}.` };
+    if (o.typing && i % 3 === 2) {
+      return { ...base, kind: 'word-type' as const, prompt: 'Scrivi come si legge questo nome (in lettere latine)', accepted: [translit, ...(alt ?? [])] };
+    }
+    const others = shuffle(LETTER_NAMES.filter((x) => x[1] !== translit), rng).slice(0, 3).map((x) => x[1]);
+    return { ...base, kind: 'word-read' as const, prompt: 'Come si legge il nome di questa lettera?', options: options(opt(translit), others.map((d) => opt(d)), rng) };
+  });
+}

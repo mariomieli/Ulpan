@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BASE_LETTERS, CONFUSABLES, GLYPH_BY_ID, LETTER_VARIANTS, type Glyph } from '../data/alphabet';
 import { WORDS } from '../data/words';
 import { requirements } from '../lib/hebrew';
 import { mastery } from '../lib/srs';
+import { buildLetterNameQuiz } from '../lib/quiz';
+import { recentQuestions } from '../lib/recent';
+import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
@@ -82,14 +85,42 @@ function LetterModal({ letterId, onClose }: { letterId: string; onClose: () => v
   );
 }
 
+function LetterNamesPractice({ onClose }: { onClose: () => void }) {
+  const { settings } = useAppState();
+  const [round, setRound] = useState(0);
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const questions = useMemo(() => {
+    const recent = recentQuestions();
+    const qs = buildLetterNameQuiz(Math.random, { typing: settings.typing });
+    return [...qs.filter((q) => !recent.has(q.key)), ...qs.filter((q) => recent.has(q.key))];
+  }, [round, settings.typing]);
+  if (result) {
+    return <QuizResults result={result} title="Nomi delle lettere" onRetry={() => { setResult(null); setRound(round + 1); }}>
+      <button className="btn" onClick={onClose}>Torna all’alfabeto</button>
+    </QuizResults>;
+  }
+  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onClose} />;
+}
+
 export function AlphabetPage() {
   const { srs } = useAppState();
   const [open, setOpen] = useState<string | null>(null);
   const [showVariants, setShowVariants] = useState(true);
+  const [names, setNames] = useState(false);
 
   const tiles: Glyph[] = BASE_LETTERS.flatMap((id) =>
     showVariants ? [GLYPH_BY_ID[id], ...(LETTER_VARIANTS[id] ?? []).map((v) => GLYPH_BY_ID[v])] : [GLYPH_BY_ID[id]]);
   const baseOf = (g: Glyph) => BASE_LETTERS.find((b) => b === g.id || LETTER_VARIANTS[b]?.includes(g.id)) ?? g.id;
+
+  if (names) {
+    return (
+      <div className="fade-in">
+        <button className="link-btn" onClick={() => setNames(false)}>← Alfabeto</button>
+        <h1 style={{ marginTop: 6 }}>Leggi i nomi delle lettere</h1>
+        <LetterNamesPractice onClose={() => setNames(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in">
@@ -113,6 +144,13 @@ export function AlphabetPage() {
             <div className="snd">{g.sound}</div>
           </button>
         ))}
+      </div>
+      <div className="card row" style={{ marginTop: 20 }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h3 style={{ margin: 0 }}>Leggi i nomi delle lettere</h3>
+          <p className="muted small" style={{ margin: 0 }}><Rich text="Il primo esercizio di lettura dei metodi tradizionali: אָלֶף, בֵּית, גִּימֶל… Ideale quando conosci tutte le lettere." /></p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setNames(true)}>Inizia</button>
       </div>
       <div className="card" style={{ marginTop: 20 }}>
         <h3>Da sapere</h3>
