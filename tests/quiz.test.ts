@@ -214,3 +214,21 @@ describe('fase 2: didattica', () => {
     }
   });
 });
+
+describe('ripasso', () => {
+  it('le domande a scelta multipla hanno sempre almeno 3 risposte, anche con elementi di lezioni successive', () => {
+    const ids = ['g:bet', 'g:shin', 'g:tsadi-sofit', 'v:shuruk', 'v:hataf-patach', ...WORDS.filter((w) => w.core).slice(0, 30).map((w) => `w:${w.id}`)];
+    for (let seed = 1; seed <= 20; seed++) {
+      for (const q of buildReview(ids, 1, seededRng(seed))) {
+        if (q.options) expect(q.options.length, q.key).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+  it('test di lezione ed esercizi: almeno 3 risposte', () => {
+    for (const l of LESSONS) for (let seed = 1; seed <= 5; seed++) {
+      for (const q of [...buildLessonQuiz(l.id, 12, seededRng(seed)), ...buildLessonQuiz(l.id, 20, seededRng(seed), {}, 'test')]) {
+        if (q.options) expect(q.options.length, `${l.id} ${q.key}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+});

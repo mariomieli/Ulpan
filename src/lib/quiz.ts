@@ -5,7 +5,7 @@ import { clusters, normalizeTranslit } from './hebrew';
 import { MARKS } from '../data/nikud';
 import { ktivMale } from './ktiv';
 import {
-  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON,
+  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON, wordLesson,
 } from '../data/curriculum';
 
 export type Rng = () => number;
@@ -628,7 +628,7 @@ export function buildQuiz(spec: QuizSpec, rng: Rng, o: QuizOptions = {}): Questi
       if (g && v) q = syllableQuestion(g, v, pick(SYLLABLE_KINDS, rng), spec.pool, rng);
     }
     if (!q || keys.has(q.key)) continue;
-    if (q.options && q.options.length < 2) continue;
+    if (!enoughOptions(q)) continue;
     if (veryStrict && o.avoid?.has(q.key)) continue;
     if (strict && q.itemIds.some((id) => usedItems.has(id))) continue;
     keys.add(q.key);
@@ -661,7 +661,7 @@ export function buildLessonQuiz(
   const out: Question[] = [];
   const keys = new Set<string>();
   const add = (q: Question | null): boolean => {
-    if (!q || keys.has(q.key) || (q.options && q.options.length < 2)) return false;
+    if (!enoughOptions(q) || keys.has(q.key)) return false;
     keys.add(q.key);
     out.push(q);
     return true;
@@ -729,7 +729,7 @@ export function buildPlacementBlock(lessonId: number, rng: Rng): Question[] {
   const out: Question[] = [];
   const keys = new Set<string>();
   const add = (q: Question | null) => {
-    if (q && !keys.has(q.key) && (!q.options || q.options.length >= 2)) { keys.add(q.key); out.push(q); }
+    if (enoughOptions(q) && !keys.has(q.key)) { keys.add(q.key); out.push(q); }
   };
   const readingKinds: QuestionKind[] = ['glyph-sound', 'sound-glyph', 'glyph-name'];
   for (const id of shuffle(lesson.glyphs, rng).slice(0, 3)) add(glyphQuestion(GLYPH_BY_ID[id], pick(readingKinds, rng), pool, rng));
@@ -863,8 +863,23 @@ export const EXAMS: ExamDef[] = [
 ];
 
 /** Una domanda per ciascun elemento da ripassare. */
+/** Le domande a scelta multipla devono avere almeno 3 risposte possibili. */
+const MIN_OPTIONS = 3;
+const enoughOptions = (q: Question | null): q is Question => !!q && (!q.options || q.options.length >= MIN_OPTIONS);
+
+/** Lezione in cui si studia un elemento del ripasso (g:, v:, w:). */
+function itemLesson(id: string): number {
+  const key = id.slice(2);
+  if (id.startsWith('g:')) return GLYPH_BY_ID[key]?.lesson ?? 1;
+  if (id.startsWith('v:')) return VOWEL_BY_ID[key]?.lesson ?? 1;
+  const w = WORDS.find((x) => x.id === key);
+  return w ? wordLesson(w) : 1;
+}
+
 export function buildReview(itemIds: string[], maxLesson: number, rng: Rng, o: QuizOptions = {}): Question[] {
-  const pool = poolUpTo(maxLesson);
+  // il ripasso può contenere elementi di lezioni successive (es. dopo un test d'ingresso o un riordino):
+  // le alternative devono comprendere almeno quelle lezioni, altrimenti resterebbe una sola risposta
+  const pool = poolUpTo(Math.max(maxLesson, ...itemIds.map(itemLesson)));
   const out: Question[] = [];
   for (const id of itemIds) {
     const [type, key] = [id.slice(0, 1), id.slice(2)];
@@ -884,7 +899,8 @@ export function buildReview(itemIds: string[], maxLesson: number, rng: Rng, o: Q
         if (w) q = wordQuestion(w, pick(allowedKinds(WORD_KINDS, o), rng), { ...pool, listening: !!o.audio }, rng);
         else break;
       } else break;
-      if (q && o.avoid?.has(q.key) && attempt < 11) { fallback ??= q; q = null; }
+      if (!enoughOptions(q)) { q = null; continue; }
+      if (o.avoid?.has(q.key) && attempt < 11) { fallback ??= q; q = null; }
     }
     q ??= fallback;
     if (q) out.push({ ...q, itemIds: [id] });
