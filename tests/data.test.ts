@@ -104,3 +104,15 @@ describe('testi di lettura', () => {
     }
   });
 });
+
+describe('frasi', () => {
+  it('id e testi unici, più di 200 frasi', () => {
+    expect(SENTENCES.length).toBeGreaterThanOrEqual(200);
+    expect(new Set(SENTENCES.map((s) => s.id)).size).toBe(SENTENCES.length);
+    expect(new Set(SENTENCES.map((s) => s.he)).size).toBe(SENTENCES.length);
+  });
+
+  it('vocabolario ampio: almeno 1000 parole', () => {
+    expect(WORDS.length).toBeGreaterThanOrEqual(1000);
+  });
+});

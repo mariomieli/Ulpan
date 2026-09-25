@@ -16,6 +16,8 @@ type Mode = 'parole' | 'frasi' | 'testi' | 'flashcard' | 'dettato';
 
 const MODE_LABELS: Record<Mode, string> = { parole: 'Parole', frasi: 'Frasi', testi: 'Testi', flashcard: 'Flashcard', dettato: 'Dettato' };
 
+const PAGE = 60;
+
 const CATEGORIES = [...new Set(WORDS.map((w) => w.category))] as WordCategory[];
 
 export function ReadingPage() {
@@ -28,6 +30,11 @@ export function ReadingPage() {
   const [nikud, setNikud] = useState(true);
   const [translit, setTranslit] = useState(false);
   const [meaning, setMeaning] = useState(true);
+  const [shown, setShown] = useState(PAGE);
+  // nuovi filtri: si riparte dal primo blocco
+  const [filterKey, setFilterKey] = useState('');
+  const key = `${level}|${cat}|${q}|${mode}`;
+  if (key !== filterKey) { setFilterKey(key); setShown(PAGE); }
 
   const words = useMemo(() => WORDS.filter((w) =>
     wordLesson(w) <= level &&
@@ -36,6 +43,9 @@ export function ReadingPage() {
   [level, cat, q]);
 
   const show = (w: string) => (nikud ? w : stripNikud(w));
+  const matches = (it: string, tr: string, he: string) =>
+    !q || it.toLowerCase().includes(q.toLowerCase()) || tr.toLowerCase().includes(q.toLowerCase()) || stripNikud(he).includes(stripNikud(q));
+  const sentences = sentencesUpTo(level).filter((x) => matches(x.it, x.translit, x.he));
 
   return (
     <div className="fade-in">
@@ -68,11 +78,14 @@ export function ReadingPage() {
       </div>
       {level > unlocked && <p className="small muted">Nota: stai guardando parole con lettere che non hai ancora studiato.</p>}
 
+      {(mode === 'parole' || mode === 'frasi') && (
+        <div className="toolbar">
+          <input type="search" placeholder="Cerca (italiano, traslitterazione o ebraico)…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+      )}
+
       {mode === 'parole' && (
         <>
-          <div className="toolbar">
-            <input type="search" placeholder="Cerca (italiano, traslitterazione o ebraico)…" value={q} onChange={(e) => setQ(e.target.value)} />
-          </div>
           <div className="chips" style={{ marginBottom: 16 }}>
             <button className={`chip ${cat === 'tutte' ? 'active' : ''}`} onClick={() => setCat('tutte')}>Tutte</button>
             {CATEGORIES.map((c) => (
@@ -83,7 +96,12 @@ export function ReadingPage() {
             <div className="card empty">Nessuna parola con questi filtri.</div>
           ) : (
             <div className="word-grid">
-              {words.map((w) => <WordCard key={w.id} w={w} he={show(w.he)} translit={translit} meaning={meaning} />)}
+              {words.slice(0, shown).map((w) => <WordCard key={w.id} w={w} he={show(w.he)} translit={translit} meaning={meaning} />)}
+            </div>
+          )}
+          {words.length > shown && (
+            <div className="center" style={{ marginTop: 16 }}>
+              <button className="btn" onClick={() => setShown(shown + PAGE)}>Mostra altre {Math.min(PAGE, words.length - shown)} parole</button>
             </div>
           )}
           <p className="small muted" style={{ marginTop: 12 }}>{words.length} parole · tocca una parola coperta per scoprirla.</p>
@@ -92,8 +110,8 @@ export function ReadingPage() {
 
       {mode === 'frasi' && (
         <div className="card">
-          {sentencesUpTo(level).length === 0 && <div className="empty">Le frasi compaiono man mano che impari nuove lettere.</div>}
-          {sentencesUpTo(level).map((s) => (
+          {sentences.length === 0 && <div className="empty">{q ? 'Nessuna frase trovata.' : 'Le frasi compaiono man mano che impari nuove lettere.'}</div>}
+          {sentences.slice(0, shown).map((s) => (
             <div className="sentence" key={s.id}>
               <He>{show(s.he)}</He>
               <div style={{ minWidth: 160 }}>
@@ -103,6 +121,12 @@ export function ReadingPage() {
               <SpeakButton text={s.he} />
             </div>
           ))}
+          {sentences.length > shown && (
+            <div className="center" style={{ marginTop: 12 }}>
+              <button className="btn" onClick={() => setShown(shown + PAGE)}>Mostra altre frasi</button>
+            </div>
+          )}
+          <p className="small muted" style={{ margin: '12px 0 0' }}>{sentences.length} frasi</p>
         </div>
       )}
 

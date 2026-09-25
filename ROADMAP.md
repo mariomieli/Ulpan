@@ -3,7 +3,7 @@
 Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 
 ## Qualità dei contenuti
-- [ ] **Revisione di un madrelingua** di parole (`src/data/words.ts`), frasi e testi (`src/data/texts.ts`), in particolare le preghiere: il nikud è stato scritto senza verifica esperta.
+- [ ] **Revisione di un madrelingua** di parole (`src/data/words.ts`, `src/data/words-extra.ts` – oltre 1.000), frasi (oltre 200) e testi (`src/data/texts.ts`), in particolare le preghiere: il nikud è stato scritto senza verifica esperta.
 - [ ] **Audio registrato da una persona vera** (lettere, sillabe, parole, testi) al posto della sintesi vocale, che su molti dispositivi manca o legge male le sillabe isolate.
 
 ## Apprendimento
