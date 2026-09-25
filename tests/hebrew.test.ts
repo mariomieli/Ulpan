@@ -35,6 +35,20 @@ describe('traslitterazione', () => {
     expect(translitMatches('yeled', ['yalda'])).toBe(false);
   });
 
+  it('yi e iy valgono i', () => {
+    expect(translitMatches('israel', ['yisrael'])).toBe(true);
+    expect(translitMatches('yisrael', ['israel'])).toBe(true);
+    expect(translitMatches('talmiyd', ['talmid'])).toBe(true);
+    expect(translitMatches('talmyid', ['talmid'])).toBe(true);
+  });
+
+  it('c e k sono equivalenti, ma ch resta diverso da k', () => {
+    expect(translitMatches('celev', ['kelev'])).toBe(true);
+    expect(translitMatches('cafe', ['kafe'])).toBe(true);
+    expect(translitMatches('lechem', ['lekhem'])).toBe(true);
+    expect(translitMatches('lekem', ['lechem'])).toBe(false);
+  });
+
   it('confronta con le risposte accettate', () => {
     expect(translitMatches('  Ima ', ['ima'])).toBe(true);
     expect(translitMatches('aba', ['ima'])).toBe(false);
