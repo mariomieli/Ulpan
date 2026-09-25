@@ -21,7 +21,7 @@ function Ring({ value, max, label }: { value: number; max: number; label: string
         <circle cx="42" cy="42" r={r} stroke={pct >= 1 ? 'var(--ok)' : 'var(--primary)'} strokeWidth="8" fill="none"
           strokeDasharray={c} strokeDashoffset={c * (1 - pct)} strokeLinecap="round" />
       </svg>
-      <div className="ring-label" aria-hidden="true">{value}/{max}</div>
+      <div className="ring-label" aria-hidden="true">{value >= max ? '✓' : `${value}/${max}`}</div>
     </div>
   );
 }
@@ -112,7 +112,7 @@ export function HomePage() {
           <Ring value={today.answered} max={state.settings.dailyGoal} label="Obiettivo giornaliero" />
           <div className="stat">
             <span className="stat-label">Obiettivo di oggi</span>
-            <span className="stat-value">{today.answered >= state.settings.dailyGoal ? 'Raggiunto!' : `${state.settings.dailyGoal - today.answered} risposte`}</span>
+            <span className="stat-value">{today.answered >= state.settings.dailyGoal ? `Raggiunto! (${today.answered} risposte)` : `${state.settings.dailyGoal - today.answered} risposte`}</span>
             <span className="stat-label">{today.answered ? `${Math.round((today.correct / today.answered) * 100)}% corrette` : 'Nessuna attività oggi'}</span>
           </div>
         </div>
