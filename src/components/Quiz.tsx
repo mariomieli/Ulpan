@@ -190,6 +190,15 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     return () => window.removeEventListener('keydown', onKey);
   }, [q, choose, mode, checked, goNext, answers, confirmExam, pickTile, submitCompose]);
 
+  if (!questions.length) {
+    return (
+      <div className="card empty">
+        <h2>Nessuna domanda disponibile</h2>
+        <p>Non ci sono elementi da proporre in questo momento.</p>
+        {onExit && <button className="btn btn-primary" onClick={onExit}>Torna indietro</button>}
+      </div>
+    );
+  }
   if (!q) return null;
   const last = answers[answers.length - 1];
   const showFeedback = mode === 'practice' && checked && last?.question.key === q.key;

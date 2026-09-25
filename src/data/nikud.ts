@@ -74,14 +74,14 @@ export const VOWELS: Vowel[] = [
     description: 'Una ו con un punto sopra (וֹ) dopo la consonante: si legge “o”.',
   },
   {
-    id: 'tsere', mark: MARKS.TSERE, name: 'Tsere', hebrewName: 'צֵירֵה',
+    id: 'tsere', mark: MARKS.TSERE, name: 'Tsere', hebrewName: 'צֵירֵי',
     sound: 'e', translit: 'e', group: 'E', lesson: 5,
     description: 'Due punti affiancati sotto la lettera: si legge “e”.',
   },
   {
-    id: 'tsere-male', mark: MARKS.TSERE, mater: 'י', name: 'Tsere malè', hebrewName: 'צֵירֵה מָלֵא',
-    sound: 'e', translit: 'e', group: 'E', lesson: 5,
-    description: 'Tsere seguito da una י: si legge “e” (in alcune parole “ei”).',
+    id: 'tsere-male', mark: MARKS.TSERE, mater: 'י', name: 'Tsere malè', hebrewName: 'צֵירֵי מָלֵא',
+    sound: 'e', translit: 'ei', group: 'E', lesson: 5,
+    description: 'Tsere seguito da una י: si legge “ei” (בֵּית “beit”, אֵין “ein”); in alcune parole semplicemente “e”.',
   },
   {
     id: 'segol', mark: MARKS.SEGOL, name: 'Segol', hebrewName: 'סֶגּוֹל',

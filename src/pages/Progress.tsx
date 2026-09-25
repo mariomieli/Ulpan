@@ -74,7 +74,7 @@ export function ProgressPage() {
         <div className="bars" style={{ height: 120 }}>
           {last30.map((d, i) => (
             <div key={d.k} title={`${d.k}: ${d.n} risposte`}>
-              <div className={`bar ${d.n ? '' : 'empty'}`} style={{ height: `${Math.max(3, (d.n / max) * 100)}%` }} />
+              <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(3, (d.n / max) * 100)}%` }} />
               <span>{i % 5 === 4 ? d.label : ' '}</span>
             </div>
           ))}

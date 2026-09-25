@@ -118,7 +118,7 @@ export function HomePage() {
           <div className="bars" style={{ marginTop: 10 }}>
             {week.map((d) => (
               <div key={d.key} title={`${d.n} risposte`}>
-                <div className={`bar ${d.n ? '' : 'empty'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%` }} />
+                <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.n / maxDay) * 100)}%` }} />
                 <span>{d.label}</span>
               </div>
             ))}

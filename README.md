@@ -47,7 +47,7 @@ tests/         test Vitest
 Con [Supabase](https://supabase.com) (piano gratuito) ogni persona si registra con email e password e ha il proprio avanzamento, salvato online e sincronizzato tra dispositivi. Senza configurazione l'app funziona in locale, senza account.
 
 1. Crea un progetto su supabase.com.
-2. In **SQL Editor** esegui `supabase/schema.sql` poi `supabase/groups.sql` (gruppi e classifiche) e `supabase/classes.sql` (classi e pannello insegnante), in quest'ordine (tabella `progress` con Row Level Security: ognuno vede solo i propri dati,, e la funzione `delete_my_account` per l'eliminazione dell'account da parte dell'utente).
+2. In **SQL Editor** esegui `supabase/schema.sql` poi `supabase/groups.sql` (gruppi e classifiche) , `supabase/classes.sql` (classi e pannello insegnante) e `supabase/fase1.sql` (correzioni di sicurezza), in quest’ordine (tabella `progress` con Row Level Security: ognuno vede solo i propri dati,, e la funzione `delete_my_account` per l'eliminazione dell'account da parte dell'utente).
 3. In **Authentication → URL Configuration** imposta *Site URL* e *Redirect URLs* all'indirizzo dell'app (es. `https://mariomieli.github.io/Ulpan/`).
 4. Da **Project Settings → API** copia *Project URL* e *anon public key* e impostale:
    nel file `.env.production` (usato dalla build pubblicata); per lo sviluppo locale copia gli stessi valori in `.env.local`.

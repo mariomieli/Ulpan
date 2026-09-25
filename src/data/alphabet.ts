@@ -33,7 +33,7 @@ export const GLYPHS: Glyph[] = [
   {
     id: 'alef', char: 'א', letter: 'א', name: 'Alef', hebrewName: 'אָלֶף',
     sound: 'muta', translit: '',
-    description: 'Non ha un suono proprio: fa da “supporto” alla vocale che porta. אָ si legge semplicemente “a”.',
+    description: 'Non ha un suono proprio: fa da “supporto” alla vocale che porta. אָ si legge semplicemente “a”. In mezzo alla parola può indicare una breve pausa (colpo di glottide).',
     tip: 'Ricorda una X inclinata. È la prima lettera e vale 1.',
     gematria: 1, lesson: 1,
   },
@@ -54,7 +54,7 @@ export const GLYPHS: Glyph[] = [
   {
     id: 'gimel', char: 'ג', letter: 'ג', name: 'Gimel', hebrewName: 'גִּימֶל',
     sound: 'g', translit: 'g',
-    description: 'Sempre “g” dura, come in “gatto”, anche davanti a e/i.',
+    description: 'Sempre “g” dura, come in “gatto”, anche davanti a e/i. Con l’apostrofo (ג׳) si legge come la “g” di “gelato”: prestiti moderni.',
     tip: 'Ha un “piedino” a sinistra; נ (nun) invece ha la base piatta.',
     gematria: 3, lesson: 3,
   },
@@ -82,7 +82,7 @@ export const GLYPHS: Glyph[] = [
   {
     id: 'zayin', char: 'ז', letter: 'ז', name: 'Zayin', hebrewName: 'זַיִן',
     sound: 'z', translit: 'z',
-    description: '“z” sonora, come la “s” di “rosa” (o la “z” di “zero” pronunciata dolce).',
+    description: '“z” sonora, come la “s” di “rosa”. (Con l’apostrofo, ז׳, si legge come la “j” francese: prestiti moderni.)',
     tip: 'Sembra una vav con un “cappello” largo.',
     gematria: 7, lesson: 8,
   },
@@ -173,7 +173,7 @@ export const GLYPHS: Glyph[] = [
   {
     id: 'ayin', char: 'ע', letter: 'ע', name: 'Ayin', hebrewName: 'עַיִן',
     sound: 'muta', translit: '',
-    description: 'Nell’ebraico moderno è in genere muta come א: si legge solo la vocale.',
+    description: 'Nell’ebraico moderno è in genere muta come א: si legge solo la vocale (a volte con una breve pausa, come in מַדְעָן “mad’an”).',
     tip: 'Due bracci che si uniscono in basso a sinistra, come una “y”.',
     gematria: 70, lesson: 7,
   },
@@ -201,7 +201,7 @@ export const GLYPHS: Glyph[] = [
   {
     id: 'tsadi', char: 'צ', letter: 'צ', name: 'Tsadi', hebrewName: 'צָדִי',
     sound: 'ts', translit: 'ts',
-    description: '“ts” come la “z” di “pizza”.',
+    description: '“ts” come la “z” di “pizza”. Con l’apostrofo (צ׳) si legge come la “c” di “ciao”: prestiti moderni.',
     tip: 'Un braccio a destra e una base piatta; ע scende a sinistra senza base.',
     gematria: 90, lesson: 8, finalForm: 'tsadi-sofit',
   },

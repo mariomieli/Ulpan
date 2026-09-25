@@ -10,10 +10,11 @@ const d = (s: string) => new Date(`${s}T12:00:00`);
 describe('srs', () => {
   it('intervalli crescenti e reset su errore', () => {
     const t = Date.now();
+    const DAY = 86400000;
     let s = newSrsState(t);
     s = review(s, true, t); expect(s.interval).toBe(1);
-    s = review(s, true, t); expect(s.interval).toBe(3);
-    s = review(s, true, t); expect(s.interval).toBeGreaterThan(3);
+    s = review(s, true, t + DAY); expect(s.interval).toBe(3);
+    s = review(s, true, t + 4 * DAY); expect(s.interval).toBeGreaterThan(3);
     expect(mastery(s)).toBe(2);
     s = review(s, false, t);
     expect(s.interval).toBe(0);
@@ -108,5 +109,75 @@ describe('punti deboli', () => {
     s = applyAnswer(s, ['g:chet'], true, d('2026-01-01'));
     s = applyAnswer(s, ['g:chet'], false, d('2026-01-01'));
     expect(weakestItems(s, 1)).toEqual(['g:chet']);
+  });
+});
+
+describe('fase 1: ripasso e sincronizzazione', () => {
+  it('più risposte giuste nello stesso giorno non gonfiano l’intervallo', () => {
+    const t = Date.now();
+    let s = newSrsState(t);
+    for (let i = 0; i < 5; i++) s = review(s, true, t + i * 60000);
+    expect(s.interval).toBe(1);
+    expect(s.seen).toBe(5);
+    expect(s.correct).toBe(5);
+    expect(mastery(s)).toBe(1);
+  });
+
+  it('un errore riporta sempre in ripasso, anche prima della scadenza', () => {
+    const t = Date.now();
+    let s = review(newSrsState(t), true, t);
+    s = review(s, false, t + 1000);
+    expect(s.interval).toBe(0);
+    expect(s.due).toBeLessThan(t + 3600000);
+  });
+
+  it('le parole nuove di una lezione vengono scaglionate', () => {
+    const now = d('2026-01-01');
+    const s = applyStudied(initialState(), 7, now);
+    const due = dueItems(s, now.getTime());
+    const newWordsDue = due.filter((id) => id.startsWith('w:'));
+    expect(newWordsDue.length).toBeLessThanOrEqual(15);
+    expect(due.filter((id) => id.startsWith('g:')).length).toBeGreaterThan(0);
+  });
+
+  it('due dispositivi nello stesso giorno: le risposte si sommano', async () => {
+    const { mergeStates } = await import('../src/lib/store');
+    const a = applyAnswer(applyAnswer(initialState(), ['g:bet'], true, d('2026-01-01'), 'tel'), ['g:bet'], true, d('2026-01-01'), 'tel');
+    const b = applyAnswer(initialState(), ['g:mem'], true, d('2026-01-01'), 'pc');
+    const m = mergeStates(a, b);
+    expect(m.days['2026-01-01']).toEqual({ answered: 3, correct: 3 });
+    expect(m.xp).toBe(30);
+    // unire di nuovo non cambia nulla (idempotente)
+    expect(mergeStates(m, a).xp).toBe(30);
+    expect(mergeStates(m, m).days).toEqual(m.days);
+  });
+
+  it('elementi orfani esclusi dal ripasso', () => {
+    let s = initialState();
+    s = { ...s, srs: { 'w:parola-inesistente': newSrsState(0), 'g:bet': newSrsState(0) } };
+    expect(dueItems(s, Date.now())).toEqual(['g:bet']);
+  });
+});
+
+describe('fase 1: validazione dei dati', () => {
+  it('scarta tipi sbagliati e chiavi pericolose', async () => {
+    const { sanitize, isBackup } = await import('../src/lib/store');
+    const s = sanitize(JSON.parse('{"version":1,"xp":"5","srs":{"__proto__":{"seen":1},"g:bet":{"seen":"x","due":5}},"days":{"2026-01-01":{"answered":3,"correct":2},"bad":{}},"settings":{"theme":"rosa","dailyGoal":20}}'));
+    expect(s.xp).toBe(0);
+    expect(Object.keys(s.srs)).toEqual(['g:bet']);
+    expect(s.srs['g:bet'].seen).toBe(0);
+    expect(s.days).toEqual({ '2026-01-01': { answered: 3, correct: 2 } });
+    expect(s.settings.theme).toBe('system');
+    expect(s.settings.dailyGoal).toBe(20);
+    expect(isBackup([])).toBe(false);
+    expect(isBackup({ name: 'package' })).toBe(false);
+    expect(isBackup({ version: 1, xp: 0, srs: {}, settings: {} })).toBe(true);
+  });
+
+  it('i vecchi dati senza contatori per dispositivo vengono conservati', async () => {
+    const { sanitize } = await import('../src/lib/store');
+    const s = sanitize({ version: 1, xp: 120, days: { '2026-01-01': { answered: 5, correct: 4 } }, srs: {}, settings: {} });
+    expect(s.xp).toBe(120);
+    expect(s.days['2026-01-01']).toEqual({ answered: 5, correct: 4 });
   });
 });

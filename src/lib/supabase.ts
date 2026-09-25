@@ -21,6 +21,9 @@ export function getSupabase(): Promise<SupabaseClient> {
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
-  }));
+  })).catch((e) => {
+    clientPromise = null; // permette di riprovare invece di restare bloccati sull'errore
+    throw e;
+  });
   return clientPromise;
 }

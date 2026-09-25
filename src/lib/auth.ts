@@ -51,54 +51,77 @@ function toUser(u: User): AuthUser {
 /* ------------------------------------------------------------------ */
 
 let pushTimer: ReturnType<typeof setTimeout> | undefined;
-let pulling = false;
+let applyingRemote = false;
+let inflight: Promise<void> | null = null;
+let migrationOffered = false;
 
-export async function push() {
+/**
+ * Sincronizza con il cloud: legge la copia online, la unisce a quella locale
+ * e scrive il risultato. Mai sovrascrivere senza unire: un altro dispositivo
+ * potrebbe aver salvato progressi nel frattempo.
+ * Le chiamate concorrenti si accodano in un'unica sincronizzazione.
+ */
+export function sync(): Promise<void> {
+  inflight ??= doSync().finally(() => { inflight = null; });
+  return inflight;
+}
+
+async function doSync() {
   if (!supabase || auth.status !== 'signedIn' || !auth.user) return;
   if (!navigator.onLine) { setAuth({ sync: 'offline' }); return; }
+  const client = supabase;
+  const uid = auth.user.id;
   setAuth({ sync: 'saving' });
-  const now = new Date().toISOString();
-  const { error } = await supabase.from('progress').upsert({
-    user_id: auth.user.id,
-    state: getState(),
-    updated_at: now,
-  });
-  setAuth({ sync: error ? 'error' : 'saved' });
-  // Statistiche per le classifiche dei gruppi (se la tabella non esiste ancora, si ignora)
-  void supabase.from('public_stats').upsert({
-    user_id: auth.user.id,
-    display_name: auth.user.name.slice(0, 40),
-    ...publicStats(getState()),
-    updated_at: now,
-  }).then(() => undefined);
-}
-
-function schedulePush() {
-  if (auth.status !== 'signedIn' || pulling) return;
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(push, 1500);
-}
-
-/** Scarica i progressi dal cloud e li unisce a quelli locali. */
-export async function pull() {
-  if (!supabase || auth.status !== 'signedIn' || !auth.user) return;
-  if (!navigator.onLine) { setAuth({ sync: 'offline' }); return; }
-  const { data, error } = await supabase.from('progress').select('state').eq('user_id', auth.user.id).maybeSingle();
+  const { data, error } = await client.from('progress').select('state').eq('user_id', uid).maybeSingle();
+  // l'utente è cambiato durante l'attesa (logout, cambio account): non mescolare i dati
+  if (auth.user?.id !== uid) return;
   if (error) { setAuth({ sync: 'error' }); return; }
+
   let next = getState();
   if (data?.state) {
     next = mergeStates(next, sanitize(data.state));
-  } else if (!hasProgress(next)) {
-    // Primo accesso: propone di portare nell'account i progressi fatti come ospite
+  } else if (!hasProgress(next) && !migrationOffered) {
+    // Primo accesso: propone (una volta) di portare nell'account i progressi fatti come ospite
+    migrationOffered = true;
     const guest = readStored(null);
     if (hasProgress(guest) && confirm('Su questo dispositivo ci sono progressi salvati senza account. Vuoi trasferirli nel tuo account?')) {
       next = mergeStates(next, guest);
     }
   }
-  pulling = true;
+  applyingRemote = true;
   replaceState(next);
-  pulling = false;
-  await push();
+  applyingRemote = false;
+
+  const now = new Date().toISOString();
+  const { error: upErr } = await client.from('progress').upsert({ user_id: uid, state: next, updated_at: now });
+  if (auth.user?.id !== uid) return;
+  setAuth({ sync: upErr ? 'error' : 'saved' });
+  // Statistiche per le classifiche dei gruppi (se la tabella non esiste ancora, si ignora)
+  void client.from('public_stats').upsert({
+    user_id: uid,
+    display_name: auth.user.name.slice(0, 40),
+    ...publicStats(next),
+    updated_at: now,
+  }).then(() => undefined);
+}
+
+/** Salva subito (unendo con il cloud). */
+export const push = sync;
+/** Scarica e unisce i progressi dal cloud. */
+export const pull = sync;
+
+function schedulePush() {
+  if (auth.status !== 'signedIn' || applyingRemote) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => void sync(), 4000);
+}
+
+/** Salva le modifiche in sospeso quando l'app va in background o si chiude. */
+function flushPending() {
+  if (pushTimer === undefined) return;
+  clearTimeout(pushTimer);
+  pushTimer = undefined;
+  void sync();
 }
 
 /* ------------------------------------------------------------------ */
@@ -133,6 +156,10 @@ export function initAuth() {
 
   // Avvio immediato senza aspettare la rete: utente già collegato, ospite o nuovo visitatore.
   const hasCode = new URLSearchParams(location.search).has('code');
+  // Link di recupero password: supabase-js lo segna nel "code verifier" salvato
+  if (hasCode && (localStorage.getItem(`${sessionStorageKey}-code-verifier`) ?? '').includes('PASSWORD_RECOVERY')) {
+    recovering = true;
+  }
   const cached = cachedUser();
   if (cached && !hasCode) {
     switchUser(cached.id);
@@ -144,18 +171,25 @@ export function initAuth() {
     setAuth({ status: 'signedOut' });
   }
 
-  void getSupabase().then((client) => {
+  const load = () => getSupabase().then((client) => {
     supabase = client;
     listen(client);
+  }).catch(() => {
+    // libreria non scaricabile (offline): si riprova al ritorno della connessione
+    if (auth.status === 'loading') setAuth({ status: 'signedOut' });
+    window.addEventListener('online', () => void load(), { once: true });
   });
+  void load();
 }
 
 function listen(client: SupabaseClient) {
   subscribeStore(schedulePush);
   window.addEventListener('online', () => void pull());
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') void pull();
+    if (document.visibilityState === 'visible') void sync();
+    else flushPending();
   });
+  window.addEventListener('pagehide', flushPending);
 
   client.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
@@ -165,8 +199,8 @@ function listen(client: SupabaseClient) {
     }
     if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
       if (recovering) return; // prima si imposta la nuova password
-      // evita chiamate a Supabase dentro il callback
-      setTimeout(() => void activate(session.user), 0);
+      // evita chiamate a Supabase dentro il callback; ricontrolla: PASSWORD_RECOVERY può arrivare subito dopo
+      setTimeout(() => { if (!recovering) void activate(session.user); }, 0);
     } else if (event === 'SIGNED_OUT') {
       localStorage.removeItem(USER_CACHE);
       switchUser(null);

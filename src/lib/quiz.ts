@@ -311,7 +311,9 @@ export function canCombine(g: Glyph, v: Vowel): boolean {
   if (g.finalOf) return false;
   if (v.group === 'Sheva' || v.id.startsWith('hataf')) return false;
   if (g.id === 'vav' && (v.group === 'O' || v.id === 'shuruk')) return false;
-  if (g.id === 'yod' && v.id === 'hiriq-male') return false;
+  if (g.id === 'yod' && (v.id === 'hiriq-male' || v.id === 'tsere-male')) return false;
+  if (g.id === 'vav' && v.id === 'kubutz') return false; // combinazione praticamente inesistente
+  if (g.id === 'sin' && v.group === 'O') return false; // il punto del cholam coincide con quello del sin
   return true;
 }
 

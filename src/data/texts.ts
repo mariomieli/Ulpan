@@ -85,7 +85,7 @@ export const TEXTS: ReadingText[] = [
   },
   {
     id: 'mode-ani', title: 'Modè anì', category: 'preghiera',
-    intro: 'La breve preghiera che si recita appena svegli.',
+    intro: 'La breve preghiera che si recita appena svegli. Le donne dicono מוֹדָה אֲנִי (modà anì).',
     lines: [
       { he: 'מוֹדֶה אֲנִי לְפָנֶיךָ', translit: 'Mode ani lefanecha', it: 'Ti ringrazio,' },
       { he: 'מֶלֶךְ חַי וְקַיָּם,', translit: 'melech chai vekayam,', it: 'Re vivente ed eterno,' },
@@ -99,7 +99,7 @@ export const TEXTS: ReadingText[] = [
     lines: [
       { he: 'בָּרוּךְ אַתָּה יְיָ', translit: 'Baruch ata Adonai', it: 'Benedetto sei Tu, Signore' },
       { he: 'אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם,', translit: 'Eloheinu melech haolam,', it: 'nostro Dio, Re del mondo,' },
-      { he: 'הַמּוֹצִיא לֶחֶם מִן הָאָרֶץ.', translit: 'hamotzi lechem min haaretz.', it: 'che fai uscire il pane dalla terra.' },
+      { he: 'הַמּוֹצִיא לֶחֶם מִן הָאָרֶץ.', translit: 'hamotsi lechem min haarets.', it: 'che fai uscire il pane dalla terra.' },
     ],
   },
   {
@@ -109,7 +109,7 @@ export const TEXTS: ReadingText[] = [
       { he: 'כְּנִיסָה', translit: 'knisa', it: 'Ingresso' },
       { he: 'יְצִיאָה', translit: 'yetsia', it: 'Uscita' },
       { he: 'אֵין כְּנִיסָה', translit: 'ein knisa', it: 'Vietato l’ingresso' },
-      { he: 'עֲצוֹר', translit: 'atsor', it: 'Stop' },
+      { he: 'עֲצֹר', translit: 'atsor', it: 'Stop' },
       { he: 'זְהִירוּת', translit: 'zehirut', it: 'Attenzione' },
       { he: 'תַּחֲנַת אוֹטוֹבּוּס', translit: 'tachanat otobus', it: 'Fermata dell’autobus' },
     ],

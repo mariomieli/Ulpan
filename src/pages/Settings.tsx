@@ -24,15 +24,19 @@ export function SettingsPage() {
     a.href = URL.createObjectURL(blob);
     a.download = `ulpan-progressi-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   const importData = async (f: File) => {
     try {
-      actions.importJson(await f.text());
+      const text = await f.text();
+      if (!confirm('Importando questo file i progressi attuali verranno sostituiti su tutti i tuoi dispositivi. Continuare?')) return;
+      actions.importJson(text);
       setMsg('Progressi importati correttamente.');
     } catch {
-      setMsg('File non valido: impossibile importare.');
+      setMsg('File non valido: non è un backup di Ulpan. Nessun dato è stato modificato.');
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 

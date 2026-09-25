@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth, showLogin, signOut } from './lib/auth';
 import { cloudEnabled } from './lib/supabase';
 import { AuthPage } from './pages/Auth';
@@ -161,9 +162,11 @@ export function App() {
       </nav>
 
       <main className="main">
-        <Suspense fallback={<div className="page-loading" aria-label="Caricamento" />}>
-          <Page path={path} />
-        </Suspense>
+        <ErrorBoundary resetKey={path}>
+          <Suspense fallback={<div className="page-loading" aria-label="Caricamento" />}>
+            <Page path={path} />
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       <nav className="bottom-nav" aria-label="Navigazione">

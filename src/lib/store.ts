@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from 'react';
 import { newSrsState, review, isDue, type SrsState } from './srs';
 import { LESSON_BY_ID, wordsOfLesson, LAST_LESSON } from '../data/curriculum';
+import { GLYPH_BY_ID } from '../data/alphabet';
+import { VOWEL_BY_ID } from '../data/nikud';
+import { WORDS } from '../data/words';
+
+const WORD_IDS = new Set(WORDS.map((w) => w.id));
 
 export type Theme = 'system' | 'light' | 'dark';
 export type HebrewFont = 'serif' | 'sans';
@@ -36,6 +41,11 @@ export interface DayStats {
   correct: number;
 }
 
+export interface DeviceContrib {
+  xp: number;
+  days: Record<string, DayStats>;
+}
+
 export interface AppState {
   version: 1;
   settings: Settings;
@@ -48,6 +58,14 @@ export interface AppState {
   days: Record<string, DayStats>;
   /** Testi di lettura completati: id → data. */
   texts: Record<string, string>;
+  /**
+   * Contributi di ogni dispositivo a XP e attività giornaliera. Ogni dispositivo
+   * incrementa solo i propri contatori: così, unendo due copie, i progressi fatti
+   * in parallelo si sommano invece di sovrascriversi. `xp` e `days` sono i totali.
+   */
+  contrib: Record<string, DeviceContrib>;
+  /** Ultima modifica delle impostazioni (per unirle tra dispositivi). */
+  settingsUpdatedAt?: number;
   /** Ultima modifica (ms): serve a scegliere le impostazioni più recenti in sincronizzazione. */
   updatedAt?: number;
   /** Momento dell'ultimo azzeramento/importazione: le copie più vecchie vengono scartate. */
@@ -77,7 +95,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export function initialState(): AppState {
   return {
     version: 1, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
-    xp: 0, streak: 0, lastActive: null, days: {}, texts: {},
+    xp: 0, streak: 0, lastActive: null, days: {}, texts: {}, contrib: {},
   };
 }
 
@@ -94,21 +112,153 @@ function yesterdayKey(now: Date): string {
   return dayKey(d);
 }
 
-export function sanitize(raw: unknown): AppState {
-  const base = initialState();
-  if (!raw || typeof raw !== 'object') return base;
-  const r = raw as Partial<AppState>;
+/* ------------------------------------------------------------------ */
+/* Validazione (dati da localStorage, cloud o file importati)          */
+/* ------------------------------------------------------------------ */
+
+const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function num(x: unknown, def = 0, min = 0, max = 1e12): number {
+  return typeof x === 'number' && Number.isFinite(x) ? Math.min(max, Math.max(min, x)) : def;
+}
+
+/** Copia sicura di una mappa: solo chiavi valide, niente chiavi pericolose. */
+function mapOf<T>(x: unknown, keyRe: RegExp, value: (v: unknown) => T | null): Record<string, T> {
+  const out: Record<string, T> = {};
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return out;
+  for (const [k, v] of Object.entries(x)) {
+    if (BAD_KEYS.has(k) || !keyRe.test(k)) continue;
+    const val = value(v);
+    if (val !== null) out[k] = val;
+  }
+  return out;
+}
+
+const obj = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null);
+
+const dayStats = (v: unknown): DayStats | null => {
+  const o = obj(v);
+  return o ? { answered: num(o.answered, 0, 0, 1e7), correct: num(o.correct, 0, 0, 1e7) } : null;
+};
+const daysMap = (v: unknown) => mapOf(v, DATE_RE, dayStats);
+
+function sanitizeSettings(v: unknown): Settings {
+  const o = obj(v) ?? {};
+  const d = DEFAULT_SETTINGS;
   return {
-    ...base,
-    ...r,
-    version: 1,
-    settings: { ...DEFAULT_SETTINGS, ...(r.settings ?? {}) },
-    lessons: r.lessons ?? {},
-    exams: r.exams ?? {},
-    srs: r.srs ?? {},
-    days: r.days ?? {},
-    texts: r.texts ?? {},
+    theme: o.theme === 'light' || o.theme === 'dark' || o.theme === 'system' ? o.theme : d.theme,
+    font: o.font === 'sans' || o.font === 'serif' ? o.font : d.font,
+    fontScale: num(o.fontScale, d.fontScale, 0.5, 2),
+    audio: typeof o.audio === 'boolean' ? o.audio : d.audio,
+    speechRate: num(o.speechRate, d.speechRate, 0.3, 2),
+    typing: typeof o.typing === 'boolean' ? o.typing : d.typing,
+    dailyGoal: num(o.dailyGoal, d.dailyGoal, 1, 1000),
+    unlockAll: typeof o.unlockAll === 'boolean' ? o.unlockAll : d.unlockAll,
   };
+}
+
+/** Totali di XP e attività ricavati dai contributi dei dispositivi. */
+function totals(contrib: Record<string, DeviceContrib>): { xp: number; days: Record<string, DayStats> } {
+  let xp = 0;
+  const days: Record<string, DayStats> = {};
+  for (const c of Object.values(contrib)) {
+    xp += c.xp;
+    for (const [k, d] of Object.entries(c.days)) {
+      const t = days[k] ?? { answered: 0, correct: 0 };
+      days[k] = { answered: t.answered + d.answered, correct: t.correct + d.correct };
+    }
+  }
+  return { xp, days };
+}
+
+/** Rende valido qualsiasi dato in ingresso: tipi controllati, chiavi filtrate, limiti. */
+export function sanitize(raw: unknown): AppState {
+  const r = obj(raw);
+  if (!r) return initialState();
+  const lessons = mapOf(r.lessons, /^\d{1,3}$/, (v) => {
+    const o = obj(v);
+    return o ? {
+      studied: o.studied === true, passed: o.passed === true,
+      bestScore: num(o.bestScore, 0, 0, 100), attempts: num(o.attempts, 0, 0, 1e6),
+    } : null;
+  }) as unknown as AppState['lessons'];
+  const exams = mapOf(r.exams, /^[a-z-]{1,30}$/, (v) => {
+    const o = obj(v);
+    return o ? {
+      bestScore: num(o.bestScore, 0, 0, 100), lastScore: num(o.lastScore, 0, 0, 100),
+      attempts: num(o.attempts, 0, 0, 1e6), lastDate: typeof o.lastDate === 'string' && DATE_RE.test(o.lastDate) ? o.lastDate : '',
+      bestTimeSec: o.bestTimeSec === undefined ? undefined : num(o.bestTimeSec, 0, 0, 1e7),
+    } : null;
+  });
+  const srs = mapOf(r.srs, /^[gvw]:[\w-]{1,60}$/, (v) => {
+    const o = obj(v);
+    return o ? {
+      reps: num(o.reps, 0, 0, 1e4), interval: num(o.interval, 0, 0, 1e5), ease: num(o.ease, 2.5, 1.3, 3),
+      due: num(o.due, 0, 0, 1e14), lapses: num(o.lapses, 0, 0, 1e6), seen: num(o.seen, 0, 0, 1e7),
+      correct: num(o.correct, 0, 0, 1e7),
+    } : null;
+  });
+  const texts = mapOf(r.texts, /^[\w-]{1,40}$/, (v) => (typeof v === 'string' && DATE_RE.test(v) ? v : null));
+  let contrib = mapOf(r.contrib, /^[\w-]{1,40}$/, (v) => {
+    const o = obj(v);
+    return o ? { xp: num(o.xp, 0, 0, 1e9), days: daysMap(o.days) } : null;
+  });
+  // Dati precedenti ai contributi per dispositivo: diventano un unico contributo "storico"
+  if (!Object.keys(contrib).length && (r.xp || r.days)) {
+    contrib = { legacy: { xp: num(r.xp, 0, 0, 1e9), days: daysMap(r.days) } };
+  }
+  return {
+    version: 1,
+    settings: sanitizeSettings(r.settings),
+    lessons, exams, srs, texts, contrib,
+    ...totals(contrib),
+    streak: num(r.streak, 0, 0, 1e5),
+    lastActive: typeof r.lastActive === 'string' && DATE_RE.test(r.lastActive) ? r.lastActive : null,
+    updatedAt: r.updatedAt === undefined ? undefined : num(r.updatedAt),
+    resetAt: r.resetAt === undefined ? undefined : num(r.resetAt),
+    settingsUpdatedAt: r.settingsUpdatedAt === undefined ? undefined : num(r.settingsUpdatedAt),
+  };
+}
+
+/** Controlla che un file importato sia davvero un backup di Ulpan. */
+export function isBackup(raw: unknown): boolean {
+  const r = obj(raw);
+  return !!r && r.version === 1 && typeof r.xp === 'number' && !!obj(r.srs) && !!obj(r.settings);
+}
+
+/* ------------------------------------------------------------------ */
+/* Dispositivo                                                          */
+/* ------------------------------------------------------------------ */
+
+let cachedDevice: string | null = null;
+
+/** Identificativo casuale di questo dispositivo (per i contatori per dispositivo). */
+export function deviceId(): string {
+  if (cachedDevice) return cachedDevice;
+  try {
+    let id = localStorage.getItem('ulpan:device');
+    if (!id) {
+      id = Math.random().toString(36).slice(2, 12);
+      localStorage.setItem('ulpan:device', id);
+    }
+    cachedDevice = id;
+  } catch {
+    cachedDevice = 'local';
+  }
+  return cachedDevice;
+}
+
+/** Aggiunge XP (ed eventualmente una risposta del giorno) ai contatori di un dispositivo. */
+function addContrib(s: AppState, dev: string, xp: number, day?: string, correct?: boolean): Pick<AppState, 'contrib' | 'xp' | 'days'> {
+  const c = s.contrib[dev] ?? { xp: 0, days: {} };
+  const days = { ...c.days };
+  if (day) {
+    const d = days[day] ?? { answered: 0, correct: 0 };
+    days[day] = { answered: d.answered + 1, correct: d.correct + (correct ? 1 : 0) };
+  }
+  const contrib = { ...s.contrib, [dev]: { xp: c.xp + xp, days } };
+  return { contrib, ...totals(contrib) };
 }
 
 function load(key: string = storageKey): AppState {
@@ -182,7 +332,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
   // Un azzeramento successivo all'ultima modifica dell'altra copia vince
   if ((b.resetAt ?? 0) > (a.updatedAt ?? 0)) return b;
   if ((a.resetAt ?? 0) > (b.updatedAt ?? 0)) return a;
-  const newer = (b.updatedAt ?? 0) > (a.updatedAt ?? 0) ? b : a;
+  const newerSettings = (b.settingsUpdatedAt ?? b.updatedAt ?? 0) > (a.settingsUpdatedAt ?? a.updatedAt ?? 0) ? b : a;
 
   const lessons: AppState['lessons'] = { ...a.lessons };
   for (const [k, l] of Object.entries(b.lessons)) {
@@ -215,10 +365,17 @@ export function mergeStates(a: AppState, b: AppState): AppState {
     srs[k] = !p || x.seen > p.seen || (x.seen === p.seen && x.due > p.due) ? x : p;
   }
 
-  const days: AppState['days'] = { ...a.days };
-  for (const [k, d] of Object.entries(b.days)) {
-    const p = days[k];
-    days[k] = p ? { answered: Math.max(p.answered, d.answered), correct: Math.max(p.correct, d.correct) } : d;
+  // Contatori per dispositivo: ognuno cresce solo, quindi per ogni dispositivo si tiene il massimo
+  const contrib: AppState['contrib'] = { ...a.contrib };
+  for (const [dev, c] of Object.entries(b.contrib)) {
+    const p = contrib[dev];
+    if (!p) { contrib[dev] = c; continue; }
+    const days = { ...p.days };
+    for (const [k, d] of Object.entries(c.days)) {
+      const q = days[k];
+      days[k] = q ? { answered: Math.max(q.answered, d.answered), correct: Math.max(q.correct, d.correct) } : d;
+    }
+    contrib[dev] = { xp: Math.max(p.xp, c.xp), days };
   }
 
   const recent = (b.lastActive ?? '') > (a.lastActive ?? '') ? b
@@ -227,10 +384,10 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 
   return {
     version: 1,
-    settings: { ...newer.settings },
-    lessons, exams, srs, days,
+    settings: { ...newerSettings.settings },
+    settingsUpdatedAt: Math.max(a.settingsUpdatedAt ?? 0, b.settingsUpdatedAt ?? 0) || undefined,
+    lessons, exams, srs, contrib, ...totals(contrib),
     texts: { ...b.texts, ...a.texts },
-    xp: Math.max(a.xp, b.xp),
     streak: recent.streak,
     lastActive: recent.lastActive,
     updatedAt: Math.max(a.updatedAt ?? 0, b.updatedAt ?? 0),
@@ -242,7 +399,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 /* Azioni (pure: stato → stato, per poterle testare)                   */
 /* ------------------------------------------------------------------ */
 
-export function applyAnswer(s: AppState, itemIds: string[], correct: boolean, now: Date): AppState {
+export function applyAnswer(s: AppState, itemIds: string[], correct: boolean, now: Date, dev: string = deviceId()): AppState {
   const t = now.getTime();
   const today = dayKey(now);
   const srs = { ...s.srs };
@@ -251,14 +408,12 @@ export function applyAnswer(s: AppState, itemIds: string[], correct: boolean, no
   let { streak } = s;
   if (s.lastActive !== today) streak = s.lastActive === yesterdayKey(now) ? streak + 1 : 1;
 
-  const d = s.days[today] ?? { answered: 0, correct: 0 };
   return {
     ...s,
     srs,
     streak,
     lastActive: today,
-    xp: s.xp + (correct ? 10 : 2),
-    days: { ...s.days, [today]: { answered: d.answered + 1, correct: d.correct + (correct ? 1 : 0) } },
+    ...addContrib(s, dev, correct ? 10 : 2, today, correct),
   };
 }
 
@@ -272,9 +427,21 @@ export function lessonItemIds(lessonId: number): string[] {
 }
 
 /** Aggiunge al mazzo del ripasso gli elementi della lezione non ancora presenti. */
+/** Nuove parole che entrano nel ripasso ogni giorno (le lettere e le vocali entrano subito). */
+export const NEW_WORDS_PER_DAY = 15;
+
 export function applyStudied(s: AppState, lessonId: number, now: Date): AppState {
   const srs = { ...s.srs };
-  for (const id of lessonItemIds(lessonId)) srs[id] ??= newSrsState(now.getTime());
+  const t = now.getTime();
+  // Le parole nuove vengono scaglionate: al massimo NEW_WORDS_PER_DAY al giorno,
+  // per non trovarsi centinaia di ripassi dopo una lezione ricca di vocaboli.
+  const pendingWords = Object.entries(srs).filter(([id, x]) => id.startsWith('w:') && x.seen === 0 && x.due > t).length;
+  let n = pendingWords;
+  for (const id of lessonItemIds(lessonId)) {
+    if (srs[id]) continue;
+    const delayDays = id.startsWith('w:') ? Math.floor(n++ / NEW_WORDS_PER_DAY) : 0;
+    srs[id] = { ...newSrsState(t), due: t + delayDays * 24 * 60 * 60 * 1000 };
+  }
   const prev = s.lessons[lessonId] ?? { studied: false, bestScore: 0, passed: false, attempts: 0 };
   return { ...s, srs, lessons: { ...s.lessons, [lessonId]: { ...prev, studied: true } } };
 }
@@ -283,7 +450,7 @@ export function applyLessonTest(s: AppState, lessonId: number, score: number, pa
   const prev = s.lessons[lessonId] ?? { studied: false, bestScore: 0, passed: false, attempts: 0 };
   return {
     ...s,
-    xp: s.xp + (score >= passThreshold && !prev.passed ? 100 : 0),
+    ...addContrib(s, deviceId(), score >= passThreshold && !prev.passed ? 100 : 0),
     lessons: {
       ...s.lessons,
       [lessonId]: {
@@ -329,9 +496,18 @@ export function maxUnlockedLesson(s: AppState): number {
   return n;
 }
 
+/** L'elemento esiste ancora nei contenuti? (parole rinominate o rimosse restano orfane) */
+export function isKnownItem(id: string): boolean {
+  const key = id.slice(2);
+  if (id.startsWith('g:')) return !!GLYPH_BY_ID[key];
+  if (id.startsWith('v:')) return !!VOWEL_BY_ID[key];
+  if (id.startsWith('w:')) return WORD_IDS.has(key);
+  return false;
+}
+
 export function dueItems(s: AppState, now: number): string[] {
   return Object.entries(s.srs)
-    .filter(([, st]) => isDue(st, now))
+    .filter(([id, st]) => isDue(st, now) && isKnownItem(id))
     .sort((a, b) => a[1].due - b[1].due)
     .map(([id]) => id);
 }
@@ -340,6 +516,7 @@ export function dueItems(s: AppState, now: number): string[] {
 export function weakestItems(s: AppState, n: number): string[] {
   // prima gli elementi sbagliati almeno una volta, poi quelli meno consolidati
   return Object.entries(s.srs)
+    .filter(([id, x]) => isKnownItem(id) && x.seen > 0)
     .sort((a, b) => {
       const ra = a[1].seen ? a[1].correct / a[1].seen : 0;
       const rb = b[1].seen ? b[1].correct / b[1].seen : 0;
@@ -369,13 +546,13 @@ export const actions = {
   },
   textRead(textId: string) {
     if (state.texts[textId]) return;
-    set({ ...state, xp: state.xp + 20, texts: { ...state.texts, [textId]: dayKey() } });
+    set({ ...state, ...addContrib(state, deviceId(), 20), texts: { ...state.texts, [textId]: dayKey() } });
   },
   exam(examId: string, score: number, timeSec: number) {
     set(applyExam(state, examId, score, timeSec, new Date()));
   },
   settings(patch: Partial<Settings>) {
-    set({ ...state, settings: { ...state.settings, ...patch } });
+    set({ ...state, settings: { ...state.settings, ...patch }, settingsUpdatedAt: Date.now() });
   },
   reset() {
     set({ ...initialState(), settings: state.settings, resetAt: Date.now() });
@@ -383,7 +560,11 @@ export const actions = {
   exportJson(): string {
     return JSON.stringify(state, null, 2);
   },
+  /** Sostituisce i progressi con un backup (lancia un errore se il file non è valido). */
   importJson(json: string) {
-    set({ ...sanitize(JSON.parse(json)), resetAt: Date.now() });
+    if (json.length > 5_000_000) throw new Error('file troppo grande');
+    const raw = JSON.parse(json);
+    if (!isBackup(raw)) throw new Error('non è un backup di Ulpan');
+    set({ ...sanitize(raw), resetAt: Date.now() });
   },
 };

@@ -21,6 +21,7 @@ export class GroupError extends Error {}
 const MESSAGES: [RegExp, string][] = [
   [/could not find the function|does not exist|PGRST202|PGRST205/i, 'I gruppi non sono ancora attivi sul server.'],
   [/codice non valido/i, 'Codice non valido: controlla le lettere e riprova.'],
+  [/troppi tentativi/i, 'Troppi tentativi con i codici: riprova tra un’ora.'],
   [/gruppo pieno/i, 'Il gruppo ha raggiunto il numero massimo di membri.'],
   [/troppi gruppi/i, 'Hai già creato il numero massimo di gruppi (20).'],
   [/nome mancante/i, 'Scrivi un nome per il gruppo.'],

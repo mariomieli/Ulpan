@@ -326,9 +326,9 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
       <div className="grid grid-2">
         <form className="card stack" style={{ gap: 10 }} onSubmit={submitJoin}>
           <h3 style={{ margin: 0 }}>Entra con un codice</h3>
-          <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-            placeholder="ES. K7M2QX" aria-label="Codice d’invito" className="code-input" autoCapitalize="characters" autoComplete="off" />
-          <button className="btn btn-primary" disabled={busy || code.length !== 6}>Entra</button>
+          <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+            placeholder="ES. K7M2QXPA" aria-label="Codice d’invito" className="code-input" autoCapitalize="characters" autoComplete="off" />
+          <button className="btn btn-primary" disabled={busy || code.length < 6}>Entra</button>
         </form>
         <form className="card stack" style={{ gap: 10 }} onSubmit={submitCreate}>
           <h3 style={{ margin: 0 }}>Crea</h3>

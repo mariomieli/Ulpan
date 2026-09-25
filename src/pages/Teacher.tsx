@@ -52,7 +52,7 @@ function StudentDetail({ groupId, row, sum, assignments, onBack, onChanged }: {
         <div className="bars" style={{ height: 80 }}>
           {sum.activity14.map((d, i) => (
             <div key={d.day} title={`${formatDate(d.day)}: ${d.answered} risposte`}>
-              <div className={`bar ${d.answered ? '' : 'empty'}`} style={{ height: `${Math.max(4, (d.answered / max) * 100)}%` }} />
+              <div className={`bar ${d.answered ? '' : 'is-zero'}`} style={{ height: `${Math.max(4, (d.answered / max) * 100)}%` }} />
               <span>{i % 3 === 1 ? d.day.slice(8) : ' '}</span>
             </div>
           ))}

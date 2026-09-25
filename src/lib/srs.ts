@@ -20,8 +20,18 @@ export function newSrsState(now: number): SrsState {
   return { reps: 0, interval: 0, ease: 2.5, due: now, lapses: 0, seen: 0, correct: 0 };
 }
 
+/**
+ * Aggiorna un elemento dopo una risposta. L'intervallo cresce solo quando
+ * l'elemento è in scadenza; un errore lo riporta sempre in ripasso.
+ */
 export function review(state: SrsState, correct: boolean, now: number): SrsState {
   const s = { ...state, seen: state.seen + 1 };
+  if (correct && state.reps > 0 && now < state.due) {
+    // Risposta giusta prima della scadenza: conta nelle statistiche ma non allunga
+    // l'intervallo (altrimenti 4 risposte in un giorno varrebbero "padroneggiato").
+    s.correct += 1;
+    return s;
+  }
   if (correct) {
     s.correct += 1;
     s.reps += 1;

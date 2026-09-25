@@ -247,7 +247,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .option:focus-vis
 .bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
 .bars > div { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
 .bars .bar { width: 100%; max-width: 26px; border-radius: 6px 6px 2px 2px; background: var(--primary); min-height: 3px; }
-.bars .bar.empty { background: var(--surface-2); }
+.bars .bar.is-zero { background: var(--surface-2); }
 .bars span { font-size: .68rem; color: var(--text-2); overflow: hidden; }
 
 /* ---------- Lezioni ---------- */
