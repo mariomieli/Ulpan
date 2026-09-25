@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { cloudEnabled, getSupabase, sessionStorageKey } from './supabase';
+import { publicStats } from './leaderboard';
 import {
   getState, hasProgress, mergeStates, readStored, replaceState, sanitize, storageKeyFor, subscribe as subscribeStore, switchUser,
 } from './store';
@@ -52,16 +53,24 @@ function toUser(u: User): AuthUser {
 let pushTimer: ReturnType<typeof setTimeout> | undefined;
 let pulling = false;
 
-async function push() {
+export async function push() {
   if (!supabase || auth.status !== 'signedIn' || !auth.user) return;
   if (!navigator.onLine) { setAuth({ sync: 'offline' }); return; }
   setAuth({ sync: 'saving' });
+  const now = new Date().toISOString();
   const { error } = await supabase.from('progress').upsert({
     user_id: auth.user.id,
     state: getState(),
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   });
   setAuth({ sync: error ? 'error' : 'saved' });
+  // Statistiche per le classifiche dei gruppi (se la tabella non esiste ancora, si ignora)
+  void supabase.from('public_stats').upsert({
+    user_id: auth.user.id,
+    display_name: auth.user.name.slice(0, 40),
+    ...publicStats(getState()),
+    updated_at: now,
+  }).then(() => undefined);
 }
 
 function schedulePush() {
@@ -225,7 +234,10 @@ export async function updatePassword(password: string): Promise<string | null> {
 
 export async function updateName(name: string): Promise<string | null> {
   const { error } = await (await getSupabase()).auth.updateUser({ data: { name: name.trim() } });
-  return error ? italian(error.message) : null;
+  if (error) return italian(error.message);
+  if (auth.user) setAuth({ user: { ...auth.user, name: name.trim() } });
+  await push();
+  return null;
 }
 
 export async function signOut() {

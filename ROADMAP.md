@@ -13,10 +13,10 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 
 ## Motivazione
 - [ ] **Promemoria giornaliero** con notifica sul telefono se il ripasso non è stato fatto.
-- [ ] **Gruppi e classifica** tra gli utenti registrati.
 - [ ] **Pannello per l'insegnante**: progressi e punti deboli di ogni studente di una classe.
 
 ## Già fatto
+- [x] Gruppi con codice d'invito e classifica (settimanale e totale)
 - [x] Testi di lettura graduati (storie, preghiere, cartelli)
 - [x] Dettato con tessere lettera+vocale
 - [x] Caricamento più veloce (pagine e Supabase su richiesta)

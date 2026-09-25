@@ -18,6 +18,7 @@ const loaders = {
   tests: () => import('./pages/Tests'),
   progress: () => import('./pages/Progress'),
   settings: () => import('./pages/Settings'),
+  groups: () => import('./pages/Groups'),
 };
 const LessonsPage = lazy(() => loaders.lessons().then((m) => ({ default: m.LessonsPage })));
 const LessonPage = lazy(() => loaders.lesson().then((m) => ({ default: m.LessonPage })));
@@ -28,6 +29,7 @@ const ReviewPage = lazy(() => loaders.review().then((m) => ({ default: m.ReviewP
 const TestsPage = lazy(() => loaders.tests().then((m) => ({ default: m.TestsPage })));
 const ExamPage = lazy(() => loaders.tests().then((m) => ({ default: m.ExamPage })));
 const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.ProgressPage })));
+const GroupsPage = lazy(() => loaders.groups().then((m) => ({ default: m.GroupsPage })));
 const SettingsPage = lazy(() => loaders.settings().then((m) => ({ default: m.SettingsPage })));
 
 /** Dopo il primo avvio scarica in background le altre pagine (navigazione istantanea e uso offline). */
@@ -45,6 +47,7 @@ const NAV = [
   { path: '/lettura', label: 'Lettura', icon: 'read' },
   { path: '/ripasso', label: 'Ripasso', icon: 'repeat' },
   { path: '/test', label: 'Test ed esami', icon: 'test' },
+  { path: '/gruppi', label: 'Gruppi', icon: 'users' },
   { path: '/progressi', label: 'Progressi', icon: 'chart' },
   { path: '/impostazioni', label: 'Impostazioni', icon: 'settings' },
 ];
@@ -67,6 +70,7 @@ function Page({ path }: { path: string }) {
   let p: Record<string, string> | null;
   if ((p = match('/lezioni/:id', path))) return <LessonPage id={Number(p.id)} />;
   if ((p = match('/test/:id', path))) return <ExamPage id={p.id} />;
+  if ((p = match('/gruppi/:id', path))) return <GroupsPage path={path} groupId={p.id} />;
   switch (path.split('?')[0]) {
     case '/lezioni': return <LessonsPage />;
     case '/alfabeto': return <AlphabetPage />;
@@ -74,6 +78,7 @@ function Page({ path }: { path: string }) {
     case '/lettura': return <ReadingPage />;
     case '/ripasso': return <ReviewPage />;
     case '/test': return <TestsPage />;
+    case '/gruppi': return <GroupsPage path={path} />;
     case '/progressi': return <ProgressPage />;
     case '/impostazioni': return <SettingsPage />;
     default: return <HomePage />;
