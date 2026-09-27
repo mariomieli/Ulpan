@@ -120,6 +120,7 @@ export function SettingsPage() {
             {[10, 20, 30, 50, 80, 120, 150, 200].map((n) => <option key={n} value={n}>{n}{n === 30 ? ' (consigliato)' : ''}</option>)}
           </select>
         </div>
+        <label className="toggle"><input type="checkbox" checked={settings.autoAdvance} onChange={(e) => set({ autoAdvance: e.target.checked })} /> Dopo una risposta giusta passa da solo alla domanda seguente</label>
         <label className="toggle"><input type="checkbox" checked={settings.typing} onChange={(e) => set({ typing: e.target.checked })} /> Includi domande a risposta scritta (traslitterazione)</label>
         <label className="toggle"><input type="checkbox" checked={settings.unlockAll} onChange={(e) => set({ unlockAll: e.target.checked })} /> Sblocca tutte le lezioni ed esami (per chi sa già leggere un po’)</label>
       </div>

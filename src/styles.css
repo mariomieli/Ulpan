@@ -977,3 +977,8 @@ img.brand-mark { background: none; border-radius: 22%; object-fit: contain; flex
 .medal.locked .medal-inner { fill: var(--bg); }
 .medal.locked .medal-glyph { fill: var(--text-2); }
 .medal .medal-progress { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+
+/* avanzamento automatico: una sottile barra che si svuota prima di passare alla domanda seguente */
+.feedback { position: relative; overflow: hidden; }
+@keyframes auto-next { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.auto-next { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--ok); transform-origin: left; animation: auto-next linear forwards; }

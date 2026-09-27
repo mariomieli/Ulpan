@@ -26,6 +26,8 @@ export interface Settings {
   sfx: boolean;
   /** Vibrazione del telefono per risposte e traguardi. */
   haptics: boolean;
+  /** Dopo una risposta giusta a scelta multipla si passa da soli alla domanda seguente. */
+  autoAdvance: boolean;
 }
 
 export interface LessonProgress {
@@ -102,6 +104,7 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: 'system',
   sfx: true,
   haptics: true,
+  autoAdvance: true,
 };
 
 export function initialState(): AppState {
@@ -170,6 +173,7 @@ function sanitizeSettings(v: unknown): Settings {
     motion: o.motion === 'reduced' || o.motion === 'full' || o.motion === 'system' ? o.motion : d.motion,
     sfx: typeof o.sfx === 'boolean' ? o.sfx : d.sfx,
     haptics: typeof o.haptics === 'boolean' ? o.haptics : d.haptics,
+    autoAdvance: typeof o.autoAdvance === 'boolean' ? o.autoAdvance : d.autoAdvance,
   };
 }
 

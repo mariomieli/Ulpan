@@ -12,6 +12,8 @@ import { confetti, feedback, useCountUp } from '../lib/fx';
 
 /** XP per risposta corretta (vedi applyAnswer nello store). */
 const XP_PER_ANSWER = 10;
+/** Tempo per vedere la conferma prima di passare alla domanda seguente. */
+const AUTO_ADVANCE_MS = 1200;
 
 export interface AnswerRecord {
   question: Question;
@@ -193,6 +195,16 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     if (all) goNext(all);
   }, [selected, commit, goNext]);
 
+  // avanzamento automatico dopo una risposta giusta a scelta multipla
+  const lastAnswer = answers[answers.length - 1];
+  const autoAdvanceNow = mode === 'practice' && checked && !!q?.options && lastAnswer?.question.key === q?.key
+    && lastAnswer.correct && settings.autoAdvance;
+  useEffect(() => {
+    if (!autoAdvanceNow) return;
+    const t = setTimeout(() => goNext(answers), AUTO_ADVANCE_MS);
+    return () => clearTimeout(t);
+  }, [autoAdvanceNow, goNext, answers]);
+
   // scorciatoie da tastiera
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -239,6 +251,8 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   };
 
   const correctLabel = q.options?.find((o) => o.value === q.answer);
+  // risposta giusta a scelta multipla: si va avanti da soli (se l'errore c'è, si resta a leggere la spiegazione)
+  const autoNext = showFeedback && last.correct && !!q.options && settings.autoAdvance;
   // avanzamento: conta anche la domanda appena corretta, così alla fine arriva al 100%
   const progress = (idx + (showFeedback ? 1 : 0)) / questions.length;
   const mistake = showFeedback && !last.correct ? explainMistake(q, last.given) : null;
@@ -348,6 +362,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
               {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
               <div className="small"><Rich text={q.explanation} /></div>
             </div>
+            {autoNext && <span className="auto-next" aria-hidden="true" style={{ animationDuration: `${AUTO_ADVANCE_MS}ms` }} />}
             <button className="btn btn-primary" onClick={() => goNext(answers)} autoFocus>
               {isLast ? 'Risultati' : 'Continua'} <Icon name="arrowRight" size={18} className="" />
             </button>
