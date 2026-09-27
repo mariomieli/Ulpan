@@ -107,7 +107,7 @@ export function ExamPage({ id }: { id: string }) {
 
   if (phase === 'run') {
     return (
-      <QuizRunner key={round} questions={questions} mode="exam" timeLimitSec={exam.minutes ? exam.minutes * 60 : undefined}
+      <QuizRunner key={round} questions={questions} mode="exam" title={exam.title} timeLimitSec={exam.minutes ? exam.minutes * 60 : undefined}
         onExit={() => { if (confirm('Vuoi davvero abbandonare l’esame?')) setPhase('intro'); }}
         onFinish={(r) => { actions.exam(exam.id, r.pct, r.timeSec); setResult(r); setPhase('done'); }} />
     );
@@ -180,8 +180,8 @@ export function PlacementPage() {
     const title = ids.map((id) => LESSON_BY_ID[id].title).join(' · ');
     return (
       <div className="stack">
-        <p className="center muted small" style={{ margin: 0 }}>Test d’ingresso · blocco {block + 1} di {blocks.length}: {title}</p>
         <QuizRunner key={block} questions={questions} mode="exam" onFinish={finishBlock}
+          title={`Test d’ingresso · blocco ${block + 1} di ${blocks.length}: ${title}`}
           onExit={() => { if (confirm('Interrompere il test d’ingresso?')) setPhase('intro'); }} />
       </div>
     );

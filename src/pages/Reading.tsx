@@ -153,7 +153,7 @@ export function ReadingPage() {
       )}
 
       {mode === 'testi' && <TextsView level={level} fmt={show} translit={translit} meaning={meaning} />}
-      {mode === 'dettato' && <Dictation key={level} level={level} />}
+      {mode === 'dettato' && <Dictation key={level} level={level} onExit={() => setMode('parole')} />}
       {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} fmt={show} />}
     </div>
   );
@@ -366,7 +366,7 @@ function Comprehension({ t }: { t: ReadingText }) {
   );
 }
 
-function Dictation({ level }: { level: number }) {
+function Dictation({ level, onExit }: { level: number; onExit: () => void }) {
   const { settings } = useAppState();
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -378,13 +378,9 @@ function Dictation({ level }: { level: number }) {
     return <QuizResults result={result} title="Dettato completato" onRetry={() => { setResult(null); setRound(round + 1); }} />;
   }
   return (
-    <>
-      <p className="small muted center">
-        {listeningEnabled(settings.audio)
-          ? 'Ascolta la parola e ricomponila scegliendo le tessere giuste: attenzione a vocali e lettere simili!'
-          : 'Ricomponi la parola scegliendo le tessere giuste. (Con una voce ebraica installata il dettato diventa ad ascolto.)'}
-      </p>
-      <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} />
-    </>
+    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onExit} title="Dettato"
+      hint={listeningEnabled(settings.audio)
+        ? 'Ascolta la parola e ricomponila scegliendo le tessere giuste: attenzione a vocali e lettere simili!'
+        : 'Ricomponi la parola scegliendo le tessere giuste. (Con una voce ebraica installata il dettato diventa ad ascolto.)'} />
   );
 }

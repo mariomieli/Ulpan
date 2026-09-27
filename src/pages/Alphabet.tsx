@@ -99,7 +99,7 @@ function LetterNamesPractice({ onClose }: { onClose: () => void }) {
       <button className="btn" onClick={onClose}>Torna all’alfabeto</button>
     </QuizResults>;
   }
-  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onClose} />;
+  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onClose} title="Nomi delle lettere" />;
 }
 
 export function AlphabetPage() {

@@ -38,6 +38,10 @@ interface Props {
   timeLimitSec?: number;
   onFinish: (r: QuizResult) => void;
   onExit?: () => void;
+  /** Titolo breve mostrato sopra la domanda (es. il blocco del test d'ingresso). */
+  title?: string;
+  /** Istruzioni brevi mostrate sopra la domanda. */
+  hint?: ReactNode;
 }
 
 function fmtTime(sec: number) {
@@ -46,7 +50,7 @@ function fmtTime(sec: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: Props) {
+export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, title, hint }: Props) {
   const { settings } = useAppState();
 
   // Test ed esami: niente menu e conferma prima di chiudere la scheda
@@ -57,6 +61,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
     window.addEventListener('beforeunload', warn);
     return () => { setFocusMode(false); window.removeEventListener('beforeunload', warn); };
   }, [mode]);
+
+  // su telefono l'esercizio occupa tutto lo schermo: la pagina sotto non scorre
+  useEffect(() => {
+    document.documentElement.classList.add('quiz-open');
+    return () => document.documentElement.classList.remove('quiz-open');
+  }, []);
 
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -251,6 +261,9 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   };
 
   const correctLabel = q.options?.find((o) => o.value === q.answer);
+  // risposte brevi (suoni, nomi, sillabe, lettere): su telefono in griglia 2×2
+  const compact = !!q.options && q.options.length <= 4 && q.options.every((o) =>
+    o.hebrew ? [...o.label.replace(/[\u0591-\u05C7]/g, '')].length <= 7 : o.label.length <= 14);
   // risposta giusta a scelta multipla: si va avanti da soli (se l'errore c'è, si resta a leggere la spiegazione)
   const autoNext = showFeedback && last.correct && !!q.options && settings.autoAdvance;
   // avanzamento: conta anche la domanda appena corretta, così alla fine arriva al 100%
@@ -258,7 +271,13 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
   const mistake = showFeedback && !last.correct ? explainMistake(q, last.given) : null;
 
   return (
-    <div className="quiz fade-in">
+    <div className="quiz quiz-run fade-in">
+      {(title || hint) && (
+        <div className="quiz-head">
+          {title && <p className="quiz-title">{title}</p>}
+          {hint && <p className="small muted" style={{ margin: 0 }}>{hint}</p>}
+        </div>
+      )}
       <div className="quiz-top">
         {onExit && (
           <button className="btn btn-ghost btn-icon" onClick={onExit} aria-label="Esci dal quiz" title="Esci">
@@ -324,7 +343,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
             )}
           </div>
         ) : q.options ? (
-          <div className="options" role={mode === 'exam' ? 'radiogroup' : undefined} aria-label="Risposte">
+          <div className={`options ${compact ? 'compact' : ''}`} role={mode === 'exam' ? 'radiogroup' : undefined} aria-label="Risposte">
             {q.options.map((o, i) => (
               <button key={o.value} className={optionClass(o.value)} onClick={() => choose(o.value)}
                 disabled={showFeedback} role={mode === 'exam' ? 'radio' : undefined}
@@ -360,7 +379,11 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit }: 
                 <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
               )}
               {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
-              <div className="small"><Rich text={q.explanation} /></div>
+              {/* la spiegazione: aperta dopo un errore, a richiesta dopo una risposta giusta */}
+              <details className="why" open={!last.correct}>
+                <summary>Perché?</summary>
+                <div className="small"><Rich text={q.explanation} /></div>
+              </details>
             </div>
             {autoNext && <span className="auto-next" aria-hidden="true" style={{ animationDuration: `${AUTO_ADVANCE_MS}ms` }} />}
             <button className="btn btn-primary" onClick={() => goNext(answers)} autoFocus>
