@@ -125,9 +125,10 @@ export function HomePage() {
             <span className="stat-value">{due}</span>
             <span className="stat-label">{due === 1 ? 'elemento da ripassare' : 'elementi da ripassare'}</span>
           </div>
-          <a className={`btn btn-block ${due ? 'btn-primary' : ''}`} style={{ marginTop: 12 }} href="#/ripasso">
-            {due ? 'Ripassa ora' : 'Ripasso libero'}
+          <a className="btn btn-block btn-primary" style={{ marginTop: 12 }} href="#/ripasso/oggi">
+            Sessione di oggi
           </a>
+          <a className="btn btn-block btn-ghost small" style={{ marginTop: 6 }} href="#/ripasso">Altri allenamenti</a>
         </div>
         <div className="card">
           <div className="card-title"><h3>Serie</h3><Icon name="flame" /></div>

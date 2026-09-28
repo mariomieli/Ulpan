@@ -39,7 +39,7 @@ export type QuestionKind =
   | 'glyph-name' | 'glyph-sound' | 'name-glyph' | 'sound-glyph' | 'final-form' | 'listen-glyph'
   | 'vowel-sound' | 'vowel-name' | 'name-vowel'
   | 'syllable-read' | 'translit-syllable'
-  | 'word-read' | 'word-meaning' | 'meaning-word' | 'word-type' | 'listen-word' | 'word-compose';
+  | 'word-read' | 'word-meaning' | 'meaning-word' | 'word-type' | 'listen-word' | 'word-compose' | 'word-hebrew';
 
 export interface Option {
   value: string;
@@ -62,6 +62,8 @@ export interface Question {
   answer: string;
   /** Dettato: tessere (lettera + segni) da mettere in ordine; la risposta è la loro concatenazione. */
   compose?: { tiles: string[] };
+  /** Risposta da scrivere in lettere ebraiche (senza vocali), con la tastiera sullo schermo. */
+  keyboard?: boolean;
   /** Risposte accettate per le domande a risposta scritta. */
   accepted?: string[];
   explanation: string;
@@ -949,4 +951,102 @@ export function buildLetterNameQuiz(rng: Rng, o: QuizOptions = {}, count = 12): 
     const others = shuffle(LETTER_NAMES.filter((x) => x[1] !== translit), rng).slice(0, 3).map((x) => x[1]);
     return { ...base, kind: 'word-read' as const, prompt: 'Come si legge il nome di questa lettera?', options: options(opt(translit), others.map((d) => opt(d)), rng) };
   });
+}
+
+/**
+ * Sessione di oggi: un'unica lista che mescola ripasso in scadenza, punti deboli e qualche
+ * elemento nuovo della lezione in corso, senza doppioni.
+ */
+export function pickDailyItems(due: string[], weak: string[], fresh: string[], size = 15): string[] {
+  const out: string[] = [];
+  const add = (ids: string[], n: number) => {
+    for (const id of ids) {
+      if (out.length >= size || n <= 0) break;
+      if (!out.includes(id)) { out.push(id); n--; }
+    }
+  };
+  add(due, 9);
+  add(weak, 3);
+  add(fresh, 3);
+  // se una parte è scarsa, si completa con le altre
+  add(due, size);
+  add(weak, size);
+  add(fresh, size);
+  return out;
+}
+
+/**
+ * Allenamento sulle lettere che si confondono (ב/כ, ד/ר, ה/ח/ת, ו/ז/ן…): le alternative sono
+ * proprio le lettere simili a quella chiesta.
+ */
+export function buildConfusableQuiz(known: Glyph[], count: number, rng: Rng): Question[] {
+  const ids = new Set(known.map((g) => g.id));
+  const similar = (g: Glyph) => (CONFUSABLES[g.id] ?? []).filter((id) => ids.has(id)).map((id) => GLYPH_BY_ID[id]);
+  const targets = known.filter((g) => similar(g).length > 0);
+  const out: Question[] = [];
+  for (const g of shuffle(targets, rng)) {
+    if (out.length >= count) break;
+    // alternative: le lettere simili, poi quelle simili alle simili, poi altre lettere note
+    const near = similar(g);
+    const second = near.flatMap(similar).filter((x) => x.id !== g.id && !near.includes(x));
+    const rest = shuffle(known.filter((x) => x.id !== g.id && !near.includes(x) && !second.includes(x)), rng);
+    const others = [...shuffle(near, rng), ...shuffle(second, rng), ...rest]
+      .filter((x, i, a) => a.findIndex((y) => y.char === x.char || y.name === x.name) === i && x.char !== g.char && x.name !== g.name)
+      .slice(0, 3);
+    if (others.length < 2) continue;
+    const kind: QuestionKind = rng() < 0.5 ? 'name-glyph' : 'glyph-name';
+    const expl = `${g.char} è ${g.name}: ${g.tip}`;
+    out.push(kind === 'name-glyph' ? {
+      key: `conf:name-glyph:${g.id}`, kind, itemIds: [`g:${g.id}`], meta: { glyph: g.id },
+      prompt: `Quale di queste è «${g.name}»?`,
+      options: options(opt(g.char, true), others.map((x) => opt(x.char, true)), rng),
+      answer: g.char, explanation: expl,
+    } : {
+      key: `conf:glyph-name:${g.id}`, kind, itemIds: [`g:${g.id}`], meta: { glyph: g.id },
+      prompt: 'Attenzione ai dettagli: che lettera è?',
+      stimulus: { text: g.char, hebrew: true, size: 'xl' },
+      options: options(opt(g.name), others.map((x) => opt(x.name)), rng),
+      answer: g.name, explanation: expl,
+    });
+  }
+  return spread(out);
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrivere in ebraico                                                 */
+/* ------------------------------------------------------------------ */
+
+const FINAL_TO_BASE: Record<string, string> = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+
+/** Solo le lettere (niente vocali, spazi o punteggiatura). */
+export function hebrewLetters(s: string): string {
+  return s.replace(/[^\u05D0-\u05EA]/g, '');
+}
+
+/**
+ * Valuta una parola scritta in ebraico: esatta, "quasi" (solo una forma finale sbagliata, es. מ al posto di ם)
+ * oppure sbagliata.
+ */
+export function gradeHebrew(given: string, answer: string): 'exact' | 'close' | 'wrong' {
+  const g = hebrewLetters(given);
+  const a = hebrewLetters(answer);
+  if (!g) return 'wrong';
+  if (g === a) return 'exact';
+  const base = (x: string) => [...x].map((c) => FINAL_TO_BASE[c] ?? c).join('');
+  return base(g) === base(a) ? 'close' : 'wrong';
+}
+
+/** Esercizio: scrivi la parola in lettere ebraiche, partendo da pronuncia e significato. */
+export function buildHebrewTyping(level: number, count: number, rng: Rng, o: QuizOptions = {}): Question[] {
+  const fit = (w: Word) => !/\s/.test(w.he) && hebrewLetters(w.he).length >= 2 && hebrewLetters(w.he).length <= 6;
+  let words = poolUpTo(level).words.filter(fit);
+  if (words.length < count) words = WORDS.filter(fit).slice(0, Math.max(40, count));
+  const avoid = o.avoid ?? new Set<string>();
+  const ordered = shuffle(words, rng).sort((a, b) => Number(avoid.has(`hebtype:${a.id}`)) - Number(avoid.has(`hebtype:${b.id}`)) || Number(!!b.core) - Number(!!a.core));
+  return ordered.slice(0, count).map((w) => ({
+    key: `hebtype:${w.id}`, kind: 'word-hebrew' as const, itemIds: [`w:${w.id}`], keyboard: true,
+    prompt: `Scrivi in ebraico: «${w.translit}» (${w.it})`,
+    speak: w.he, answer: hebrewLetters(w.he),
+    explanation: `${w.he} si scrive ${hebrewLetters(w.he)}: ${[...hebrewLetters(w.he)].join(' · ')}.`,
+  }));
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitize,
+import { sanitize, mergeStates,
   initialState, applyAnswer, applyLessonTest, applyStudied, applyExam, isLessonUnlocked,
   maxUnlockedLesson, dueItems, lessonItemIds,
 } from '../src/lib/store';
@@ -224,5 +224,14 @@ describe('nuovo ordine del corso', () => {
     for (const n of [1, 2, 3]) expect(s.lessons[n]).toMatchObject({ passed: true, bestScore: 88 });
     for (const n of [4, 5]) expect(s.lessons[n]).toMatchObject({ passed: true, bestScore: 92 });
     expect(s.lessons[6]).toBeUndefined();
+  });
+});
+
+describe('velocità di lettura', () => {
+  it('si conserva, si valida e si unisce tenendo il migliore per giorno', () => {
+    const a = sanitize({ ...initialState(), reading: { '2026-09-01': 40, '2026-09-02:plain': 25, bad: 3, '2026-09-03': -5 } });
+    expect(a.reading).toEqual({ '2026-09-01': 40, '2026-09-02:plain': 25 });
+    const b = sanitize({ ...initialState(), reading: { '2026-09-01': 55 } });
+    expect(mergeStates(a, b).reading).toEqual({ '2026-09-01': 55, '2026-09-02:plain': 25 });
   });
 });

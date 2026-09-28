@@ -1,7 +1,7 @@
 import { rememberQuestion } from '../lib/recent';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Question } from '../lib/quiz';
-import { explainMistake, gradeLabel, gradeTyped } from '../lib/quiz';
+import { explainMistake, gradeHebrew, gradeLabel, gradeTyped } from '../lib/quiz';
 
 import { actions, useAppState } from '../lib/store';
 import { speak } from '../lib/speech';
@@ -119,6 +119,10 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
 
   const evaluate = useCallback((given: string): { correct: boolean; close: boolean } => {
     if (!q) return { correct: false, close: false };
+    if (q.keyboard) {
+      const g = gradeHebrew(given, q.answer);
+      return { correct: g !== 'wrong', close: g === 'close' };
+    }
     if (q.accepted) {
       const g = gradeTyped(given, q.accepted);
       return { correct: g !== 'wrong', close: g === 'close' };
@@ -215,6 +219,12 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
       if (!q) return;
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT') return;
+      if (q.keyboard && !checked) {
+        if (/^[\u05D0-\u05EA]$/.test(e.key)) { e.preventDefault(); setTyped((t) => t + e.key); }
+        else if (e.key === 'Backspace') { e.preventDefault(); setTyped((t) => t.slice(0, -1)); }
+        else if (e.key === 'Enter') { e.preventDefault(); submitTyped(); }
+        return;
+      }
       if (q.compose && !checked) {
         if (/^[1-9]$/.test(e.key)) pickTile(Number(e.key) - 1);
         else if (e.key === 'Backspace') setPicked((p) => p.slice(0, -1));
@@ -232,7 +242,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [q, choose, mode, checked, goNext, answers, confirmExam, pickTile, submitCompose]);
+  }, [q, choose, mode, checked, goNext, answers, confirmExam, pickTile, submitCompose, submitTyped]);
 
   if (!questions.length) {
     return (
@@ -314,7 +324,22 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
           </div>
         )}
 
-        {q.compose ? (
+        {q.keyboard ? (
+          <div className="compose">
+            <div className={`compose-answer typed-he ${showFeedback ? (last.correct ? 'correct' : 'wrong') : ''}`} aria-live="polite">
+              {typed ? <He size="lg">{typed}</He> : <span className="muted small">Scrivi la parola con le lettere qui sotto (da destra a sinistra)</span>}
+            </div>
+            {!showFeedback && (
+              <>
+                <HebrewKeyboard onKey={(c) => setTyped((t) => (t.length < 12 ? t + c : t))} />
+                <div className="quiz-actions">
+                  <button className="btn" disabled={!typed} onClick={() => setTyped((t) => t.slice(0, -1))}>⌫ Cancella</button>
+                  <button className="btn btn-primary" disabled={!typed} onClick={submitTyped}>{mode === 'exam' ? (isLast ? 'Consegna' : 'Conferma') : 'Verifica'}</button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : q.compose ? (
           <div className="compose">
             <div className={`compose-answer ${showFeedback ? (last.correct ? 'correct' : 'wrong') : ''}`} aria-live="polite">
               {composed ? <He size="lg">{composed}</He> : <span className="muted small">Tocca le tessere nell’ordine giusto (da destra a sinistra)</span>}
@@ -368,9 +393,11 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
                   : <Icon name="x" size={20} className="" />}
                 {last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}
               </strong>
-              {last.close && <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>}
+              {last.close && (q.keyboard
+                ? <div>Attenzione alle forme finali: si scrive <He size="sm">{q.answer}</He>.</div>
+                : <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>)}
               {!last.correct && (
-                <div>Risposta corretta: {correctLabel?.hebrew || q.compose ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
+                <div>Risposta corretta: {correctLabel?.hebrew || q.compose || q.keyboard ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
               )}
               {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
               {/* la spiegazione: aperta dopo un errore, a richiesta dopo una risposta giusta */}
@@ -401,6 +428,23 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
   );
 }
 
+/** Lettere in ordine alfabetico, con le forme finali accanto a quelle normali. */
+const KEY_ROWS = ['אבגדהוז', 'חטיכךלמ', 'םנןסעפף', 'צץקרשת'].map((r) => [...r]);
+
+function HebrewKeyboard({ onKey }: { onKey: (c: string) => void }) {
+  return (
+    <div className="he-keyboard" dir="rtl" role="group" aria-label="Tastiera ebraica">
+      {KEY_ROWS.map((row, i) => (
+        <div className="he-keys" key={i}>
+          {row.map((c) => (
+            <button key={c} type="button" className="he-key" lang="he" onClick={() => onKey(c)}>{c}</button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function QuizResults({ result, title, passThreshold, onRetry, children }: {
   result: QuizResult;
   title: string;
@@ -421,7 +465,7 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
   const wrong = useMemo(() => result.answers.filter((a) => !a.correct), [result]);
   const labelOf = (a: AnswerRecord, value: string | null) => {
     if (value === null) return <i>nessuna risposta</i>;
-    if (a.question.compose) return <span className="he-inline" lang="he">{value}</span>;
+    if (a.question.compose || a.question.keyboard) return <span className="he-inline" lang="he">{value}</span>;
     const o = a.question.options?.find((x) => x.value === value);
     if (o?.hebrew) return <span className="he-inline" lang="he">{o.label}</span>;
     return <b>{o?.label ?? value}</b>;

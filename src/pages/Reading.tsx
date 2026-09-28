@@ -1,9 +1,9 @@
 import { recentQuestions, rememberQuestion } from '../lib/recent';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { WORDS, type Word, type WordCategory } from '../data/words';
 import { LESSONS, sentencesUpTo, textLevel, wordLesson } from '../data/curriculum';
 import { TEXTS, TEXT_CATEGORY_LABELS, type ReadingText, type TextCategory } from '../data/texts';
-import { buildDictation, shuffle } from '../lib/quiz';
+import { buildDictation, buildHebrewTyping, shuffle } from '../lib/quiz';
 import { flashcardOrder } from '../lib/flashcards';
 import { listeningEnabled } from '../lib/speech';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
@@ -11,13 +11,14 @@ import { stripNikud } from '../lib/hebrew';
 import { ktivMale } from '../lib/ktiv';
 import { syllabify } from '../lib/syllables';
 import { LetterArt } from '../components/LessonArt';
+import { glossWord, lineTokens } from '../lib/gloss';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 
-type Mode = 'parole' | 'frasi' | 'testi' | 'flashcard' | 'dettato';
+type Mode = 'parole' | 'frasi' | 'testi' | 'flashcard' | 'dettato' | 'scrivi' | 'velocita';
 
-const MODE_LABELS: Record<Mode, string> = { parole: 'Parole', frasi: 'Frasi', testi: 'Testi', flashcard: 'Flashcard', dettato: 'Dettato' };
+const MODE_LABELS: Record<Mode, string> = { parole: 'Parole', frasi: 'Frasi', testi: 'Testi', flashcard: 'Flashcard', dettato: 'Dettato', scrivi: 'Scrivi', velocita: 'Velocità' };
 
 const PAGE = 60;
 
@@ -76,14 +77,14 @@ export function ReadingPage() {
             {LESSONS.map((l) => <option key={l.id} value={l.id}>{l.id} · {l.title}</option>)}
           </select>
         </div>
-        {mode !== 'dettato' && <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>}
-        {mode !== 'dettato' && nikud && <label className="toggle"><input type="checkbox" checked={syl} onChange={(e) => setSyl(e.target.checked)} /> Dividi in sillabe</label>}
-        {mode !== 'flashcard' && mode !== 'dettato' && <>
+        {mode !== 'dettato' && mode !== 'scrivi' && <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>}
+        {mode !== 'dettato' && mode !== 'scrivi' && nikud && <label className="toggle"><input type="checkbox" checked={syl} onChange={(e) => setSyl(e.target.checked)} /> Dividi in sillabe</label>}
+        {mode !== 'flashcard' && mode !== 'dettato' && mode !== 'scrivi' && mode !== 'velocita' && <>
           <label className="toggle"><input type="checkbox" checked={translit} onChange={(e) => setTranslit(e.target.checked)} /> Traslitterazione</label>
           <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
         </>}
       </div>
-      {!nikud && mode !== 'dettato' && <p className="small muted">Senza nikud l’ebraico si scrive in <b>grafia piena</b>: si aggiungono ו per “o/u” e י per “i” (שֻׁלְחָן → שולחן), come su giornali e cartelli.</p>}
+      {!nikud && mode !== 'dettato' && mode !== 'scrivi' && <p className="small muted">Senza nikud l’ebraico si scrive in <b>grafia piena</b>: si aggiungono ו per “o/u” e י per “i” (שֻׁלְחָן → שולחן), come su giornali e cartelli.</p>}
       {level > unlocked && <p className="small muted">Nota: stai guardando parole con lettere che non hai ancora studiato.</p>}
 
       {(mode === 'parole' || mode === 'frasi') && (
@@ -154,6 +155,8 @@ export function ReadingPage() {
 
       {mode === 'testi' && <TextsView level={level} fmt={show} translit={translit} meaning={meaning} />}
       {mode === 'dettato' && <Dictation key={level} level={level} />}
+      {mode === 'scrivi' && <HebrewTyping key={level} level={level} />}
+      {mode === 'velocita' && <SpeedReading key={`${level}-${nikud}`} level={level} fmt={show} nikud={nikud} />}
       {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} fmt={show} />}
     </div>
   );
@@ -294,6 +297,7 @@ function TextReader({ t, fmt, translit, meaning, onBack }: {
   const [shown, setShown] = useState<Set<number>>(new Set());
   const done = state.texts[t.id];
   const toggle = (i: number) => setShown((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+  const [picked, setPicked] = useState<{ line: number; idx: number } | null>(null);
 
   return (
     <div className="fade-in">
@@ -305,18 +309,47 @@ function TextReader({ t, fmt, translit, meaning, onBack }: {
           <span className="pill">{TEXT_CATEGORY_LABELS[t.category]}</span>
         </div>
         {t.intro && <p className="muted small" style={{ marginTop: 8 }}><Rich text={t.intro} /></p>}
-        <p className="small muted">Leggi ad alta voce, poi tocca una riga per controllare.</p>
+        <p className="small muted">Leggi ad alta voce, poi tocca una riga per controllare. Tocca una parola per vederne pronuncia e significato.</p>
         {t.lines.map((l, i) => {
           const open = shown.has(i);
+          const tokens = lineTokens(l.he, l.translit);
+          const sel = picked?.line === i ? tokens[picked.idx] : undefined;
+          const gloss = sel ? glossWord(sel.token, sel.translit) : null;
           return (
-            <div key={i} className="sentence text-line" role="button" tabIndex={0} onClick={() => toggle(i)}
-              onKeyDown={(e) => e.key === 'Enter' && toggle(i)}>
-              <He>{fmt(l.he)}</He>
-              <div style={{ minWidth: 160 }}>
-                {(translit || open) && <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{l.translit}</div>}
-                {(meaning || open) && <div className="muted small">{l.it}</div>}
+            <div key={i} className="text-block">
+              <div className="sentence text-line" onClick={() => toggle(i)}>
+                <span className="he" lang="he" dir="rtl">
+                  {tokens.map((tk, j) => (
+                    <Fragment key={j}>
+                      {j > 0 && ' '}
+                      <button type="button" className={`word-tap ${picked?.line === i && picked.idx === j ? 'on' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setPicked(picked?.line === i && picked.idx === j ? null : { line: i, idx: j }); }}>
+                        {fmt(tk.token)}
+                      </button>
+                    </Fragment>
+                  ))}
+                </span>
+                <div style={{ minWidth: 160 }}>
+                  {(translit || open) && <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{l.translit}</div>}
+                  {(meaning || open) && <div className="muted small">{l.it}</div>}
+                </div>
+                <button type="button" className="btn btn-ghost btn-sm" aria-expanded={open} onClick={(e) => { e.stopPropagation(); toggle(i); }}>
+                  {open ? 'Nascondi' : 'Traduci'}
+                </button>
+                <SpeakButton text={l.he} />
               </div>
-              <SpeakButton text={l.he} />
+              {sel && gloss && (
+                <div className="word-gloss fade-in" role="status">
+                  <span className="he-inline" lang="he">{sel.token.replace(/[.,:;!?״"']+$/, '')}</span>
+                  <b>{gloss.translit ?? gloss.word?.translit ?? '—'}</b>
+                  <span className="muted">
+                    {gloss.word
+                      ? gloss.prefix ? `${gloss.prefix.he} = ${gloss.prefix.it} + ${gloss.word.it}` : gloss.word.it
+                      : 'parola non ancora nel vocabolario del corso'}
+                  </span>
+                  <SpeakButton text={sel.token} label="Ascolta" />
+                </div>
+              )}
             </div>
           );
         })}
@@ -363,6 +396,99 @@ function Comprehension({ t }: { t: ReadingText }) {
         </p>
       )}
     </section>
+  );
+}
+
+const SPEED_WORDS = 20;
+
+/** Velocità di lettura: leggi ad alta voce 20 parole, l'app misura le parole al minuto. */
+function SpeedReading({ level, fmt, nikud }: { level: number; fmt: (he: string) => string; nikud: boolean }) {
+  const state = useAppState();
+  const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
+  const [round, setRound] = useState(0);
+  const [start, setStart] = useState(0);
+  const [wpm, setWpm] = useState(0);
+  const pool = useMemo(() => WORDS.filter((w) => wordLesson(w) <= level && !/\s/.test(w.he)), [level]);
+  const words = useMemo(() => shuffle(pool, Math.random).slice(0, SPEED_WORDS), [pool, round]);
+  const history = Object.entries(state.reading ?? {})
+    .filter(([k]) => (nikud ? !k.endsWith(':plain') : k.endsWith(':plain')))
+    .sort(([a], [b]) => a.localeCompare(b)).slice(-10);
+  const best = Math.max(0, ...history.map(([, v]) => v));
+  const maxBar = Math.max(30, best);
+
+  if (pool.length < SPEED_WORDS) {
+    return (
+      <div className="card empty">
+        <LetterArt letters="אבג" />
+        <h3>Servono più parole</h3>
+        <p>Con le lettere fino alla lezione {level} non ci sono ancora {SPEED_WORDS} parole da leggere: scegli una lezione più avanti.</p>
+      </div>
+    );
+  }
+
+  const finish = () => {
+    const sec = Math.max(3, (Date.now() - start) / 1000);
+    setWpm(Math.round((SPEED_WORDS / sec) * 60));
+    setPhase('done');
+  };
+
+  return (
+    <div className="stack">
+      {phase === 'intro' && (
+        <div className="card center">
+          <h2 style={{ marginTop: 0 }}>Quanto leggi veloce?</h2>
+          <p className="muted">Premi Via e leggi <b>ad alta voce</b> le {SPEED_WORDS} parole, da destra a sinistra e dall’alto in basso. Alla fine premi Finito: l’app calcola le parole al minuto.{nikud ? '' : ' Senza nikud, come su giornali e cartelli.'}</p>
+          <button className="btn btn-primary btn-lg" onClick={() => { setStart(Date.now()); setPhase('run'); }}>Via!</button>
+        </div>
+      )}
+      {phase === 'run' && (
+        <div className="card">
+          <div className="speed-grid" dir="rtl">
+            {words.map((w) => <span key={w.id} className="he" lang="he">{fmt(w.he)}</span>)}
+          </div>
+          <div className="center" style={{ marginTop: 16 }}>
+            <button className="btn btn-primary btn-lg" onClick={finish}>Finito</button>
+          </div>
+        </div>
+      )}
+      {phase === 'done' && (
+        <div className="card center">
+          <p className="muted" style={{ margin: 0 }}>La tua velocità</p>
+          <div className="result-score">{wpm}</div>
+          <p className="muted">parole al minuto{best && wpm > best ? ' · nuovo record!' : ''}</p>
+          <p className="small">Hai letto tutte le parole correttamente? Salva il risultato solo se sì.</p>
+          <div className="row" style={{ justifyContent: 'center' }}>
+            <button className="btn" onClick={() => { setRound(round + 1); setPhase('intro'); }}>Riprova</button>
+            <button className="btn btn-primary" onClick={() => { actions.readingSpeed(wpm, !nikud); setRound(round + 1); setPhase('intro'); }}>Salva il risultato</button>
+          </div>
+        </div>
+      )}
+      <div className="card">
+        <div className="card-title"><h3>I tuoi progressi {nikud ? '(con nikud)' : '(senza nikud)'}</h3>{best > 0 && <span className="pill pill-accent">Record: {best}/min</span>}</div>
+        {history.length ? (
+          <div className="bars" style={{ height: 110 }}>
+            {history.map(([k, v], i) => (
+              <div key={k} title={`${k.slice(0, 10)}: ${v} parole al minuto`}>
+                <div className="bar" style={{ height: `${Math.max(6, (v / maxBar) * 100)}%`, ['--i' as string]: i }} />
+                <span>{k.slice(8, 10)}/{k.slice(5, 7)}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="muted small" style={{ margin: 0 }}>Nessuna prova salvata: fai la prima e guarda come migliori nei giorni.</p>}
+        <p className="small muted" style={{ margin: '10px 0 0' }}>Per confronto: un lettore principiante legge 10–20 parole al minuto, uno fluente oltre 60.</p>
+      </div>
+    </div>
+  );
+}
+
+function HebrewTyping({ level }: { level: number }) {
+  const [round, setRound] = useState(0);
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const questions = useMemo(() => buildHebrewTyping(level, 10, Math.random, { avoid: recentQuestions() }), [level, round]);
+  if (result) return <QuizResults result={result} title="Scrittura in ebraico completata" onRetry={() => { setResult(null); setRound(round + 1); }} />;
+  return (
+    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult}
+      hint="Scrivi la parola in lettere ebraiche, senza vocali: usa i tasti qui sotto o la tastiera ebraica del dispositivo. Attenzione alle forme finali (ך ם ן ף ץ)!" />
   );
 }
 

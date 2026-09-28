@@ -84,6 +84,7 @@ function Page({ path }: { path: string }) {
     case '/nikud': return <NikudPage />;
     case '/lettura': return <ReadingPage />;
     case '/ripasso': return <ReviewPage />;
+    case '/ripasso/oggi': return <ReviewPage key="oggi" autoStart="oggi" />;
     case '/test': return <TestsPage />;
     case '/gruppi': return <GroupsPage path={path} />;
     case '/progressi': return <ProgressPage />;

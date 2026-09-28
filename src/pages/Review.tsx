@@ -1,8 +1,9 @@
 import { recentQuestions } from '../lib/recent';
 import { listeningEnabled } from '../lib/speech';
-import { useState } from 'react';
-import { buildReview, type Question } from '../lib/quiz';
-import { dueItems, maxUnlockedLesson, useAppState, weakestItems } from '../lib/store';
+import { useEffect, useState } from 'react';
+import { buildConfusableQuiz, buildReview, pickDailyItems, type Question } from '../lib/quiz';
+import { dueItems, isLessonUnlocked, lessonItemIds, maxUnlockedLesson, useAppState, weakestItems } from '../lib/store';
+import { LESSONS, glyphsUpTo } from '../data/curriculum';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { LetterArt } from '../components/LessonArt';
 import { Icon } from '../components/Icon';
@@ -17,25 +18,47 @@ function practicePick(ids: string[], n: number): string[] {
   return [...shuffled.filter((id) => !seen(id)), ...shuffled.filter(seen)].slice(0, n);
 }
 
-export function ReviewPage() {
+export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
   const state = useAppState();
   const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [title, setTitle] = useState('Sessione di ripasso completata');
   const [result, setResult] = useState<QuizResult | null>(null);
   const due = dueItems(state, Date.now());
   const deckSize = Object.keys(state.srs).length;
+  const opts = () => ({ audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() });
 
-  const start = (ids: string[]) => {
+  const start = (ids: string[], doneTitle = 'Sessione di ripasso completata') => {
     setResult(null);
-    setQuestions(buildReview(ids.slice(0, SESSION), maxUnlockedLesson(state), Math.random,
-      { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }));
+    setTitle(doneTitle);
+    setQuestions(buildReview(ids.slice(0, SESSION), maxUnlockedLesson(state), Math.random, opts()));
   };
+
+  // Sessione di oggi: scadenze + punti deboli + qualche novità della lezione in corso
+  const current = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed);
+  const fresh = current ? lessonItemIds(current.id).filter((id) => !state.srs[id]) : [];
+  const todayIds = pickDailyItems(due, practicePick(weakestItems(state, 40), 10), fresh, 15);
+  const startToday = () => start(todayIds, 'Sessione di oggi completata');
+
+  // Lettere che si confondono, tra quelle già studiate
+  const known = glyphsUpTo(maxUnlockedLesson(state));
+  const confusable = buildConfusableQuiz(known, 12, Math.random);
+  const startConfusable = () => {
+    setResult(null);
+    setTitle('Allenamento sulle lettere simili');
+    setQuestions(buildConfusableQuiz(known, 12, Math.random));
+  };
+
+  useEffect(() => {
+    if (autoStart === 'oggi' && todayIds.length) startToday();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   if (questions && !result) {
     return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} />;
   }
   if (result) {
     return (
-      <QuizResults result={result} title="Sessione di ripasso completata">
+      <QuizResults result={result} title={title}>
         {due.length > 0
           ? <button className="btn btn-primary" onClick={() => start(due)}>Continua ({due.length})</button>
           : <button className="btn btn-primary" onClick={() => { setResult(null); setQuestions(null); }}>Fatto</button>}
@@ -59,7 +82,15 @@ export function ReviewPage() {
           <a className="btn btn-primary" href="#/lezioni/1">Inizia la lezione 1</a>
         </div>
       ) : (
-        <div className="grid grid-2">
+        <>
+        <div className="card today-card">
+          <div className="card-title"><h2>Sessione di oggi</h2><Icon name="star" /></div>
+          <p className="muted" style={{ marginTop: 0 }}>Circa 10 minuti: ciò che è in scadenza, i tuoi punti deboli e qualche elemento nuovo{current ? ` della lezione ${current.id}` : ''}. Un solo pulsante, al resto pensa l’app.</p>
+          <button className="btn btn-primary btn-lg" disabled={!todayIds.length} onClick={startToday}>
+            Inizia la sessione ({todayIds.length} domande)
+          </button>
+        </div>
+        <div className="grid grid-2" style={{ marginTop: 16 }}>
           <div className="card">
             <div className="card-title"><h2>Da ripassare oggi</h2><Icon name="repeat" /></div>
             <div className="stat"><span className="stat-value">{due.length}</span><span className="stat-label">elementi in scadenza su {deckSize} nel mazzo</span></div>
@@ -72,7 +103,15 @@ export function ReviewPage() {
             <p className="muted">Allenati sugli elementi in cui sbagli di più, anche se non sono in scadenza.</p>
             <button className="btn btn-block btn-lg" onClick={() => start(practicePick(weakestItems(state, 40), 15))}>Allenati sui punti deboli</button>
           </div>
+          <div className="card">
+            <div className="card-title"><h2>Lettere simili</h2><span className="he-inline" lang="he" aria-hidden="true">ב כ · ד ר</span></div>
+            <p className="muted">Domande mirate sulle lettere che si confondono: ב/כ, ד/ר, ה/ח/ת, ו/ז/ן, ס/ם…</p>
+            <button className="btn btn-block btn-lg" disabled={!confusable.length} onClick={startConfusable}>
+              {confusable.length ? 'Allenati sulle lettere simili' : 'Disponibile quando conosci più lettere'}
+            </button>
+          </div>
         </div>
+        </>
       )}
     </div>
   );

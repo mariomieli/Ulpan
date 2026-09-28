@@ -69,6 +69,8 @@ export interface AppState {
   days: Record<string, DayStats>;
   /** Testi di lettura completati: id → data. */
   texts: Record<string, string>;
+  /** Velocità di lettura: miglior risultato (parole al minuto) per giorno; ":plain" = senza nikud. */
+  reading?: Record<string, number>;
   /**
    * Contributi di ogni dispositivo a XP e attività giornaliera. Ogni dispositivo
    * incrementa solo i propri contatori: così, unendo due copie, i progressi fatti
@@ -219,6 +221,7 @@ export function sanitize(raw: unknown): AppState {
     } : null;
   });
   const texts = mapOf(r.texts, /^[\w-]{1,40}$/, (v) => (typeof v === 'string' && DATE_RE.test(v) ? v : null));
+  const reading = mapOf(r.reading, /^\d{4}-\d{2}-\d{2}(:plain)?$/, (v) => (typeof v === 'number' && v > 0 ? num(v, 0, 1, 1000) : null));
   let contrib = mapOf(r.contrib, /^[\w-]{1,40}$/, (v) => {
     const o = obj(v);
     return o ? { xp: num(o.xp, 0, 0, 1e9), days: daysMap(o.days) } : null;
@@ -233,7 +236,7 @@ export function sanitize(raw: unknown): AppState {
     settings: sanitizeSettings(r.settings),
     // progressi salvati con un ordine delle lezioni precedente: si convertono
     lessons: r.version === 1 && r.curriculum !== 3 ? migrateLessons(lessons, r.curriculum === 2 ? 2 : 1) : lessons,
-    exams, srs, texts, contrib,
+    exams, srs, texts, contrib, reading,
     ...totals(contrib),
     streak: num(r.streak, 0, 0, 1e5),
     lastActive: typeof r.lastActive === 'string' && DATE_RE.test(r.lastActive) ? r.lastActive : null,
@@ -468,6 +471,8 @@ export function mergeStates(a: AppState, b: AppState): AppState {
     settingsUpdatedAt: Math.max(a.settingsUpdatedAt ?? 0, b.settingsUpdatedAt ?? 0) || undefined,
     lessons, exams, srs, contrib, ...totals(contrib),
     texts: { ...b.texts, ...a.texts },
+    reading: Object.fromEntries([...new Set([...Object.keys(a.reading ?? {}), ...Object.keys(b.reading ?? {})])]
+      .map((k) => [k, Math.max(a.reading?.[k] ?? 0, b.reading?.[k] ?? 0)])),
     streak: recent.streak,
     lastActive: recent.lastActive,
     updatedAt: Math.max(a.updatedAt ?? 0, b.updatedAt ?? 0),
@@ -656,6 +661,12 @@ export const actions = {
   },
   exam(examId: string, score: number, timeSec: number) {
     set(applyExam(state, examId, score, timeSec, new Date()));
+  },
+  /** Registra una prova di velocità di lettura (tiene il migliore del giorno). */
+  readingSpeed(wpm: number, plain: boolean) {
+    const key = `${dayKey()}${plain ? ':plain' : ''}`;
+    const best = Math.max(state.reading?.[key] ?? 0, Math.round(wpm));
+    set({ ...state, reading: { ...state.reading, [key]: best } });
   },
   settings(patch: Partial<Settings>) {
     set({ ...state, settings: { ...state.settings, ...patch }, settingsUpdatedAt: Date.now() });

@@ -1017,3 +1017,29 @@ details.why[open] > summary { margin-bottom: 2px; }
   .app.focus-mode .quiz-run .quiz-card .feedback { bottom: 12px; }
   .quiz-run .feedback .btn { margin-top: 8px; }
 }
+
+/* testi: parole da toccare */
+.word-tap {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0 1px; margin: 0; cursor: pointer;
+  border-radius: 6px; line-height: inherit; text-decoration: underline dotted color-mix(in srgb, var(--text-2) 40%, transparent);
+  text-underline-offset: .35em;
+}
+.word-tap:hover, .word-tap.on { background: var(--primary-soft); color: var(--primary); text-decoration: none; }
+.word-gloss {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: -4px 0 10px; padding: 10px 14px;
+  border-radius: var(--r-md); background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.word-gloss .he-inline { font-size: 1.6rem; }
+
+/* velocità di lettura */
+.speed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px 14px; text-align: center; }
+.speed-grid .he { font-size: calc(1.9rem * var(--he-scale)); line-height: 1.5; }
+/* tastiera ebraica */
+.he-keyboard { display: grid; gap: 6px; margin-top: 12px; }
+.he-keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.he-key {
+  min-height: 46px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font-family: var(--he-font); font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 2px 0 var(--border);
+}
+.he-key:active { transform: translateY(2px); box-shadow: none; background: var(--primary-soft); }
+.typed-he { min-height: 64px; }
