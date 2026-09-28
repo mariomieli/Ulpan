@@ -153,7 +153,7 @@ export function ReadingPage() {
       )}
 
       {mode === 'testi' && <TextsView level={level} fmt={show} translit={translit} meaning={meaning} />}
-      {mode === 'dettato' && <Dictation key={level} level={level} onExit={() => setMode('parole')} />}
+      {mode === 'dettato' && <Dictation key={level} level={level} />}
       {mode === 'flashcard' && <Flashcards key={level} words={WORDS.filter((w) => wordLesson(w) <= level)} fmt={show} />}
     </div>
   );
@@ -366,7 +366,7 @@ function Comprehension({ t }: { t: ReadingText }) {
   );
 }
 
-function Dictation({ level, onExit }: { level: number; onExit: () => void }) {
+function Dictation({ level }: { level: number }) {
   const { settings } = useAppState();
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -378,7 +378,7 @@ function Dictation({ level, onExit }: { level: number; onExit: () => void }) {
     return <QuizResults result={result} title="Dettato completato" onRetry={() => { setResult(null); setRound(round + 1); }} />;
   }
   return (
-    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onExit} title="Dettato"
+    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult}
       hint={listeningEnabled(settings.audio)
         ? 'Ascolta la parola e ricomponila scegliendo le tessere giuste: attenzione a vocali e lettere simili!'
         : 'Ricomponi la parola scegliendo le tessere giuste. (Con una voce ebraica installata il dettato diventa ad ascolto.)'} />

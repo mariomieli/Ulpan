@@ -984,19 +984,13 @@ img.brand-mark { background: none; border-radius: 22%; object-fit: contain; flex
 .auto-next { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--ok); transform-origin: left; animation: auto-next linear forwards; }
 
 /* =====================================================================
-   Domande a schermo intero su telefono: niente scorrimento verticale
+   Domande compatte su telefono
    ===================================================================== */
 .quiz-head { margin-bottom: 10px; }
 .quiz-title { margin: 0; font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); }
 details.why > summary { cursor: pointer; font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); margin-top: 4px; width: fit-content; }
 details.why[open] > summary { margin-bottom: 2px; }
 @media (max-width: 600px) {
-  html.quiz-open, html.quiz-open body { overflow: hidden; }
-  .quiz-run {
-    position: fixed; inset: 0; z-index: 60; max-width: none; margin: 0; background: var(--bg);
-    display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
-    padding: max(10px, env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));
-  }
   .quiz-run .quiz-head { margin-bottom: 6px; }
   .quiz-run .quiz-head .small { font-size: var(--fs-xs); }
   .quiz-run .quiz-top { margin-bottom: 10px; gap: 10px; }
@@ -1017,8 +1011,9 @@ details.why[open] > summary { margin-bottom: 2px; }
   .quiz-run .kbd-hint { display: none; }
   /* la correzione si appoggia in basso, sopra le risposte se serve */
   .quiz-run .quiz-card .feedback {
-    position: sticky; bottom: 0; margin: 12px -4px 0; padding: 12px 14px; z-index: 5;
+    position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); margin: 12px -4px 0; padding: 12px 14px; z-index: 5;
     max-height: 60vh; overflow-y: auto; box-shadow: var(--e3);
   }
+  .app.focus-mode .quiz-run .quiz-card .feedback { bottom: 12px; }
   .quiz-run .feedback .btn { margin-top: 8px; }
 }

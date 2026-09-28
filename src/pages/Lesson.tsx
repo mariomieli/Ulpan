@@ -165,7 +165,7 @@ function Study({ lessonId, onDone }: { lessonId: number; onDone: () => void }) {
   );
 }
 
-function Practice({ lessonId, onTest, onExit }: { lessonId: number; onTest: () => void; onExit: () => void }) {
+function Practice({ lessonId, onTest }: { lessonId: number; onTest: () => void }) {
   const { settings } = useAppState();
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -180,7 +180,7 @@ function Practice({ lessonId, onTest, onExit }: { lessonId: number; onTest: () =
       </QuizResults>
     );
   }
-  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onExit} title={`Lezione ${lessonId} · esercizio`} />;
+  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} />;
 }
 
 function LessonTest({ lessonId }: { lessonId: number }) {
@@ -198,7 +198,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
 
   if (phase === 'run') {
     return (
-      <QuizRunner key={round} questions={questions} mode="exam" title={`Test della lezione ${lessonId}`} onExit={() => { if (confirm(LEAVE_MESSAGE)) setPhase('intro'); }}
+      <QuizRunner key={round} questions={questions} mode="exam" onExit={() => { if (confirm(LEAVE_MESSAGE)) setPhase('intro'); }}
         onFinish={(r) => { actions.lessonTest(lessonId, r.pct, PASS_THRESHOLD); setResult(r); setPhase('done'); }} />
     );
   }
@@ -291,7 +291,7 @@ export function LessonPage({ id }: { id: number }) {
         </div>
       )}
       {tab === 'studio' && <Study lessonId={id} onDone={() => { actions.studied(id); setTab('esercizi'); }} />}
-      {tab === 'esercizi' && <Practice lessonId={id} onTest={() => setTab('test')} onExit={() => setTab('studio')} />}
+      {tab === 'esercizi' && <Practice lessonId={id} onTest={() => setTab('test')} />}
       {tab === 'test' && <LessonTest lessonId={id} />}
     </div>
   );

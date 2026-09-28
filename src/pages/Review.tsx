@@ -31,7 +31,7 @@ export function ReviewPage() {
   };
 
   if (questions && !result) {
-    return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} title="Ripasso" />;
+    return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} />;
   }
   if (result) {
     return (

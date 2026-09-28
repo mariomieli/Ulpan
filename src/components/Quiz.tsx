@@ -62,12 +62,6 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
     return () => { setFocusMode(false); window.removeEventListener('beforeunload', warn); };
   }, [mode]);
 
-  // su telefono l'esercizio occupa tutto lo schermo: la pagina sotto non scorre
-  useEffect(() => {
-    document.documentElement.classList.add('quiz-open');
-    return () => document.documentElement.classList.remove('quiz-open');
-  }, []);
-
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [typed, setTyped] = useState('');
