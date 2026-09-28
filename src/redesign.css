@@ -112,10 +112,11 @@ h1 { font-size: clamp(30px, 4vw, 40px); line-height: 1.15; }
 .btn-primary:hover:not(:disabled) { background: var(--primary-2); transform: translateY(-2px); box-shadow: 0 6px 0 var(--primary-shadow); }
 .btn-primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-shadow); }
 .btn-gold { background: var(--gold); border: 0; color: var(--gold-dark-ink); font-weight: 700; box-shadow: 0 5px 0 var(--gold-shadow); }
-.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--gold-shadow); color: var(--gold-dark-ink); }
+.btn-gold:hover { background: var(--gold); transform: translateY(-2px); box-shadow: 0 7px 0 var(--gold-shadow); color: var(--gold-dark-ink); }
 .btn-gold:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--gold-shadow); }
 .btn-ok { background: var(--ok); border: 0; color: #fff; box-shadow: 0 4px 0 var(--ok-shadow); }
 .btn-bad { background: var(--bad); border: 0; color: #fff; box-shadow: 0 4px 0 var(--bad-shadow); }
+.btn-ok:hover { background: var(--ok); } .btn-bad:hover { background: var(--bad); }
 .btn-ok:active, .btn-bad:active { transform: translateY(3px); box-shadow: none; }
 
 /* chip serie e XP */
@@ -594,3 +595,29 @@ h1 { font-size: clamp(30px, 4vw, 40px); line-height: 1.15; }
 .lb-bar { display: block; height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
 .lb-bar i { display: block; height: 100%; border-radius: 8px; background: var(--primary); transition: width .8s var(--ease-spring); }
 .leaderboard li.me .lb-bar i { background: var(--gold); }
+
+/* ---------- Ripasso a carte ---------- */
+.deck { max-width: 560px; margin: 0 auto; }
+.deck-title { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.deck-dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 4px 0 22px; }
+.deck-dots span { width: 8px; height: 8px; border-radius: 99px; background: var(--locked-sh); transition: all .4s var(--ease-spring); }
+.deck-dots span.done { background: var(--ok); }
+.deck-dots span.active { width: 24px; background: var(--primary); }
+.deck-scene .flash-face { min-height: 340px; }
+.deck-scene.flyL, .deck-scene.flyR { pointer-events: none; }
+.deck-front { gap: 8px; }
+.deck-kicker { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.flash-face .he.deck-he { font-size: calc(120px * var(--he-scale)) !important; line-height: 1.2; }
+.deck-scene .flash-back h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 52px !important; margin: 6px 0 0; }
+.deck-actions { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.deck-speak { width: 54px; height: 54px; flex: none; }
+.deck-show { flex: 1; max-width: 360px; }
+.deck-votes .btn { flex: 1; min-width: 0; padding-inline: 8px; }
+.deck-end { text-align: center; max-width: 520px; margin: 0 auto; padding: 32px 20px; }
+.deck-check { width: 84px; height: 84px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; margin: 0 auto 14px; animation: popIn .5s var(--ease-spring) backwards; }
+.deck-check path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: checkDraw .5s .3s ease-out forwards; }
+.deck-end h2 { margin: 0 0 6px; }
+.deck-xp { display: inline-block; margin: 6px 0 16px; padding: 5px 14px; border-radius: 999px; background: var(--gold); color: var(--gold-dark-ink); font-weight: 800; box-shadow: 0 3px 0 var(--gold-shadow); animation: popIn .5s .4s var(--ease-spring) backwards; }
+.ok-text { color: var(--ok); } .gold-text { color: var(--gold-ink, var(--gold)); } .bad-text { color: var(--bad); }
+@media (prefers-reduced-motion: reduce) { .deck-check path { stroke-dashoffset: 0; animation: none; } }
+@keyframes checkDraw { to { stroke-dashoffset: 0; } }

@@ -235,3 +235,14 @@ describe('velocità di lettura', () => {
     expect(mergeStates(a, b).reading).toEqual({ '2026-09-01': 55, '2026-09-02:plain': 25 });
   });
 });
+
+describe('ripasso "Difficile"', () => {
+  it('fa crescere l’intervallo meno di "Facile" e abbassa la facilità', () => {
+    const base = { reps: 3, interval: 10, ease: 2.5, due: 0, lapses: 0, seen: 5, correct: 5 };
+    const easy = review(base, true, 1000);
+    const hard = review(base, true, 1000, true);
+    expect(hard.interval).toBeLessThan(easy.interval);
+    expect(hard.interval).toBe(12);
+    expect(hard.ease).toBeLessThan(base.ease);
+  });
+});

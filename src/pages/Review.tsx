@@ -7,6 +7,7 @@ import { LESSONS, glyphsUpTo } from '../data/curriculum';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { LetterArt } from '../components/LessonArt';
 import { Icon } from '../components/Icon';
+import { ReviewDeck } from '../components/ReviewDeck';
 
 const SESSION = 20;
 
@@ -23,13 +24,25 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [title, setTitle] = useState('Sessione di ripasso completata');
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [deckIds, setDeckIds] = useState<string[] | null>(null);
+  const [round, setRound] = useState(0);
   const due = dueItems(state, Date.now());
   const deckSize = Object.keys(state.srs).length;
   const opts = () => ({ audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() });
 
-  const start = (ids: string[], doneTitle = 'Sessione di ripasso completata') => {
+  // Il ripasso si fa a carte: si legge, si gira e ci si autovaluta
+  const start = (ids: string[], doneTitle = 'Ripasso') => {
     setResult(null);
+    setQuestions(null);
     setTitle(doneTitle);
+    setRound((r) => r + 1);
+    setDeckIds(ids.slice(0, SESSION));
+  };
+  // Le stesse carte come domande a scelta multipla
+  const startQuiz = (ids: string[]) => {
+    setDeckIds(null);
+    setResult(null);
+    setTitle('Ripasso con domande completato');
     setQuestions(buildReview(ids.slice(0, SESSION), maxUnlockedLesson(state), Math.random, opts()));
   };
 
@@ -37,7 +50,7 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
   const current = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed);
   const fresh = current ? lessonItemIds(current.id).filter((id) => !state.srs[id]) : [];
   const todayIds = pickDailyItems(due, practicePick(weakestItems(state, 40), 10), fresh, 15);
-  const startToday = () => start(todayIds, 'Sessione di oggi completata');
+  const startToday = () => start(todayIds, 'Sessione di oggi');
 
   // Lettere che si confondono, tra quelle già studiate
   const known = glyphsUpTo(maxUnlockedLesson(state));
@@ -53,6 +66,19 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
+  if (deckIds) {
+    const quiz = deckIds;
+    return (
+      <div className="fade-in">
+        <ReviewDeck key={round} ids={deckIds} title={title} onExit={() => setDeckIds(null)}>
+          {due.length > 0
+            ? <button className="btn btn-primary" onClick={() => start(due)}>Continua ({due.length})</button>
+            : <button className="btn btn-primary" onClick={() => setDeckIds(null)}>Fatto</button>}
+          <button className="btn" onClick={() => startQuiz(quiz)}>Mettiti alla prova con le domande</button>
+        </ReviewDeck>
+      </div>
+    );
+  }
   if (questions && !result) {
     return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} title={title.replace(/ complet.*$/, '').replace('Sessione di ripasso', 'Ripasso')} />;
   }
@@ -85,9 +111,9 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
         <>
         <div className="card today-card">
           <div className="card-title"><h2>Sessione di oggi</h2><Icon name="star" /></div>
-          <p className="muted" style={{ marginTop: 0 }}>Circa 10 minuti: ciò che è in scadenza, i tuoi punti deboli e qualche elemento nuovo{current ? ` della lezione ${current.id}` : ''}. Un solo pulsante, al resto pensa l’app.</p>
+          <p className="muted" style={{ marginTop: 0 }}>Circa 10 minuti: ciò che è in scadenza, i tuoi punti deboli e qualche elemento nuovo{current ? ` della lezione ${current.id}` : ''}. Leggi la carta, girala e di’ quanto è stato facile.</p>
           <button className="btn btn-primary btn-lg" disabled={!todayIds.length} onClick={startToday}>
-            Inizia la sessione ({todayIds.length} domande)
+            Inizia la sessione ({todayIds.length} carte)
           </button>
         </div>
         <div className="grid grid-2" style={{ marginTop: 16 }}>
@@ -95,7 +121,7 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
             <div className="card-title"><h2>Da ripassare oggi</h2><Icon name="repeat" /></div>
             <div className="stat"><span className="stat-value">{due.length}</span><span className="stat-label">elementi in scadenza su {deckSize} nel mazzo</span></div>
             <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 16 }} disabled={!due.length} onClick={() => start(due)}>
-              {due.length ? `Inizia (${Math.min(SESSION, due.length)} domande)` : 'Tutto in pari per oggi ✓'}
+              {due.length ? `Inizia (${Math.min(SESSION, due.length)} carte)` : 'Tutto in pari per oggi ✓'}
             </button>
           </div>
           <div className="card">

@@ -24,7 +24,7 @@ export function newSrsState(now: number): SrsState {
  * Aggiorna un elemento dopo una risposta. L'intervallo cresce solo quando
  * l'elemento è in scadenza; un errore lo riporta sempre in ripasso.
  */
-export function review(state: SrsState, correct: boolean, now: number): SrsState {
+export function review(state: SrsState, correct: boolean, now: number, hard = false): SrsState {
   const s = { ...state, seen: state.seen + 1 };
   if (correct && state.reps > 0 && now < state.due) {
     // Risposta giusta prima della scadenza: conta nelle statistiche ma non allunga
@@ -35,10 +35,16 @@ export function review(state: SrsState, correct: boolean, now: number): SrsState
   if (correct) {
     s.correct += 1;
     s.reps += 1;
-    if (s.reps === 1) s.interval = 1;
-    else if (s.reps === 2) s.interval = 3;
-    else s.interval = Math.round(s.interval * s.ease);
-    s.ease = Math.min(3, s.ease + 0.05);
+    if (hard) {
+      // "Difficile": giusta ma con fatica, l'intervallo cresce poco e la facilità cala
+      s.interval = s.reps === 1 ? 1 : Math.max(1, Math.round(s.interval * 1.2));
+      s.ease = Math.max(1.3, s.ease - 0.15);
+    } else {
+      if (s.reps === 1) s.interval = 1;
+      else if (s.reps === 2) s.interval = 3;
+      else s.interval = Math.round(s.interval * s.ease);
+      s.ease = Math.min(3, s.ease + 0.05);
+    }
     s.due = now + s.interval * DAY;
   } else {
     s.reps = 0;

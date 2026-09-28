@@ -485,18 +485,20 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 /* ------------------------------------------------------------------ */
 
 export function applyAnswer(
-  s: AppState, itemIds: string[], correct: boolean, now: Date, dev: string = deviceId(), selfRated = false,
+  s: AppState, itemIds: string[], correct: boolean, now: Date, dev: string = deviceId(), selfRated = false, hard = false, reward = 0,
 ): AppState {
   const t = now.getTime();
   const today = dayKey(now);
   const srs = { ...s.srs };
-  for (const id of itemIds) srs[id] = review(srs[id] ?? newSrsState(t), correct, t);
+  for (const id of itemIds) srs[id] = review(srs[id] ?? newSrsState(t), correct, t, hard);
 
   let { streak } = s;
   if (s.lastActive !== today) streak = s.lastActive === yesterdayKey(now) ? streak + 1 : 1;
 
-  // Autovalutazione (flashcard "lo sapevo"): aggiorna il ripasso ma non dà XP né punti in classifica
-  if (selfRated) return { ...s, srs, streak, lastActive: today };
+  // Autovalutazione (flashcard "lo sapevo"): aggiorna il ripasso ma non dà XP né punti in classifica,
+  // salvo le carte del ripasso, che contano come risposta del giorno e valgono un piccolo premio
+  if (selfRated && !reward) return { ...s, srs, streak, lastActive: today };
+  if (selfRated) return { ...s, srs, streak, lastActive: today, ...addContrib(s, dev, correct ? reward : 0, today, correct) };
   return {
     ...s,
     srs,
@@ -641,8 +643,8 @@ export function weakestItems(s: AppState, n: number): string[] {
 /* ------------------------------------------------------------------ */
 
 export const actions = {
-  answer(itemIds: string[], correct: boolean, opts: { selfRated?: boolean } = {}) {
-    set(applyAnswer(state, itemIds, correct, new Date(), deviceId(), opts.selfRated));
+  answer(itemIds: string[], correct: boolean, opts: { selfRated?: boolean; hard?: boolean; reward?: number } = {}) {
+    set(applyAnswer(state, itemIds, correct, new Date(), deviceId(), opts.selfRated, opts.hard, opts.reward));
   },
   placement(maxLesson: number, scores: Record<number, number>) {
     set(applyPlacement(state, maxLesson, scores, new Date()));
