@@ -60,9 +60,9 @@ export function AuthPage({ recovery = false }: { recovery?: boolean }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card card fade-in">
-        <div className="brand" style={{ justifyContent: 'center', paddingBottom: 8 }}>
-          <img className="brand-mark" src="./favicon.svg" alt="" width={40} height={40} style={{ width: 40, height: 40 }} />
-          <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
+        <div className="auth-logo">
+          <img className="brand-logo" src="./logo.png" alt="Ulpan" width={160} />
+          <small>Impara a leggere l’ebraico</small>
         </div>
 
         {(mode === 'login' || mode === 'register') && (

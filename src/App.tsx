@@ -164,7 +164,7 @@ export function App() {
   }, []);
 
   if (auth.status === 'loading') {
-    return <div className="auth-wrap"><img className="brand-mark" src="./favicon.svg" alt="" width={56} height={56} style={{ width: 56, height: 56 }} /></div>;
+    return <div className="auth-wrap"><img className="brand-mark" src="./logo-mark.png" alt="" width={72} height={72} style={{ width: 72, height: 72 }} /></div>;
   }
   if (auth.status === 'signedOut') {
     return path === '/privacy'
@@ -177,7 +177,7 @@ export function App() {
     <div className={`app ${focus ? 'focus-mode' : ''}`}>
       <nav className="sidebar" aria-label="Navigazione principale">
         <a href="#/" className="brand" style={{ color: 'inherit' }}>
-          <img className="brand-mark" src="./favicon.svg" alt="" width={36} height={36} />
+          <img className="brand-mark" src="./logo-mark.png" alt="" width={40} height={40} />
           <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
         </a>
         <div className="nav-list">
@@ -209,7 +209,7 @@ export function App() {
       </nav>
 
       <header className="topbar">
-        <a href="#/" className="topbar-brand"><img src="./favicon.svg" alt="" width={32} height={32} /> Ulpan</a>
+        <a href="#/" className="topbar-brand"><img src="./logo-mark.png" alt="" width={34} height={34} /> Ulpan</a>
         <span className="stat-chip flame sm" title="Giorni di fila"><Icon name="flame" size={16} className="flame-icon" /> {state.streak}</span>
         <span className="stat-chip xp sm" title="XP totali"><Icon name="star" size={16} className="star-icon" /> {state.xp}</span>
       </header>
