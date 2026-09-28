@@ -143,7 +143,7 @@
 html, body { margin: 0; padding: 0; }
 
 body {
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: Rubik, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.55;
@@ -393,7 +393,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .option:focus-vis
 .option:hover:not(:disabled) { border-color: var(--primary); }
 .option .key {
   position: absolute; top: 6px; left: 8px; font-size: .68rem; color: var(--text-2); font-weight: 600;
-  border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; font-family: Inter, sans-serif;
+  border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; font-family: Rubik, sans-serif;
 }
 .option .he { font-size: calc(2.1rem * var(--he-scale)); font-weight: 400; line-height: 1.5; padding-block: .1em; }
 .option.selected { border-color: var(--primary); background: var(--primary-soft); }
@@ -699,7 +699,7 @@ dialog:not([open]) { display: none !important; }
 .syl-table th, .syl-table td { padding: 2px; text-align: center; }
 .syl-table thead th { font-weight: 600; }
 .syl-table thead th .he-inline { font-size: 1.5rem; display: block; }
-.syl-table thead th small, .syl-cell small { display: block; font-size: .7rem; color: var(--text-2); font-family: Inter, sans-serif; }
+.syl-table thead th small, .syl-cell small { display: block; font-size: .7rem; color: var(--text-2); font-family: Rubik, sans-serif; }
 .syl-table tbody th .he-inline { font-size: 1.6rem; color: var(--primary); }
 .syl-cell {
   width: 100%; min-width: 52px; min-height: 52px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);

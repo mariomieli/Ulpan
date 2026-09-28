@@ -107,7 +107,7 @@ export function ExamPage({ id }: { id: string }) {
 
   if (phase === 'run') {
     return (
-      <QuizRunner key={round} questions={questions} mode="exam" timeLimitSec={exam.minutes ? exam.minutes * 60 : undefined}
+      <QuizRunner key={round} questions={questions} mode="exam" title={exam.title} timeLimitSec={exam.minutes ? exam.minutes * 60 : undefined}
         onExit={() => { if (confirm('Vuoi davvero abbandonare l’esame?')) setPhase('intro'); }}
         onFinish={(r) => { actions.exam(exam.id, r.pct, r.timeSec); setResult(r); setPhase('done'); }} />
     );

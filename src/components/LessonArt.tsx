@@ -3,6 +3,9 @@ import { VOWEL_BY_ID } from '../data/nikud';
 import type { Lesson } from '../data/curriculum';
 import { vowelDisplay } from '../lib/quiz';
 
+/** Lezione appena superata (segnata dal test): nel percorso la sua tappa fa un piccolo salto. */
+export const JUST_PASSED_KEY = 'ulpan:justPassed';
+
 export type LessonKind = 'vowels' | 'letters' | 'rules';
 
 /** Glifo simbolo delle lezioni di sole regole. */

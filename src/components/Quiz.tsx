@@ -12,6 +12,7 @@ import { confetti, feedback, useCountUp } from '../lib/fx';
 
 /** XP per risposta corretta (vedi applyAnswer nello store). */
 const XP_PER_ANSWER = 10;
+const PRAISE = ['Esatto!', 'Perfetto!', 'Ottimo!', 'Giusto!'];
 /** Tempo per vedere la conferma prima di passare alla domanda seguente. */
 const AUTO_ADVANCE_MS = 1200;
 
@@ -29,6 +30,8 @@ export interface QuizResult {
   total: number;
   pct: number;
   timeSec: number;
+  /** Risposte giuste di fila più lunga (solo esercizi). */
+  maxCombo?: number;
 }
 
 interface Props {
@@ -70,6 +73,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   // risposte giuste di fila (solo esercizi): da 3 in su compare il contatore
   const [combo, setCombo] = useState(0);
+  const maxComboRef = useRef(0);
   const startRef = useRef(Date.now());
   const [now, setNow] = useState(Date.now());
   const finishedRef = useRef(false);
@@ -94,6 +98,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
       answers: full, correct, total: questions.length,
       pct: questions.length ? Math.round((correct / questions.length) * 100) : 0,
       timeSec: Math.round((Date.now() - startRef.current) / 1000),
+      maxCombo: maxComboRef.current,
     });
   }, [questions, onFinish]);
 
@@ -141,7 +146,10 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
     if (mode === 'practice') {
       const c = correct ? combo + 1 : 0;
       setCombo(c);
-      feedback(!correct ? 'bad' : c >= 5 && c % 5 === 0 ? 'combo' : 'ok');
+      maxComboRef.current = Math.max(maxComboRef.current, c);
+      feedback(!correct ? 'bad' : c >= 3 && c % 3 === 0 ? 'combo' : 'ok');
+      // piccola festa per le serie di risposte giuste
+      if (c >= 3 && c % 3 === 0) confetti(28);
     }
     return next;
   }, [q, answers, evaluate, mode, combo]);
@@ -259,9 +267,9 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
 
   const optionClass = (value: string) => {
     if (!showFeedback) return selected === value ? 'option selected' : 'option';
-    if (value === q.answer) return 'option correct';
+    if (value === q.answer) return `option correct ${last?.correct ? '' : 'reveal'}`;
     if (value === selected) return 'option wrong';
-    return 'option';
+    return 'option dim';
   };
 
   const correctLabel = q.options?.find((o) => o.value === q.answer);
@@ -275,30 +283,19 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
   const mistake = showFeedback && !last.correct ? explainMistake(q, last.given) : null;
 
   return (
-    <div className="quiz quiz-run fade-in">
-      {(title || hint) && (
-        <div className="quiz-head">
-          {title && <p className="quiz-title">{title}</p>}
-          {hint && <p className="small muted" style={{ margin: 0 }}>{hint}</p>}
-        </div>
-      )}
+    <div className={`quiz quiz-run fade-in ${showFeedback ? 'has-sheet' : ''}`}>
+      {hint && <p className="small muted quiz-hint">{hint}</p>}
       <div className="quiz-top">
         {onExit && (
-          <button className="btn btn-ghost btn-icon" onClick={onExit} aria-label="Esci dal quiz" title="Esci">
+          <button className="quiz-close" onClick={onExit} aria-label="Esci dal quiz" title="Esci">
             <Icon name="x" size={20} className="" />
           </button>
         )}
-        <div className="progress" role="progressbar" aria-label="Avanzamento" aria-valuemin={0} aria-valuenow={idx + 1}
+        <div className="qbar" role="progressbar" aria-label="Avanzamento" aria-valuemin={0} aria-valuenow={idx + 1}
           aria-valuemax={questions.length} aria-valuetext={`Domanda ${idx + 1} di ${questions.length}`}>
-          <div className="progress-fill" style={{ transform: `scaleX(${progress})` }} />
+          <div style={{ width: `${progress * 100}%` }} />
         </div>
-        {mode === 'practice' && combo >= 3 && (
-          <span className="combo" key={combo} aria-label={`${combo} risposte giuste di fila`}>
-            <Icon name="flame" size={16} className="" /> ×{combo}
-          </span>
-        )}
         <span className="quiz-count">{idx + 1}/{questions.length}</span>
-        {showFeedback && last.correct && <span className="xp-float" aria-hidden="true" key={q.key}>+{XP_PER_ANSWER} XP</span>}
         {remaining !== undefined && (
           <span className={`timer ${remaining < 60 ? 'low' : ''}`} aria-label={`Tempo rimasto ${fmtTime(remaining)}`}><Icon name="clock" size={16} className="" /> {fmtTime(remaining)}</span>
         )}
@@ -306,8 +303,19 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
           <span className="sr-only" role="alert">{remaining <= 10 ? 'Mancano meno di 10 secondi' : remaining <= 60 ? 'Manca meno di un minuto' : ''}</span>
         )}
       </div>
+      {(title || (mode === 'practice' && combo >= 2)) && (
+        <div className="quiz-kicker-row">
+          {title ? <span className="kicker">{title}</span> : <span />}
+          {mode === 'practice' && combo >= 2 && (
+            <span className="combo-chip" key={combo} aria-label={`${combo} risposte giuste di fila`}>
+              <Icon name="flame" size={16} className="flame-icon" /> {combo} di fila
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="card quiz-card q-enter" key={q.key}>
+        {showFeedback && last.correct && <span className="xp-pill" aria-hidden="true">+{XP_PER_ANSWER} XP</span>}
         <div className="quiz-prompt">{q.prompt}</div>
 
         {q.stimulus && (
@@ -385,31 +393,35 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
         )}
 
         {showFeedback && (
-          <div className={`feedback fade-in ${last.correct ? 'ok' : 'bad'}`} role="status" aria-live="polite">
-            <div>
-              <strong className="feedback-title">
+          <div className={`feedback sheet ${last.correct ? 'ok' : 'bad'}`} role="status" aria-live="polite">
+            <div className="sheet-inner">
+              <span className="sheet-icon" aria-hidden="true">
                 {last.correct
-                  ? <svg className="check-draw" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-                  : <Icon name="x" size={20} className="" />}
-                {last.close ? 'Quasi perfetto!' : last.correct ? 'Esatto!' : 'Non proprio…'}
-              </strong>
-              {last.close && (q.keyboard
-                ? <div>Attenzione alle forme finali: si scrive <He size="sm">{q.answer}</He>.</div>
-                : <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>)}
-              {!last.correct && (
-                <div>Risposta corretta: {correctLabel?.hebrew || q.compose || q.keyboard ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
-              )}
-              {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
-              {/* la spiegazione: aperta dopo un errore, a richiesta dopo una risposta giusta */}
-              <details className="why" open={!last.correct}>
-                <summary>Perché?</summary>
-                <div className="small"><Rich text={q.explanation} /></div>
-              </details>
+                  ? <svg className="check-draw" viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                  : <Icon name="x" size={26} className="" />}
+              </span>
+              <div className="sheet-text">
+                <strong className="feedback-title">
+                  {last.close ? 'Quasi perfetto!' : last.correct ? PRAISE[answers.length % PRAISE.length] : 'Non proprio'}
+                </strong>
+                {last.close && (q.keyboard
+                  ? <div>Attenzione alle forme finali: si scrive <He size="sm">{q.answer}</He>.</div>
+                  : <div>C’è un piccolo refuso: la grafia esatta è <b>{q.answer}</b>.</div>)}
+                {!last.correct && (
+                  <div>Risposta giusta: {correctLabel?.hebrew || q.compose || q.keyboard ? <He size="sm">{correctLabel?.label ?? q.answer}</He> : <b>{correctLabel?.label ?? q.answer}</b>}</div>
+                )}
+                {!last.correct && mistake && <div className="small mistake">{mistake}</div>}
+                {/* la spiegazione: aperta dopo un errore, a richiesta dopo una risposta giusta */}
+                <details className="why" open={!last.correct}>
+                  <summary>Perché?</summary>
+                  <div className="small"><Rich text={q.explanation} /></div>
+                </details>
+              </div>
+              <button className={`btn btn-lg ${last.correct ? 'btn-ok' : 'btn-bad'}`} onClick={() => goNext(answers)} autoFocus>
+                {isLast ? 'Risultati' : 'Continua'} <Icon name="arrowRight" size={18} className="" />
+              </button>
             </div>
             {autoNext && <span className="auto-next" aria-hidden="true" style={{ animationDuration: `${AUTO_ADVANCE_MS}ms` }} />}
-            <button className="btn btn-primary" onClick={() => goNext(answers)} autoFocus>
-              {isLast ? 'Risultati' : 'Continua'} <Icon name="arrowRight" size={18} className="" />
-            </button>
           </div>
         )}
 
@@ -445,6 +457,24 @@ function HebrewKeyboard({ onKey }: { onKey: (c: string) => void }) {
   );
 }
 
+/** Anello del risultato: si riempie mentre la percentuale conta. */
+function ResultRing({ pct, good, shown }: { pct: number; good: boolean; shown: number }) {
+  const r = 64;
+  const c = 2 * Math.PI * r;
+  const [on, setOn] = useState(false);
+  useEffect(() => { const f = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(f); }, []);
+  return (
+    <div className="result-ring" role="img" aria-label={`${pct}%`}>
+      <svg width="170" height="170" aria-hidden="true">
+        <circle cx="85" cy="85" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="14" />
+        <circle cx="85" cy="85" r={r} fill="none" stroke={good ? 'var(--ok)' : 'var(--gold)'} strokeWidth="14" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={on ? c * (1 - pct / 100) : c} className="result-ring-fill" />
+      </svg>
+      <span className="result-score" style={{ color: good ? 'var(--ok)' : 'var(--gold-ink)' }}>{shown}%</span>
+    </div>
+  );
+}
+
 export function QuizResults({ result, title, passThreshold, onRetry, children }: {
   result: QuizResult;
   title: string;
@@ -454,12 +484,13 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
 }) {
   const grade = gradeLabel(result.pct);
   const passed = passThreshold === undefined ? undefined : result.pct >= passThreshold;
-  const shown = useCountUp(result.pct);
+  const shown = useCountUp(result.pct, 1500);
+  const xpShown = useCountUp(result.correct * XP_PER_ANSWER, 1200);
   const celebrate = passed ?? result.pct >= 80;
   // festa proporzionata: coriandoli solo per un test superato o un ottimo risultato
   useEffect(() => {
     if (!celebrate) return;
-    const t = setTimeout(() => { confetti(); feedback('win'); }, 250);
+    const t = setTimeout(() => { confetti(120); feedback('win'); }, 350);
     return () => clearTimeout(t);
   }, [celebrate]);
   const wrong = useMemo(() => result.answers.filter((a) => !a.correct), [result]);
@@ -474,19 +505,27 @@ export function QuizResults({ result, title, passThreshold, onRetry, children }:
   return (
     <div className="quiz fade-in">
       <div className="card result-head">
-        <p className="muted">{title}</p>
-        <div className="result-score" style={{ color: `var(--${grade.tone})` }} aria-label={`${result.pct}%`}>{shown}%</div>
-        <p style={{ marginTop: 8 }}>
-          <span className={`pill pill-${grade.tone}`}>{grade.label}</span>
-          {passed !== undefined && (
-            <span className={`pill ${passed ? 'pill-ok pop-in' : 'pill-bad'}`} style={{ marginLeft: 8 }}>
-              {passed ? 'Test superato' : `Serve almeno ${passThreshold}%`}
-            </span>
-          )}
+        <p className="kicker" style={{ textAlign: 'center' }}>{title}</p>
+        <ResultRing pct={result.pct} good={passed ?? result.pct >= 80} shown={shown} />
+        <h2 className="result-title">
+          {passed === true ? 'Lezione superata!' : passed === false ? 'Ci sei quasi!' : result.pct >= 80 ? 'Ottimo lavoro!' : result.pct >= 50 ? 'Buon allenamento!' : 'Continua a esercitarti!'}
+        </h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          {passed === false ? `Serve almeno ${passThreshold}% per sbloccare la lezione successiva.` : `${grade.label} · tempo ${fmtTime(result.timeSec)}`}
         </p>
-        <p className="muted">{result.correct} risposte corrette su {result.total} · tempo {fmtTime(result.timeSec)}</p>
-        <div className="row" style={{ justifyContent: 'center' }}>
-          {onRetry && <button className="btn" onClick={onRetry}><Icon name="repeat" size={18} className="" /> Riprova</button>}
+        <div className="result-tiles">
+          <div className="rtile gold" style={{ animationDelay: '.5s' }}><span>XP</span><b>+{xpShown}</b></div>
+          <div className="rtile green" style={{ animationDelay: '.62s' }}><span>Corrette</span><b>{result.correct}/{result.total}</b></div>
+          <div className="rtile flame" style={{ animationDelay: '.74s' }}><span>Combo</span><b>{result.maxCombo ?? 0}</b></div>
+        </div>
+        {passed && (
+          <div className="trophy-card">
+            <span className="trophy-icon"><Icon name="trophy" size={28} className="" /></span>
+            <div><b>Nuovo traguardo</b><span>Lezione completata: la prossima tappa è sbloccata.</span></div>
+          </div>
+        )}
+        <div className="row" style={{ justifyContent: 'center', marginTop: 18 }}>
+          {onRetry && <button className="btn btn-lg" onClick={onRetry}><Icon name="repeat" size={18} className="" /> Riprova</button>}
           {children}
         </div>
       </div>

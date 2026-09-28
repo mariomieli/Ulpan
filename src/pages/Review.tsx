@@ -54,7 +54,7 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
   }, [autoStart]);
 
   if (questions && !result) {
-    return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} />;
+    return <QuizRunner questions={questions} mode="practice" onFinish={setResult} onExit={() => setQuestions(null)} title={title.replace(/ complet.*$/, '').replace('Sessione di ripasso', 'Ripasso')} />;
   }
   if (result) {
     return (

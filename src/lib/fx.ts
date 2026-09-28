@@ -93,7 +93,7 @@ export function feedback(kind: FxKind) {
  * Coriandoli su canvas, circa 90 pezzi per 1,4 secondi; il canvas viene rimosso alla fine.
  * Alcuni pezzi sono lettere ebraiche. Con il movimento ridotto non fa nulla.
  */
-export function confetti() {
+export function confetti(count = 90) {
   if (reducedMotion() || typeof document === 'undefined') return;
   const canvas = document.createElement('canvas');
   canvas.className = 'confetti-canvas';
@@ -108,10 +108,10 @@ export function confetti() {
   if (!c) { canvas.remove(); return; }
   c.scale(dpr, dpr);
   const css = getComputedStyle(document.documentElement);
-  const colors = ['--primary', '--accent', '--ok', '--bad', '--primary-2']
-    .map((v) => css.getPropertyValue(v).trim()).filter(Boolean);
+  void css;
+  const colors = ['#1F4E8C', '#E0B45A', '#1E7A4F', '#D2553A', '#2A63AD', '#F2D39A', '#A9D8BC'];
   const letters = ['א', 'ב', 'ג', 'ש', 'ת', 'ל'];
-  const parts = Array.from({ length: 90 }, (_, i) => ({
+  const parts = Array.from({ length: count }, (_, i) => ({
     x: w / 2 + (Math.random() - 0.5) * w * 0.3,
     y: h * 0.35,
     vx: (Math.random() - 0.5) * 11,
@@ -123,7 +123,7 @@ export function confetti() {
     letter: i % 9 === 0 ? letters[i % letters.length] : null,
   }));
   const t0 = performance.now();
-  const DURATION = 1400;
+  const DURATION = count > 60 ? 2200 : 1400;
   const frame = (now: number) => {
     const t = now - t0;
     if (t > DURATION || document.hidden) { canvas.remove(); return; }

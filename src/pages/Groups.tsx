@@ -12,7 +12,7 @@ import { navigate } from '../lib/router';
 import { Icon } from '../components/Icon';
 import { TeacherPanel } from './Teacher';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+const HEB_INITIALS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת'];
 
 export function errorText(e: unknown): string {
   return e instanceof GroupError ? e.message : 'Qualcosa è andato storto. Riprova.';
@@ -29,7 +29,7 @@ export function formatDate(iso: string | null | undefined): string {
   return `${d}/${m}/${y}`;
 }
 
-export function Invite({ code, name, kind = 'group' }: { code: string; name: string; kind?: GroupKind }) {
+export function Invite({ code, name, kind = 'group', compact = false }: { code: string; name: string; kind?: GroupKind; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   const link = inviteLink(code);
   const share = async () => {
@@ -43,6 +43,13 @@ export function Invite({ code, name, kind = 'group' }: { code: string; name: str
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
+  if (compact) {
+    return (
+      <button className="invite-chip" onClick={share} aria-label={`Codice d’invito ${code}: tocca per condividerlo`}>
+        {copied ? 'Copiato ✓' : code}
+      </button>
+    );
+  }
   return (
     <div className="invite">
       <div>
@@ -82,19 +89,41 @@ export function Leaderboard({ group, canRemove, onChanged }: { group: Group; can
         <h2>Classifica</h2>
         <button className="btn btn-sm btn-ghost" onClick={() => void load()} aria-label="Aggiorna"><Icon name="repeat" size={16} className="" /></button>
       </div>
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={mode === 'settimana'} className={`tab ${mode === 'settimana' ? 'active' : ''}`} onClick={() => setMode('settimana')}>Ultimi 7 giorni</button>
-        <button role="tab" aria-selected={mode === 'totale'} className={`tab ${mode === 'totale' ? 'active' : ''}`} onClick={() => setMode('totale')}>Sempre</button>
+      <div className="seg-switch" role="tablist">
+        <span className="seg-switch-ind" aria-hidden="true" style={{ transform: mode === 'totale' ? 'translateX(100%)' : 'none' }} />
+        <button role="tab" aria-selected={mode === 'settimana'} className={mode === 'settimana' ? 'on' : ''} onClick={() => setMode('settimana')}>Ultimi 7 giorni</button>
+        <button role="tab" aria-selected={mode === 'totale'} className={mode === 'totale' ? 'on' : ''} onClick={() => setMode('totale')}>XP totali</button>
       </div>
+      {ranked.length >= 2 && (
+        <div className="podium" aria-hidden="true" key={mode}>
+          {[1, 0, 2].map((pos) => {
+            const r = ranked[pos];
+            if (!r) return <div key={pos} className="podium-col empty" />;
+            const me = r.user_id === auth.user?.id;
+            return (
+              <div key={pos} className={`podium-col p${pos + 1}`}>
+                <span className="podium-avatar" style={{ animationDelay: `${0.5 + pos * 0.1}s` }}>{r.display_name.slice(0, 1)}</span>
+                <span className="podium-name">{me ? 'Tu' : r.display_name}</span>
+                <div className="podium-block" style={{ animationDelay: `${pos * 0.12}s` }}>
+                  <b>{pos + 1}</b>
+                  <span>{mode === 'settimana' ? `${r.week} corrette` : `${r.xp} XP`}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {error && <p className="feedback bad small">{error}</p>}
       {!entries && !error && <p className="muted center">Caricamento…</p>}
       {entries?.length === 0 && <p className="muted center">Ancora nessuno in classifica.</p>}
       <ol className="leaderboard">
-        {ranked.map((r) => {
+        {ranked.map((r, idx) => {
           const me = r.user_id === auth.user?.id;
+          const score = mode === 'settimana' ? r.week : r.xp;
+          const top = Math.max(1, mode === 'settimana' ? ranked[0].week : ranked[0].xp);
           return (
-            <li key={r.user_id} className={me ? 'me' : ''}>
-              <span className="lb-rank">{r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}</span>
+            <li key={`${mode}-${r.user_id}`} className={me ? 'me' : ''} style={{ animationDelay: `${idx * 50}ms` }}>
+              <span className="lb-rank">{r.rank}</span>
               <span className="avatar">{r.display_name.slice(0, 1)}</span>
               <span className="lb-name">
                 <b>{r.display_name}{me && <span className="muted"> (tu)</span>}</b>
@@ -102,6 +131,7 @@ export function Leaderboard({ group, canRemove, onChanged }: { group: Group; can
                   {r.currentStreak > 0 && <><Icon name="flame" size={13} className="inline-icon" /> {r.currentStreak} {r.currentStreak === 1 ? 'giorno' : 'giorni'} · </>}
                   {r.lessons_passed} {r.lessons_passed === 1 ? 'lezione' : 'lezioni'}
                 </span>
+                <span className="lb-bar"><i style={{ width: `${(score / top) * 100}%` }} /></span>
               </span>
               <span className="lb-score">
                 <b>{mode === 'settimana' ? r.week : r.xp}</b>
@@ -151,12 +181,15 @@ function GroupDetail({ group, onBack, onChanged }: { group: Group; onBack: () =>
   };
   return (
     <div className="fade-in stack">
-      <div>
-        <button className="link-btn" onClick={onBack}>← Gruppi e classi</button>
-        <h1 style={{ margin: '6px 0 0' }}>{group.name}</h1>
-        <p className="muted" style={{ margin: 0 }}>{group.members} {group.members === 1 ? 'membro' : 'membri'}{isOwner ? ' · sei l’amministratore' : ''}</p>
+      <button className="link-btn" onClick={onBack} style={{ justifySelf: 'start' }}>← Gruppi e classi</button>
+      <div className="group-card">
+        <span className="group-letter" lang="he" aria-hidden="true">{HEB_INITIALS[group.name.length % HEB_INITIALS.length]}</span>
+        <div className="group-info">
+          <h1>{group.name}</h1>
+          <span>{group.members} {group.members === 1 ? 'membro' : 'membri'}{isOwner ? ' · sei l’amministratore' : ''}</span>
+        </div>
+        <Invite code={group.code} name={group.name} compact />
       </div>
-      <div className="card"><Invite code={group.code} name={group.name} /></div>
       <Leaderboard group={group} canRemove={isOwner} onChanged={onChanged} />
       {error && <p className="feedback bad small">{error}</p>}
       {isOwner

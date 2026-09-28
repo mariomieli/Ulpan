@@ -8,11 +8,13 @@ import '@fontsource/frank-ruhl-libre/hebrew-700.css';
 import '@fontsource/frank-ruhl-libre/latin-700.css';
 import '@fontsource/noto-sans-hebrew/hebrew-400.css';
 import '@fontsource/noto-sans-hebrew/hebrew-700.css';
-import '@fontsource/inter/latin-400.css';
-import '@fontsource/inter/latin-500.css';
-import '@fontsource/inter/latin-600.css';
-import '@fontsource/inter/latin-700.css';
+import '@fontsource/rubik/latin-400.css';
+import '@fontsource/rubik/latin-500.css';
+import '@fontsource/rubik/latin-600.css';
+import '@fontsource/rubik/latin-700.css';
+import '@fontsource/rubik/latin-800.css';
 import './styles.css';
+import './redesign.css';
 import { initAuth } from './lib/auth';
 
 initAuth();

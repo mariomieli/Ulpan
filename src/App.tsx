@@ -47,7 +47,7 @@ function prefetchPages() {
 
 const NAV = [
   { path: '/', label: 'Home', icon: 'home' },
-  { path: '/lezioni', label: 'Lezioni', icon: 'book' },
+  { path: '/lezioni', label: 'Percorso', icon: 'book' },
   { path: '/alfabeto', label: 'Alfabeto', icon: 'alef' },
   { path: '/nikud', label: 'Nikud (Punteggiatura)', icon: 'dots' },
   { path: '/lettura', label: 'Lettura', icon: 'read' },
@@ -109,6 +109,7 @@ export function App() {
     if (!drawer && d.open) d.close();
   }, [drawer]);
   const due = dueItems(state, Date.now()).length;
+  const activeIdx = NAV.findIndex((n) => isActive(n.path, path));
   const auth = useAuth();
 
   // tema, carattere e dimensione del testo ebraico
@@ -154,7 +155,9 @@ export function App() {
     const on = (e: Event) => {
       setToast((e as CustomEvent<string>).detail);
       clearTimeout(t);
-      t = setTimeout(() => setToast(null), 7000);
+      // gli avvisi da risolvere restano di più, quelli informativi spariscono presto
+      const text = (e as CustomEvent<string>).detail;
+      t = setTimeout(() => setToast(null), /voce|errore/i.test(text) ? 7000 : 3500);
     };
     window.addEventListener('ulpan-toast', on);
     return () => { window.removeEventListener('ulpan-toast', on); clearTimeout(t); };
@@ -177,12 +180,16 @@ export function App() {
           <img className="brand-mark" src="./favicon.svg" alt="" width={36} height={36} />
           <span>Ulpan<small>Impara a leggere l’ebraico</small></span>
         </a>
-        {NAV.map((n) => (
-          <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`}>
-            <Icon name={n.icon} /> {n.label}
-            {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
-          </a>
-        ))}
+        <div className="nav-list">
+          {/* indicatore che scorre dietro la voce attiva */}
+          {activeIdx >= 0 && <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateY(${activeIdx * 46}px)` }} />}
+          {NAV.map((n) => (
+            <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`} aria-current={isActive(n.path, path) ? 'page' : undefined}>
+              <Icon name={n.icon} /> {n.label}
+              {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
+            </a>
+          ))}
+        </div>
         <div className="sidebar-foot">
           {auth.user ? (
             <div className="user-row">
@@ -197,9 +204,15 @@ export function App() {
           ) : cloudEnabled && (
             <button className="btn btn-sm btn-block" style={{ marginBottom: 8 }} onClick={showLogin}>Accedi o registrati</button>
           )}
-          <Icon name="flame" size={14} className="" /> {state.streak} {state.streak === 1 ? 'giorno' : 'giorni'} di fila · {state.xp} XP
+          <div className="foot-stats"><Icon name="flame" size={16} className="flame-icon" /> {state.streak} {state.streak === 1 ? 'giorno' : 'giorni'} di fila · {state.xp} XP</div>
         </div>
       </nav>
+
+      <header className="topbar">
+        <a href="#/" className="topbar-brand"><img src="./favicon.svg" alt="" width={32} height={32} /> Ulpan</a>
+        <span className="stat-chip flame sm" title="Giorni di fila"><Icon name="flame" size={16} className="flame-icon" /> {state.streak}</span>
+        <span className="stat-chip xp sm" title="XP totali"><Icon name="star" size={16} className="star-icon" /> {state.xp}</span>
+      </header>
 
       <main className="main">
         <ErrorBoundary resetKey={path}>
@@ -211,21 +224,22 @@ export function App() {
 
       <nav className="bottom-nav" aria-label="Navigazione">
         {NAV.filter((n) => MOBILE.includes(n.path)).map((n) => (
-          <a key={n.path} href={`#${n.path}`} className={isActive(n.path, path) ? 'active' : ''}>
-            <Icon name={n.icon} size={22} className="" />
+          <a key={n.path} href={`#${n.path}`} className={isActive(n.path, path) ? 'active' : ''} aria-current={isActive(n.path, path) ? 'page' : undefined}>
+            <span className="nav-pill" key={isActive(n.path, path) ? 'on' : 'off'}><Icon name={n.icon} size={22} className="" /></span>
             {n.label.split(' ')[0]}
             {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
           </a>
         ))}
         <button onClick={() => setDrawer(true)} aria-label="Altre sezioni" aria-haspopup="dialog" aria-expanded={drawer}>
-          <Icon name="menu" size={22} className="" /> Altro
+          <span className="nav-pill"><Icon name="menu" size={22} className="" /></span> Altro
         </button>
       </nav>
 
       {toast && (
         <div className="toast" role="status" key={toast}>
+          <i className="toast-dot" aria-hidden="true" />
           <span>{toast}</span>
-          <a href="#/impostazioni" className="btn btn-sm" onClick={() => setToast(null)}>Come risolvere</a>
+          {/voce/i.test(toast) && <a href="#/impostazioni" className="btn btn-sm" onClick={() => setToast(null)}>Come risolvere</a>}
           <button className="btn btn-ghost btn-icon" onClick={() => setToast(null)} aria-label="Chiudi"><Icon name="x" size={16} className="" /></button>
         </div>
       )}

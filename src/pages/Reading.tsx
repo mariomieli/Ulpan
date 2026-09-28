@@ -11,6 +11,7 @@ import { stripNikud } from '../lib/hebrew';
 import { ktivMale } from '../lib/ktiv';
 import { syllabify } from '../lib/syllables';
 import { LetterArt } from '../components/LessonArt';
+import { reducedMotion } from '../lib/fx';
 import { glossWord, lineTokens } from '../lib/gloss';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
@@ -184,6 +185,7 @@ function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string
   const [flipped, setFlipped] = useState(false);
   const [reverse, setReverse] = useState(false);
   const [score, setScore] = useState({ ok: 0, ko: 0 });
+  const [leaving, setLeaving] = useState<'L' | 'R' | null>(null);
   const w = deck[i];
 
   // la carta mostrata diventa "vista di recente": la prossima sessione partirà da altre parole
@@ -199,6 +201,12 @@ function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string
     // una parola sbagliata torna qualche carta più avanti, non subito
     if (!known) { d = [...deck]; d.splice(Math.min(deck.length, i + 6), 0, w); }
     if (i + 1 >= d.length) { setDeck(build()); setI(0); } else { setDeck(d); setI(i + 1); }
+  };
+
+  // la carta esce ruotando (a sinistra se da rivedere, a destra se la sapevi), poi arriva la prossima
+  const leave = (known: boolean) => {
+    setLeaving(known ? 'R' : 'L');
+    setTimeout(() => { setLeaving(null); next(known); }, reducedMotion() ? 0 : 400);
   };
 
   const hebrew = <He>{fmt(w.he)}</He>;
@@ -221,7 +229,7 @@ function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string
           <Icon name="shuffle" size={16} className="" /> Nuovo mazzo
         </button>
       </div>
-      <div className="flash-scene q-enter" key={`${w.id}-${i}-${reverse}`}>
+      <div className={`flash-scene ${leaving ? `fly${leaving}` : ''}`} key={`${w.id}-${i}-${reverse}`}>
         <div className={`flash-inner ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(true)} role="button" tabIndex={0}
           aria-label={flipped ? undefined : 'Gira la carta'}
           onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && setFlipped(true)}>
@@ -239,8 +247,8 @@ function Flashcards({ words, fmt }: { words: Word[]; fmt: (he: string) => string
       </div>
       {flipped && (
         <div className="quiz-actions">
-          <button className="btn btn-lg" onClick={() => next(false)}>Non la sapevo</button>
-          <button className="btn btn-primary btn-lg" onClick={() => next(true)}>La sapevo</button>
+          <button className="btn btn-bad btn-lg" disabled={!!leaving} onClick={() => leave(false)}>Ancora</button>
+          <button className="btn btn-ok btn-lg" disabled={!!leaving} onClick={() => leave(true)}>La sapevo</button>
         </div>
       )}
       <p className="center small muted">Prima le parole su cui sbagli, poi quelle nuove; quelle viste di recente arrivano per ultime.</p>
@@ -487,7 +495,7 @@ function HebrewTyping({ level }: { level: number }) {
   const questions = useMemo(() => buildHebrewTyping(level, 10, Math.random, { avoid: recentQuestions() }), [level, round]);
   if (result) return <QuizResults result={result} title="Scrittura in ebraico completata" onRetry={() => { setResult(null); setRound(round + 1); }} />;
   return (
-    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult}
+    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} title="Scrivi in ebraico"
       hint="Scrivi la parola in lettere ebraiche, senza vocali: usa i tasti qui sotto o la tastiera ebraica del dispositivo. Attenzione alle forme finali (ך ם ן ף ץ)!" />
   );
 }
@@ -504,7 +512,7 @@ function Dictation({ level }: { level: number }) {
     return <QuizResults result={result} title="Dettato completato" onRetry={() => { setResult(null); setRound(round + 1); }} />;
   }
   return (
-    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult}
+    <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} title="Dettato"
       hint={listeningEnabled(settings.audio)
         ? 'Ascolta la parola e ricomponila scegliendo le tessere giuste: attenzione a vocali e lettere simili!'
         : 'Ricomponi la parola scegliendo le tessere giuste. (Con una voce ebraica installata il dettato diventa ad ascolto.)'} />

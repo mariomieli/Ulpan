@@ -8,6 +8,7 @@ import { MASTERY_LABELS, mastery } from '../lib/srs';
 import { dayKey, useAppState } from '../lib/store';
 
 import { Badges } from '../components/Badges';
+import { useCountUp } from '../lib/fx';
 import { vowelDisplay } from '../lib/quiz';
 
 function Legend() {
@@ -23,6 +24,7 @@ const WEAK_THRESHOLD = 0.8;
 
 export function ProgressPage() {
   const state = useAppState();
+  const xpShown = useCountUp(state.xp, 1100);
   const totals = useMemo(() => {
     const days = Object.values(state.days);
     const answered = days.reduce((s, d) => s + d.answered, 0);
@@ -64,11 +66,11 @@ export function ProgressPage() {
         <div><h1>Progressi</h1><p>Il quadro completo del tuo apprendimento.</p></div>
       </div>
 
-      <div className="grid grid-4">
-        <div className="card stat"><span className="stat-value">{state.xp}</span><span className="stat-label">XP totali</span></div>
-        <div className="card stat"><span className="stat-value">{state.streak}</span><span className="stat-label">{state.streak === 1 ? 'giorno' : 'giorni'} di fila</span></div>
-        <div className="card stat"><span className="stat-value">{totals.answered}</span><span className="stat-label">risposte date</span></div>
-        <div className="card stat"><span className="stat-value">{totals.answered ? Math.round((totals.correct / totals.answered) * 100) : 0}%</span><span className="stat-label">precisione</span></div>
+      <div className="ptiles">
+        <div className="ptile gold" style={{ animationDelay: '0s' }}><span>XP totali</span><b>{xpShown}</b></div>
+        <div className="ptile flame" style={{ animationDelay: '.08s' }}><span>Serie</span><b>{state.streak} {state.streak === 1 ? 'giorno' : 'giorni'}</b></div>
+        <div className="ptile blue" style={{ animationDelay: '.16s' }}><span>Lezioni</span><b>{LESSONS.filter((l) => state.lessons[l.id]?.passed).length}/{LESSONS.length}</b></div>
+        <div className="ptile green" style={{ animationDelay: '.24s' }}><span>Precisione</span><b>{totals.answered ? Math.round((totals.correct / totals.answered) * 100) : 0}%</b></div>
       </div>
 
       <Badges />
@@ -78,7 +80,7 @@ export function ProgressPage() {
         <div className="bars" style={{ height: 120 }}>
           {last30.map((d, i) => (
             <div key={d.k} title={`${d.k}: ${d.n} risposte`}>
-              <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(3, (d.n / max) * 100)}%` }} />
+              <div className={`bar ${d.n ? '' : 'is-zero'}`} style={{ height: `${Math.max(3, (d.n / max) * 100)}%`, ['--i' as string]: i % 10 }} />
               <span>{i % 5 === 4 ? d.label : ' '}</span>
             </div>
           ))}
@@ -88,8 +90,8 @@ export function ProgressPage() {
       <div className="card">
         <div className="card-title"><h2>Lettere</h2></div>
         <div className="mastery-grid">
-          {BASE_LETTERS.flatMap((b) => [b, ...(LETTER_VARIANTS[b] ?? [])]).map((id) => (
-            <div key={id} className={`mcell m${mastery(state.srs[`g:${id}`])}`} title={GLYPH_BY_ID[id].name} lang="he" role="img" aria-label={`${GLYPH_BY_ID[id].name}: ${MASTERY_LABELS[mastery(state.srs[`g:${id}`])]}`}>{GLYPH_BY_ID[id].char}</div>
+          {BASE_LETTERS.flatMap((b) => [b, ...(LETTER_VARIANTS[b] ?? [])]).map((id, i) => (
+            <div key={id} style={{ animationDelay: `${Math.min(30, i) * 30}ms` }} className={`mcell m${mastery(state.srs[`g:${id}`])}`} title={GLYPH_BY_ID[id].name} lang="he" role="img" aria-label={`${GLYPH_BY_ID[id].name}: ${MASTERY_LABELS[mastery(state.srs[`g:${id}`])]}`}>{GLYPH_BY_ID[id].char}</div>
           ))}
         </div>
         <Legend />

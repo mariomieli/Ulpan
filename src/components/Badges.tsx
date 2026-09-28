@@ -27,11 +27,12 @@ export function Badges() {
     <div className="card">
       <div className="card-title"><h2>Traguardi</h2><span className="pill pill-accent">{earned}/{list.length}</span></div>
       <ul className="badge-grid">
-        {list.map((b) => (
-          <li key={b.id} className={b.earned ? 'earned' : ''} title={b.description}>
+        {list.map((b, i) => (
+          <li key={b.id} className={b.earned ? 'earned' : ''} title={b.description} style={{ animationDelay: `${i * 70}ms` }}>
             <Medal glyph={b.glyph} tone={b.tone} earned={b.earned} progress={b.progress} />
             <b>{b.title}</b>
             <span className="small muted">{b.earned ? 'Ottenuto' : b.description}</span>
+            {!b.earned && b.progress > 0 && <span className="badge-progress" aria-hidden="true"><i style={{ width: `${b.progress * 100}%` }} /></span>}
             {!b.earned && <span className="sr-only">Avanzamento {Math.round(b.progress * 100)}%</span>}
           </li>
         ))}

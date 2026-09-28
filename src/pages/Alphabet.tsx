@@ -6,11 +6,12 @@ import { mastery } from '../lib/srs';
 import { buildLetterNameQuiz } from '../lib/quiz';
 import { recentQuestions } from '../lib/recent';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
+import { TraceGlyph } from '../components/LessonVisuals';
+import { speak } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 
-const MASTERY_COLORS = ['var(--m0)', 'var(--m1)', 'var(--m2)', 'var(--m3)'];
 
 function LetterModal({ letterId, onClose }: { letterId: string; onClose: () => void }) {
   const ids = [letterId, ...(LETTER_VARIANTS[letterId] ?? [])];
@@ -99,18 +100,26 @@ function LetterNamesPractice({ onClose }: { onClose: () => void }) {
       <button className="btn" onClick={onClose}>Torna all’alfabeto</button>
     </QuizResults>;
   }
-  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onClose} />;
+  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} onExit={onClose} title="Nomi delle lettere" />;
 }
 
 export function AlphabetPage() {
-  const { srs } = useAppState();
+  const { srs, settings } = useAppState();
   const [open, setOpen] = useState<string | null>(null);
-  const [showVariants, setShowVariants] = useState(true);
+  const [showVariants, setShowVariants] = useState(false);
   const [names, setNames] = useState(false);
+  const [sel, setSel] = useState('alef');
+  const [drawKey, setDrawKey] = useState(0);
 
   const tiles: Glyph[] = BASE_LETTERS.flatMap((id) =>
     showVariants ? [GLYPH_BY_ID[id], ...(LETTER_VARIANTS[id] ?? []).map((v) => GLYPH_BY_ID[v])] : [GLYPH_BY_ID[id]]);
   const baseOf = (g: Glyph) => BASE_LETTERS.find((b) => b === g.id || LETTER_VARIANTS[b]?.includes(g.id)) ?? g.id;
+  const g = GLYPH_BY_ID[sel];
+  const pick = (x: Glyph) => {
+    setSel(x.id);
+    setDrawKey((k) => k + 1);
+    if (settings.audio) speak(x.hebrewName, settings.speechRate);
+  };
 
   if (names) {
     return (
@@ -127,23 +136,43 @@ export function AlphabetPage() {
       <div className="page-head">
         <div>
           <h1>Alfabeto · <span className="he-inline" lang="he">אָלֶף־בֵּית</span></h1>
-          <p>22 lettere, 5 forme finali e 4 varianti con puntino. Si legge da destra a sinistra. Tocca una lettera per i dettagli.</p>
+          <p>22 lettere, da destra a sinistra. Tocca una lettera per vederla disegnarsi e sentirne il nome.</p>
         </div>
         <label className="toggle">
           <input type="checkbox" checked={showVariants} onChange={(e) => setShowVariants(e.target.checked)} />
           Mostra varianti e forme finali
         </label>
       </div>
-      <div className="letter-grid">
-        {tiles.map((g) => (
-          <button key={g.id} className="letter-tile" onClick={() => setOpen(baseOf(g))} aria-label={`${g.name}, suono ${g.sound}`}>
-            <span className="mdot" style={{ background: MASTERY_COLORS[mastery(srs[`g:${g.id}`])] }} title="Padronanza" />
-            <span className="num">{g.gematria}</span>
-            <He>{g.char}</He>
-            <div className="name">{g.name}</div>
-            <div className="snd">{g.sound}</div>
-          </button>
-        ))}
+      <div className="alpha-layout">
+        <aside className="card alpha-panel" aria-live="polite">
+          <div className="alpha-trace"><TraceGlyph key={`${sel}-${drawKey}`} text={g.char} /></div>
+          <div className="row" style={{ alignItems: 'center' }}>
+            <h2 className="alpha-name">{g.name}</h2>
+            <span className="pill pill-primary">{g.sound}</span>
+            <span className="spacer" />
+            <button className="round-btn" onClick={() => settings.audio && speak(g.hebrewName, settings.speechRate)} aria-label={`Ascolta il nome ${g.name}`}>
+              <Icon name="speaker" size={20} className="" />
+            </button>
+          </div>
+          <p className="alpha-desc"><Rich text={g.description} /></p>
+          <div className="alpha-facts">
+            <div className="fact gold"><span>Valore</span><b>{g.gematria}</b></div>
+            <div className="fact green"><span>Si studia</span><b>Lez. {g.lesson}</b></div>
+          </div>
+          <button className="link-btn" onClick={() => setOpen(baseOf(g))}>Esempi e lettere simili →</button>
+        </aside>
+        <div className="alpha-grid" dir="rtl">
+          {tiles.map((x, i) => {
+            const studied = (srs[`g:${x.id}`]?.seen ?? 0) > 0;
+            return (
+              <button key={x.id} className={`atile ${sel === x.id ? 'sel' : studied ? 'studied' : ''}`} style={{ animationDelay: `${i * 25}ms` }}
+                onClick={() => pick(x)} aria-pressed={sel === x.id} aria-label={`${x.name}, suono ${x.sound}${studied ? `, ${['nuova', 'in apprendimento', 'consolidata', 'padroneggiata'][mastery(srs[`g:${x.id}`])]}` : ''}`}>
+                <span className="atile-char" lang="he">{x.char}</span>
+                <span className="atile-name" dir="ltr">{x.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="card row" style={{ marginTop: 20 }}>
         <div style={{ flex: 1, minWidth: 200 }}>
@@ -159,7 +188,7 @@ export function AlphabetPage() {
           <li><Rich text="Cinque lettere cambiano forma a fine parola: כ→ך, מ→ם, נ→ן, פ→ף, צ→ץ." /></li>
           <li><Rich text="שׁ con il punto a destra è “sh”, שׂ con il punto a sinistra è “s”." /></li>
           <li><Rich text="Suoni uguali, lettere diverse: ת/ט = t · כּ/ק = k · ח/כ = ch · ב/ו = v · ס/שׂ = s · א/ע = mute." /></li>
-          <li>Il numero in alto a destra è il valore numerico (ghematria): le lettere si usano anche come numeri.</li>
+          <li>Il valore numerico (ghematria): le lettere si usano anche come numeri.</li>
         </ul>
       </div>
       {open && <LetterModal letterId={open} onClose={() => setOpen(null)} />}

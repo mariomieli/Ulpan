@@ -13,30 +13,49 @@ import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { navigate } from '../lib/router';
-import { LessonCover } from '../components/LessonArt';
+import { JUST_PASSED_KEY, lessonKind } from '../components/LessonArt';
+import { SyllableReader, TraceTile } from '../components/LessonVisuals';
 import { showLogin, useAuth } from '../lib/auth';
 import { cloudEnabled } from '../lib/supabase';
 
 type Tab = 'teoria' | 'studio' | 'esercizi' | 'test';
 
+const KIND_LABEL = { vowels: 'le vocali', letters: 'le lettere', rules: 'regole di lettura' } as const;
+
 function Theory({ blocks }: { blocks: TheoryBlock[] }) {
+  const text = blocks.filter((b) => b.type !== 'example');
+  const examples = blocks.filter((b): b is Extract<TheoryBlock, { type: 'example' }> => b.type === 'example');
   return (
-    <div className="theory">
-      {blocks.map((b, i) => {
-        switch (b.type) {
-          case 'p': return <p key={i}><Rich text={b.text} /></p>;
-          case 'tip': return <div key={i} className="tip"><b>Nota · </b><Rich text={b.text} /></div>;
-          case 'list': return <ul key={i}>{b.items.map((it, j) => <li key={j}><Rich text={it} /></li>)}</ul>;
-          case 'example': return (
-            <div key={i} className="example">
-              <He>{b.he}</He>
-              <span className="tr">{b.translit}</span>
-              {b.note && <span className="muted small" style={{ flex: 1, minWidth: 180 }}><Rich text={b.note} /></span>}
-              <SpeakButton text={b.he} />
-            </div>
-          );
-        }
-      })}
+    <>
+      <div className="card theory">
+        {text.map((b, i) => {
+          switch (b.type) {
+            case 'p': return <p key={i}><Rich text={b.text} /></p>;
+            case 'tip': return <div key={i} className="tip"><span className="wiggle star-tip"><Icon name="star" size={20} className="star-icon" /></span><span><Rich text={b.text} /></span></div>;
+            case 'list': return <ul key={i}>{b.items.map((it, j) => <li key={j}><Rich text={it} /></li>)}</ul>;
+            default: return null;
+          }
+        })}
+      </div>
+      {examples.length > 0 && (
+        <div className="syl-grid-2">
+          {examples.map((b, i) => <SyllableReader key={i} he={b.he} translit={b.translit} note={b.note && <Rich text={b.note} />} />)}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Le novità della lezione come tessere che si disegnano (lettere, oppure vocali sulla א). */
+function TraceTiles({ lesson }: { lesson: { glyphs: string[]; vowels: string[] } }) {
+  const glyphs = lesson.glyphs.map((id) => GLYPH_BY_ID[id]).filter((g) => g.id !== 'alef' || !lesson.vowels.length);
+  const tiles = glyphs.length
+    ? glyphs.map((g) => ({ key: g.id, text: g.char, sound: g.sound, name: `${g.name}${g.finalOf ? ' · forma finale' : ''}`, speak: g.hebrewName }))
+    : lesson.vowels.map((id) => VOWEL_BY_ID[id]).map((v) => ({ key: v.id, text: vowelDisplay(v), sound: v.sound, name: v.name, speak: vowelDisplay(v) }));
+  if (!tiles.length) return null;
+  return (
+    <div className="trace-grid">
+      {tiles.map((t, i) => <TraceTile key={t.key} text={t.text} sound={t.sound} name={t.name} speakText={t.speak} delay={i * 0.5} />)}
     </div>
   );
 }
@@ -180,7 +199,7 @@ function Practice({ lessonId, onTest }: { lessonId: number; onTest: () => void }
       </QuizResults>
     );
   }
-  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} />;
+  return <QuizRunner key={round} questions={questions} mode="practice" onFinish={setResult} title={`Esercizi · lezione ${lessonId}`} />;
 }
 
 function LessonTest({ lessonId }: { lessonId: number }) {
@@ -198,8 +217,12 @@ function LessonTest({ lessonId }: { lessonId: number }) {
 
   if (phase === 'run') {
     return (
-      <QuizRunner key={round} questions={questions} mode="exam" onExit={() => { if (confirm(LEAVE_MESSAGE)) setPhase('intro'); }}
-        onFinish={(r) => { actions.lessonTest(lessonId, r.pct, PASS_THRESHOLD); setResult(r); setPhase('done'); }} />
+      <QuizRunner key={round} questions={questions} mode="exam" title={`Test · lezione ${lessonId}`} onExit={() => { if (confirm(LEAVE_MESSAGE)) setPhase('intro'); }}
+        onFinish={(r) => {
+          actions.lessonTest(lessonId, r.pct, PASS_THRESHOLD); setResult(r); setPhase('done');
+          // il percorso farà saltare la tappa appena superata
+          if (r.pct >= PASS_THRESHOLD) { try { sessionStorage.setItem(JUST_PASSED_KEY, String(lessonId)); } catch { /* niente */ } }
+        }} />
     );
   }
   if (phase === 'done' && result) {
@@ -208,11 +231,12 @@ function LessonTest({ lessonId }: { lessonId: number }) {
       <QuizResults result={result} title={`Test della lezione ${lessonId}`} passThreshold={PASS_THRESHOLD}
         onRetry={() => { setRound(round + 1); setPhase('run'); }}>
         {passed && nextLesson && (
-          <button className="btn btn-primary" onClick={() => navigate(`/lezioni/${nextLesson.id}`)}>
+          <button className="btn" onClick={() => navigate(`/lezioni/${nextLesson.id}`)}>
             Lezione {nextLesson.id} <Icon name="arrowRight" size={18} className="" />
           </button>
         )}
         {passed && !nextLesson && <a className="btn btn-primary" href="#/test/finale">Esame finale</a>}
+        {passed && <a className="btn btn-primary" href="#/lezioni">Continua il percorso <Icon name="arrowRight" size={18} className="" /></a>}
         {passed && cloudEnabled && auth.status === 'guest' && (
           <button className="btn" onClick={showLogin} title="Salva i progressi su tutti i dispositivi">
             Crea un account gratuito per salvare i progressi
@@ -261,32 +285,26 @@ export function LessonPage({ id }: { id: number }) {
 
   return (
     <div className="fade-in">
-      <div className="page-head">
-        <div>
-          <a href="#/lezioni" className="small">← Tutte le lezioni</a>
-          <div className="lesson-head">
-            <LessonCover lesson={lesson} size="md" done={p?.passed} />
-            <div>
-              <span className="lesson-step">Lezione {id} di {LESSONS.length}</span>
-              <h1 style={{ margin: 0 }}>{lesson.title}</h1>
-              <p style={{ margin: 0 }}><Rich text={lesson.subtitle} /></p>
-            </div>
-          </div>
+      <div className="lesson-top">
+        <a href="#/lezioni" className="quiz-close" aria-label="Torna al percorso" title="Torna al percorso"><Icon name="x" size={20} className="" /></a>
+        <div className="segments" role="tablist" aria-label="Fasi della lezione">
+          {tabs.map((t) => (
+            <button key={t.id} role="tab" aria-selected={tab === t.id} className={`seg ${tab === t.id ? 'active' : ''} ${t.done ? 'done' : ''}`} onClick={() => setTab(t.id)}>
+              <span className="seg-bar"><i key={tab === t.id ? 'on' : 'off'} /></span>
+              <span className="seg-label">{t.label.replace(/^\d · /, '')}{t.done && ' ✓'}</span>
+            </button>
+          ))}
         </div>
       </div>
-      <div className="tabs" role="tablist">
-        {tabs.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-            {t.label}{t.done && <span className="check">✓</span>}
-          </button>
-        ))}
-      </div>
+      <span className="kicker">Lezione {id} · {KIND_LABEL[lessonKind(lesson)]}</span>
+      <h1 className="lesson-title">{lesson.title}</h1>
 
       {tab === 'teoria' && (
-        <div className="card">
+        <div className="stack">
+          <TraceTiles lesson={lesson} />
           <Theory blocks={lesson.theory} />
           <div className="row" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" onClick={() => setTab('studio')}>Studia {lesson.glyphs.length + lesson.vowels.length ? 'le novità' : 'le parole'} <Icon name="arrowRight" size={18} className="" /></button>
+            <button className="btn btn-gold btn-xl" onClick={() => setTab('studio')}>Studia {lesson.glyphs.length + lesson.vowels.length ? 'le novità' : 'le parole'} <Icon name="arrowRight" size={18} className="" /></button>
           </div>
         </div>
       )}
