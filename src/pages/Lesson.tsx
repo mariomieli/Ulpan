@@ -15,7 +15,7 @@ import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { navigate } from '../lib/router';
-import { JUST_PASSED_KEY, lessonKind } from '../components/LessonArt';
+import { JUST_PASSED_KEY, lessonFirstGlyph, lessonGlyphText, lessonKind } from '../components/LessonArt';
 import { SyllableReader, TraceTile } from '../components/LessonVisuals';
 import { showLogin, useAuth } from '../lib/auth';
 import { cloudEnabled } from '../lib/supabase';
@@ -69,31 +69,32 @@ function examplesFor(filter: (w: Word) => boolean, lesson: number, n = 4): Word[
 function GlyphStudy({ g, lesson }: { g: Glyph; lesson: number }) {
   const examples = examplesFor((w) => requirements(w.he).glyphs.has(g.id), Math.max(lesson, 10));
   return (
-    <div className="study-card">
-      <He size="xl">{g.char}</He>
-      <h2 style={{ marginBottom: 0 }}>{g.name} <span className="he-inline muted">{g.hebrewName}</span></h2>
-      <p className="muted">Suono: <b style={{ color: 'var(--primary)' }}>{g.sound}</b>{g.finalOf && ' · forma finale'}</p>
-      <div className="row" style={{ justifyContent: 'center' }}>
-        <SpeakButton text={g.hebrewName} label="Nome" />
-        {!g.finalOf && g.id !== 'alef' && g.id !== 'ayin' && <SpeakButton text={g.char + 'ָ'} label="Suono" />}
+    <div className="study-card st-grid">
+      <div className="st-big" lang="he" dir="rtl">{g.char}</div>
+      <div className="st-info">
+        <div className="st-name"><b>{g.name}</b><span lang="he">{g.hebrewName}</span></div>
+        <span className="st-sound">Suono: <b>{g.sound}</b>{g.finalOf && ' · forma finale'}</span>
+        <div className="st-actions">
+          <SpeakButton text={g.hebrewName} label="Nome" />
+          {!g.finalOf && g.id !== 'alef' && g.id !== 'ayin' && <SpeakButton text={g.char + 'ָ'} label="Suono" />}
+        </div>
+        <div className="st-kv">
+          <span>Pronuncia</span><span><Rich text={g.description} /></span>
+          <span>Come riconoscerla</span><span><Rich text={g.tip} /></span>
+          {g.finalForm && <><span>Forma finale</span><span><He size="sm">{GLYPH_BY_ID[g.finalForm].char}</He></span></>}
+          <span>Valore numerico</span><span>{g.gematria}</span>
+        </div>
+        {examples.length > 0 && (
+          <>
+            <span className="st-ex-h">Parole che la contengono{lesson < 10 ? ' (alcune le leggerai più avanti)' : ''}</span>
+            <div className="st-ex">
+              {examples.map((w) => (
+                <div key={w.id}><span className="he" lang="he" dir="rtl">{w.he}</span><small>{w.translit} · {w.it}</small></div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      <dl className="kv">
-        <dt>Pronuncia</dt><dd><Rich text={g.description} /></dd>
-        <dt>Come riconoscerla</dt><dd><Rich text={g.tip} /></dd>
-        {g.finalForm && <><dt>Forma finale</dt><dd><He size="sm">{GLYPH_BY_ID[g.finalForm].char}</He></dd></>}
-        <dt>Valore numerico</dt><dd>{g.gematria}</dd>
-      </dl>
-      {examples.length > 0 && (
-        <>
-          <hr />
-          <p className="muted small">Parole che la contengono{lesson < 10 ? ' (alcune le leggerai più avanti)' : ''}:</p>
-          <div className="row" style={{ justifyContent: 'center' }}>
-            {examples.map((w) => (
-              <div className="variant" key={w.id}><He>{w.he}</He><small>{w.translit} · {w.it}</small></div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -101,24 +102,24 @@ function GlyphStudy({ g, lesson }: { g: Glyph; lesson: number }) {
 function VowelStudy({ v, lesson }: { v: Vowel; lesson: number }) {
   const consonants = glyphsUpTo(lesson).filter((g) => canCombine(g, v)).slice(0, 8);
   return (
-    <div className="study-card">
-      <He size="xl">{vowelDisplay(v)}</He>
-      <h2 style={{ marginBottom: 0 }}>{v.name} <span className="he-inline muted">{v.hebrewName}</span></h2>
-      <p className="muted">Si legge: <b style={{ color: 'var(--primary)' }}>{v.sound}</b></p>
-      <p><Rich text={v.description} /></p>
-      {consonants.length > 0 && (
-        <>
-          <p className="muted small">Con le lettere che conosci:</p>
-          <div className="syl-grid" style={{ maxWidth: 520, margin: '0 auto' }}>
-            {consonants.map((g) => {
-              const s = syllable(g, v);
-              return (
-                <div key={g.id} className="syl"><He>{s.text}</He><small>{s.translit}</small></div>
-              );
-            })}
-          </div>
-        </>
-      )}
+    <div className="study-card st-grid">
+      <div className="st-big" lang="he" dir="rtl">{vowelDisplay(v)}</div>
+      <div className="st-info">
+        <div className="st-name"><b>{v.name}</b><span lang="he">{v.hebrewName}</span></div>
+        <span className="st-sound">Si legge: <b>{v.sound}</b></span>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.5 }}><Rich text={v.description} /></p>
+        {consonants.length > 0 && (
+          <>
+            <span className="st-ex-h">Con le lettere che conosci</span>
+            <div className="st-ex">
+              {consonants.map((g) => {
+                const s = syllable(g, v);
+                return <div key={g.id}><span className="he" lang="he" dir="rtl">{s.text}</span><small>{s.translit}</small></div>;
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -278,13 +279,13 @@ function LessonTest({ lessonId }: { lessonId: number }) {
     );
   }
   return (
-    <div className="card center">
-      <Icon name="test" size={40} className="" />
-      <h2 style={{ marginTop: 8 }}>Test della lezione {lessonId}</h2>
-      <p className="muted">{questions.length} domande · correzione alla fine · soglia {PASS_THRESHOLD}%</p>
-      {p?.attempts ? <p>Miglior punteggio: <b>{p.bestScore}%</b> {p.passed && <span className="pill pill-ok">Superato</span>}</p> : null}
-      <p className="small muted">{unitId ? 'Superando il test sblocchi la lezione successiva.' : 'Superando il test gli elementi della lezione entrano nel tuo ripasso quotidiano.'}</p>
-      <button className="btn btn-primary btn-lg" onClick={() => { setRound(round + 1); setPhase('run'); }}>Inizia il test</button>
+    <div className="ex-card lesson-idle">
+      <span className="ex-ic" lang="he">{lessonFirstGlyph(LESSON_BY_ID[lessonId])}</span>
+      <b className="ex-t" style={{ fontSize: 28 }}>Test della lezione {lessonId}</b>
+      <span className="ex-d">{questions.length} domande · correzione alla fine · soglia {PASS_THRESHOLD}%</span>
+      {p?.attempts ? <span className="ex-n">Miglior punteggio: <b>{p.bestScore}%</b> {p.passed && <span className="pill pill-ok">Superato</span>}</span> : null}
+      <span className="ex-n">{unitId ? 'Superando il test sblocchi la lezione successiva.' : 'Superando il test gli elementi della lezione entrano nel tuo ripasso quotidiano.'}</span>
+      <button type="button" className="ex-go" onClick={() => { setRound(round + 1); setPhase('run'); }}>Inizia il test</button>
     </div>
   );
 }
@@ -328,8 +329,13 @@ export function LessonPage({ id }: { id: number }) {
           ))}
         </div>
       </div>
-      <span className="kicker">Lezione {id} · {KIND_LABEL[lessonKind(lesson)]}</span>
-      <h1 className="lesson-title">{lesson.title}</h1>
+      <div className="lesson-head">
+        <div>
+          <span className="lh-kicker">Lezione {id} · {KIND_LABEL[lessonKind(lesson)]}</span>
+          <h1>{lesson.title}</h1>
+        </div>
+        <span className="lh-he" lang="he" dir="rtl">{lessonGlyphText(lesson)}</span>
+      </div>
 
       {tab === 'teoria' && (
         <div className="stack">
