@@ -2,7 +2,7 @@
  * Testi di lettura graduati: brevi storie, preghiere comuni e cartelli reali.
  * Il livello (lezione minima) è calcolato automaticamente dal contenuto.
  */
-export type TextCategory = 'storia' | 'preghiera' | 'cartelli';
+export type TextCategory = 'storia' | 'preghiera' | 'cartelli' | 'quotidiano';
 
 export interface TextLine {
   he: string;
@@ -29,6 +29,7 @@ export const TEXT_CATEGORY_LABELS: Record<TextCategory, string> = {
   storia: 'Storie',
   preghiera: 'Preghiere',
   cartelli: 'Cartelli e insegne',
+  quotidiano: 'Vita quotidiana',
 };
 
 export const TEXTS: ReadingText[] = [
@@ -262,6 +263,75 @@ export const TEXTS: ReadingText[] = [
     questions: [
       { q: 'Sulla porta del negozio c’è scritto סָגוּר: puoi entrare?', options: ['No, è chiuso', 'Sì, è aperto', 'È la caffetteria', 'È la polizia'] },
       { q: 'Ti senti male: quale insegna cerchi?', options: ['בֵּית חוֹלִים', 'בֵּית קָפֶה', 'שֵׁרוּתִים', 'פָּתוּחַ'] },
+    ],
+  },
+  {
+    id: 'menu-caffe', title: 'Il menù del caffè', category: 'quotidiano',
+    intro: 'Menù, messaggi e avvisi si leggono di solito senza nikud: prova a disattivarlo.',
+    lines: [
+      { he: 'קָפֶה', translit: 'kafe', it: 'Caffè' },
+      { he: 'תֵּה עִם נַעֲנָע', translit: 'te im nana', it: 'Tè con menta' },
+      { he: 'מַיִם', translit: 'mayim', it: 'Acqua' },
+      { he: 'סָלָט יְרָקוֹת', translit: 'salat yerakot', it: 'Insalata di verdure' },
+      { he: 'חֻמּוּס וּפִיתָה', translit: 'chumus ufita', it: 'Hummus e pita' },
+      { he: 'עוּגַת שׁוֹקוֹלָד', translit: 'ugat shokolad', it: 'Torta al cioccolato' },
+    ],
+    questions: [
+      { q: 'Vuoi un tè con la menta: che cosa ordini?', options: ['תֵּה עִם נַעֲנָע', 'קָפֶה', 'מַיִם', 'סָלָט יְרָקוֹת'] },
+      { q: 'Che cosa significa עוּגַת שׁוֹקוֹלָד?', options: ['Torta al cioccolato', 'Hummus e pita', 'Insalata di verdure', 'Acqua'] },
+    ],
+  },
+  {
+    id: 'hodaot', title: 'Messaggi con un amico', category: 'quotidiano',
+    lines: [
+      { he: 'אַתָּה בַּדֶּרֶךְ?', translit: 'Ata baderech?', it: 'Sei in strada?' },
+      { he: 'כֵּן, אֲנִי מְאַחֵר קְצָת.', translit: 'Ken, ani me’acher ktsat.', it: 'Sì, sono un po’ in ritardo.' },
+      { he: 'אֲנִי מְחַכֶּה לְךָ בַּקָּפֶה.', translit: 'Ani mechake lecha bakafe.', it: 'Ti aspetto al bar.' },
+      { he: 'אֲנִי מַגִּיעַ בְּעוֹד עֶשֶׂר דַּקּוֹת.', translit: 'Ani magia be’od eser dakot.', it: 'Arrivo tra dieci minuti.' },
+      { he: 'תּוֹדָה רַבָּה!', translit: 'Toda raba!', it: 'Grazie mille!' },
+    ],
+    questions: [
+      { q: 'Dove aspetta l’amico?', options: ['Al bar', 'A scuola', 'In stazione', 'A casa'] },
+      { q: 'Quando arriva?', options: ['Tra dieci minuti', 'Tra un’ora', 'Domani', 'Subito'] },
+    ],
+  },
+  {
+    id: 'chadashot', title: 'Notizie dal meteo', category: 'quotidiano',
+    lines: [
+      { he: 'הַיּוֹם חַם מְאֹד בְּתֵל אָבִיב.', translit: 'Hayom cham meod beTel Aviv.', it: 'Oggi fa molto caldo a Tel Aviv.' },
+      { he: 'בִּירוּשָׁלַיִם קַר יוֹתֵר.', translit: 'Birushalayim kar yoter.', it: 'A Gerusalemme fa più freddo.' },
+      { he: 'מָחָר יֵרֵד גֶּשֶׁם בַּצָּפוֹן.', translit: 'Machar yered geshem batsafon.', it: 'Domani pioverà al nord.' },
+      { he: 'בַּדָּרוֹם יִהְיֶה שֶׁמֶשׁ.', translit: 'Badarom yihye shemesh.', it: 'Al sud ci sarà il sole.' },
+    ],
+    questions: [
+      { q: 'Dove pioverà domani?', options: ['Al nord', 'Al sud', 'A Tel Aviv', 'A Gerusalemme'] },
+      { q: 'Dove fa più freddo oggi?', options: ['A Gerusalemme', 'A Tel Aviv', 'Al sud', 'In nessun posto'] },
+    ],
+  },
+  {
+    id: 'hodaa-beit-sefer', title: 'Avviso della scuola', category: 'quotidiano',
+    lines: [
+      { he: 'הוֹדָעָה לַהוֹרִים', translit: 'Hoda’a lahorim', it: 'Avviso ai genitori' },
+      { he: 'מָחָר אֵין לִימּוּדִים.', translit: 'Machar ein limudim.', it: 'Domani non c’è scuola.' },
+      { he: 'הַתַּלְמִידִים חוֹזְרִים בְּיוֹם רִאשׁוֹן.', translit: 'Hatalmidim chozrim beyom rishon.', it: 'Gli alunni tornano domenica.' },
+      { he: 'שַׁבָּת שָׁלוֹם!', translit: 'Shabat shalom!', it: 'Shabbat shalom!' },
+    ],
+    questions: [
+      { q: 'Che cosa dice l’avviso su domani?', options: ['Non c’è scuola', 'C’è un esame', 'La scuola apre prima', 'C’è una gita'] },
+      { q: 'Quando tornano a scuola gli alunni?', options: ['Domenica', 'Lunedì', 'Domani', 'Venerdì'] },
+    ],
+  },
+  {
+    id: 'rakevet', title: 'In stazione', category: 'quotidiano',
+    lines: [
+      { he: 'תַּחֲנַת הָרַכֶּבֶת', translit: 'Tachanat harakevet', it: 'Stazione ferroviaria' },
+      { he: 'הָרַכֶּבֶת לְחֵיפָה יוֹצֵאת בְּשָׁעָה שֶׁבַע.', translit: 'Harakevet lechaifa yotset besha’a sheva.', it: 'Il treno per Haifa parte alle sette.' },
+      { he: 'כַּרְטִיס אֶחָד לְחֵיפָה, בְּבַקָּשָׁה.', translit: 'Kartis echad lechaifa, bevakasha.', it: 'Un biglietto per Haifa, per favore.' },
+      { he: 'הָרַכֶּבֶת מְאֻחֶרֶת עֶשֶׂר דַּקּוֹת.', translit: 'Harakevet me’ucheret eser dakot.', it: 'Il treno è in ritardo di dieci minuti.' },
+    ],
+    questions: [
+      { q: 'Dove va il treno?', options: ['A Haifa', 'A Tel Aviv', 'A Gerusalemme', 'A Eilat'] },
+      { q: 'Di quanto è in ritardo il treno?', options: ['Dieci minuti', 'Cinque minuti', 'Un’ora', 'Non è in ritardo'] },
     ],
   },
 ];

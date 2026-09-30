@@ -8,7 +8,7 @@ Web app (PWA) in italiano per imparare a **leggere l'ebraico** da zero: alfabeto
 - **19 lezioni progressive** (vocali, lettere in ordine alfabetico, regole di lettura, lettura senza nikud): ogni lezione ha teoria, schede di studio, esercizi con correzione immediata e un test finale (soglia 80%) che sblocca la lezione successiva.
 - **Alfabeto completo**: 22 lettere, 5 forme finali, varianti con dagesh (בּ/ב, כּ/כ, פּ/פ) e shin/sin, con pronuncia spiegata per italiani, lettere da non confondere, valore numerico ed esempi.
 - **Nikud**: tutti i 15 segni vocalici raggruppati per suono e tabella interattiva delle sillabe.
-- **Lettura**: oltre 1.000 parole in 19 categorie (tra cui verbi, professioni, vestiti, tempo libero), oltre 200 frasi e 11 testi graduati (storie, preghiere, cartelli reali), filtrabili per lezione; nikud, traslitterazione e significato attivabili/disattivabili; flashcard.
+- **Lettura**: oltre 1.000 parole in 19 categorie (tra cui verbi, professioni, vestiti, tempo libero), oltre 200 frasi e 25 testi graduati (storie, preghiere, cartelli reali, menù, messaggi e avvisi), filtrabili per lezione; nikud, traslitterazione e significato attivabili/disattivabili; flashcard.
 - **Dettato**: ricomponi la parola con le tessere lettera+vocale, evitando le “trappole” (vocali e lettere simili); ad ascolto se c'è una voce ebraica.
 - **Quiz variati**: riconoscimento di lettere, suoni, vocali e forme finali, lettura di sillabe e parole, significato, risposta scritta in traslitterazione, domande di ascolto. I distrattori sono scelti tra lettere simili e letture “quasi giuste”.
 - **Esami**: alfabeto, nikud, lettura ed esame finale a tempo, con revisione degli errori.
