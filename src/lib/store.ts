@@ -100,7 +100,7 @@ export function storageKeyFor(userId: string | null): string {
 let storageKey = BASE_KEY;
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'system',
+  theme: 'light',
   font: 'serif',
   fontScale: 1,
   audio: true,

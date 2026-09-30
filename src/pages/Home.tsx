@@ -204,7 +204,7 @@ export function HomePage() {
           <div className="acard review-card u-rise" style={{ animationDelay: '.18s' }}>
             <span className="rv-k">Ripasso intelligente</span>
             <div className="rv-n"><b>{due}</b><span>{due === 1 ? 'da ripassare oggi' : 'da ripassare oggi'}</span></div>
-            <a href="#/ripasso/oggi">Inizia la sessione</a>
+            <a href="#/ripasso/oggi">Inizia<span className="lg-only"> la sessione</span></a>
           </div>
           <div className="acard mast-card u-rise" style={{ animationDelay: '.22s' }}>
             <b>Padronanza</b>
