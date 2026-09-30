@@ -6,44 +6,46 @@ import { actions, useAppState } from '../lib/store';
 import { PASS_THRESHOLD } from '../lib/quiz';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { He, SpeakButton } from '../components/Hebrew';
-import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
 import { Theory } from './Lesson';
 
 /** La grammatica di base è nel percorso delle lezioni (dalla 20): qui restano numeri, tempo e luoghi. */
 const GROUPS: GrammarGroup[] = ['numeri', 'tempo', 'luoghi'];
 const QUESTIONS = 12;
 
+/** Prima espressione ebraica del sottotitolo di un'unità (es. "אֶפֶס · אַחַת" → "אֶפֶס"). */
+const firstHe = (subtitle: string) => subtitle.split(' · ')[0].trim();
+
 export function GrammarPage() {
   const { exams } = useAppState();
   return (
-    <div className="fade-in stack">
-      <div className="page-head">
-        <div>
-          <h1>Lingua e cultura</h1>
-          <p>Dopo aver imparato a leggere: numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi. La grammatica di base è nel <a href="#/lezioni">percorso</a>, dalla lezione 20.</p>
-        </div>
+    <div className="gram-page">
+      <PageHeader he="תַּרְבּוּת" kicker="Dopo aver imparato a leggere" title="Lingua e cultura">
+        <span className="ph-note">Numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi. La grammatica di base è nel <a href="#/lezioni">percorso</a>, dalla lezione 20.</span>
+      </PageHeader>
+      <div className="gram-groups">
+        {GROUPS.map((g) => {
+          const units = GRAMMAR_UNITS.filter((u) => u.group === g);
+          return (
+            <section key={g} className="gram-group">
+              <div className="gram-gh"><b>{GRAMMAR_GROUP_LABELS[g]}</b><span>{units.length} {units.length === 1 ? 'unità' : 'unità'}</span></div>
+              <div className="gram-tiles">
+                {units.map((u) => {
+                  const r = exams[u.id];
+                  return (
+                    <a key={u.id} href={`#/grammatica/${u.id}`} className="gram-tile">
+                      <span className="gt-he" lang="he" dir="rtl">{firstHe(u.subtitle)}</span>
+                      <b>{u.title}</b>
+                      <span className="gt-n">{u.items.length} parole ed espressioni</span>
+                      {r && <span className={`pill gt-badge ${r.bestScore >= PASS_THRESHOLD ? 'pill-ok' : 'pill-warn'}`}>{r.bestScore}%</span>}
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
-      {GROUPS.map((g) => (
-        <section key={g}>
-          <h2>{GRAMMAR_GROUP_LABELS[g]}</h2>
-          <div className="grid grid-2">
-            {GRAMMAR_UNITS.filter((u) => u.group === g).map((u) => {
-              const r = exams[u.id];
-              return (
-                <a key={u.id} href={`#/grammatica/${u.id}`} className="card text-card" style={{ color: 'inherit' }}>
-                  <div className="row">
-                    <h3 style={{ margin: 0 }}>{u.title}</h3>
-                    <span className="spacer" />
-                    {r && <span className={`pill ${r.bestScore >= PASS_THRESHOLD ? 'pill-ok' : 'pill-warn'}`}>{r.bestScore}%</span>}
-                  </div>
-                  <He size="sm" className="text-preview">{u.subtitle}</He>
-                  <p className="muted small" style={{ margin: 0 }}>{u.items.length} parole ed espressioni</p>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-      ))}
     </div>
   );
 }
@@ -83,32 +85,27 @@ export function GrammarUnitPage({ id }: { id: string }) {
   const best = exams[unit.id]?.bestScore;
   const tabs: [Tab, string][] = [['teoria', 'Teoria'], ['parole', 'Parole'], ['esercizi', 'Esercizi']];
   return (
-    <div className="fade-in stack">
-      <a href="#/grammatica" className="small">← Lingua e cultura</a>
-      <div className="page-head">
-        <div>
-          <h1>{unit.title}</h1>
-          <p><He size="sm">{unit.subtitle}</He></p>
-        </div>
+    <div className="gram-page">
+      <PageHeader he={firstHe(unit.subtitle)} kicker={GRAMMAR_GROUP_LABELS[unit.group]} title={unit.title}>
         {best !== undefined && <span className={`pill ${best >= PASS_THRESHOLD ? 'pill-ok' : 'pill-warn'}`}>Migliore: {best}%</span>}
-      </div>
-      <div className="tabs" role="tablist">
-        {tabs.map(([t, label]) => (
-          <button key={t} type="button" role="tab" aria-selected={tab === t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{label}</button>
-        ))}
+      </PageHeader>
+      <div className="gram-bar">
+        <a href="#/grammatica" className="gram-back">← Lingua e cultura</a>
+        <div className="tabs" role="tablist" style={{ margin: 0 }}>
+          {tabs.map(([t, label]) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{label}</button>
+          ))}
+        </div>
       </div>
 
       {tab === 'teoria' && <Theory blocks={unit.theory} />}
 
       {tab === 'parole' && (
-        <div className="card">
+        <div className="gram-words">
           {unit.items.map((it) => (
-            <div key={it.he} className="row" style={{ padding: '8px 0', borderBottom: '1px solid var(--border, #0001)' }}>
+            <div key={it.he} className="gram-word">
               <He size="md">{it.he}</He>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div><b>{it.translit}</b></div>
-                <div className="muted small">{it.it}</div>
-              </div>
+              <div className="gw-t"><b>{it.translit}</b><span>{it.it}</span></div>
               <SpeakButton text={it.he} />
             </div>
           ))}
@@ -116,11 +113,10 @@ export function GrammarUnitPage({ id }: { id: string }) {
       )}
 
       {tab === 'esercizi' && (
-        <div className="card center">
-          <Icon name="test" size={36} className="" />
-          <h2>Mettiti alla prova</h2>
-          <p className="muted">{QUESTIONS} domande con correzione immediata: significato, lettura e riconoscimento delle espressioni di questa unità.</p>
-          <button className="btn btn-primary btn-lg" onClick={() => { setRound(round + 1); setRunning(true); }}>Inizia</button>
+        <div className="gram-try">
+          <b>Mettiti alla prova</b>
+          <span>{QUESTIONS} domande con correzione immediata: significato, lettura e riconoscimento delle espressioni di questa unità.</span>
+          <button type="button" onClick={() => { setRound(round + 1); setRunning(true); }}>Inizia</button>
         </div>
       )}
     </div>

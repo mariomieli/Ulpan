@@ -33,7 +33,7 @@ export function Theory({ blocks }: { blocks: TheoryBlock[] }) {
         {text.map((b, i) => {
           switch (b.type) {
             case 'p': return <p key={i}><Rich text={b.text} /></p>;
-            case 'tip': return <div key={i} className="tip"><span className="wiggle star-tip"><Icon name="star" size={20} className="star-icon" /></span><span><Rich text={b.text} /></span></div>;
+            case 'tip': return <div key={i} className="tip"><span className="tip-mark" aria-hidden="true">!</span><span><Rich text={b.text} /></span></div>;
             case 'list': return <ul key={i}>{b.items.map((it, j) => <li key={j}><Rich text={it} /></li>)}</ul>;
             default: return null;
           }
