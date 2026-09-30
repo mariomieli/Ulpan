@@ -139,6 +139,11 @@ async function activate(u: User) {
   if (!(auth.user?.id === u.id && auth.status === 'signedIn')) switchUser(u.id);
   setAuth({ status: 'signedIn', user });
   await pull();
+  // Con Google non c'è il modulo di registrazione: i consensi (età e informativa, mostrati sotto il pulsante) si registrano al primo accesso
+  if (supabase && u.app_metadata?.provider === 'google' && !u.user_metadata?.privacy_accepted_at) {
+    const now = new Date().toISOString();
+    void supabase.auth.updateUser({ data: { age_confirmed_at: now, privacy_accepted_at: now } });
+  }
 }
 
 function cachedUser(): AuthUser | null {
@@ -255,6 +260,15 @@ export async function signUp(name: string, email: string, password: string): Pro
   });
   if (error) return { error: italian(error.message) };
   return { confirm: !data.session };
+}
+
+/** Accesso con Google: reindirizza a Google e torna qui con "?code=" (PKCE). */
+export async function signInWithGoogle(): Promise<string | null> {
+  const { error } = await (await getSupabase()).auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: redirectTo() },
+  });
+  return error ? italian(error.message) : null;
 }
 
 export async function resetPassword(email: string): Promise<string | null> {

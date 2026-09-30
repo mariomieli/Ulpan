@@ -30,7 +30,7 @@ export function PrivacyPage() {
           {cloudEnabled && (
             <>
               <dt>Account</dt>
-              <dd>Email, nome scelto da te e password (conservata solo in forma cifrata). Servono ad accedere e sincronizzare i progressi.</dd>
+              <dd>Email, nome scelto da te e password (conservata solo in forma cifrata). Se accedi con Google riceviamo solo email e nome del tuo profilo Google, senza password. Servono ad accedere e sincronizzare i progressi.</dd>
               <dt>Gruppi e classi</dt>
               <dd>Nei gruppi gli altri membri vedono nome, punti e serie in classifica (se attiva). Nelle classi l’insegnante vede i progressi dettagliati, mai l’email, e solo dopo il tuo consenso esplicito, registrato al momento dell’ingresso.</dd>
               <dt>Consensi</dt>
