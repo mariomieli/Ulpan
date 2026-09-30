@@ -1,207 +1,221 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { dayKey, dueItems, isLessonUnlocked, useAppState } from '../lib/store';
-import { LESSONS } from '../data/curriculum';
-import { GLYPHS } from '../data/alphabet';
-import { VOWELS } from '../data/nikud';
+import { LESSONS, wordsUpTo, type Lesson } from '../data/curriculum';
+import { GLYPHS, GLYPH_BY_ID } from '../data/alphabet';
+import { VOWELS, VOWEL_BY_ID } from '../data/nikud';
 import { WORDS } from '../data/words';
 import { mastery } from '../lib/srs';
-import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
-import { lessonGlyphText } from '../components/LessonArt';
-import { useCountUp } from '../lib/fx';
+import { lessonKind, lessonGlyphText, type LessonKind } from '../components/LessonArt';
+import { PageHeader } from '../components/PageHeader';
 import { Rich } from '../components/Hebrew';
+import { canCombine, syllable } from '../lib/quiz';
+import { ktivMale } from '../lib/ktiv';
+import { speak } from '../lib/speech';
 
 const HomeAssignments = lazy(() => import('../components/HomeAssignments'));
 
-function Ring({ value, max, label }: { value: number; max: number; label: string }) {
-  const pct = Math.min(1, max ? value / max : 0);
-  const r = 38;
-  const c = 2 * Math.PI * r;
-  // l'anello si riempie all'apertura della pagina
-  const [on, setOn] = useState(false);
-  useEffect(() => { const f = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(f); }, []);
+const KIND_NAME: Record<LessonKind, string> = { vowels: 'Vocali', letters: 'Lettere', rules: 'Regole', grammar: 'Grammatica' };
+const PHASES: LessonKind[] = ['vowels', 'letters', 'rules', 'grammar'];
+const MARKS = /[֑-ׇ]/g;
+
+/** Primo segno (lettera con i suoi punti) del simbolo di una lezione. */
+function firstGlyph(l: Lesson): string {
+  return lessonGlyphText(l).match(/[א-ת][֑-ׇ]*/u)?.[0] ?? 'א';
+}
+
+interface Part { he: string; plain: string; sound: string }
+
+/** Tre esempi leggibili della lezione: sillabe (lettere e vocali) oppure parole. */
+function sampleParts(l: Lesson): Part[] {
+  if (l.glyphs.length || l.vowels.length) {
+    const g = (l.glyphs.map((id) => GLYPH_BY_ID[id]).find((x) => x && !x.finalOf && x.id !== 'alef') ?? GLYPH_BY_ID.alef);
+    const pool = l.vowels.length
+      ? l.vowels.map((id) => VOWEL_BY_ID[id])
+      : VOWELS.filter((v) => v.lesson <= l.id);
+    const vs = pool.filter((v) => v && canCombine(g, v)).slice(0, 3);
+    if (vs.length) {
+      return vs.map((v) => { const s = syllable(g, v); return { he: s.text, plain: g.char.replace(MARKS, ''), sound: s.translit }; });
+    }
+  }
+  return wordsUpTo(l.id).filter((w) => w.core).slice(-3).map((w) => ({ he: w.he, plain: ktivMale(w.he), sound: `${w.translit} · ${w.it}` }));
+}
+
+function Ring({ value, max, size, inner, label }: { value: number; max: number; size: number; inner: number; label: string }) {
+  const deg = `${Math.min(100, max ? (value / max) * 100 : 0)}%`;
   return (
-    <div className="ring ring-96" role="img" aria-label={`${label}: ${value} su ${max}`}>
-      <svg width="96" height="96" aria-hidden="true">
-        <circle cx="48" cy="48" r={r} stroke="var(--surface-2)" strokeWidth="10" fill="none" />
-        <circle cx="48" cy="48" r={r} stroke={pct >= 1 ? 'var(--ok)' : 'var(--primary)'} strokeWidth="10" fill="none"
-          className="ring-fill" strokeDasharray={c} strokeDashoffset={on ? c * (1 - pct) : c} strokeLinecap="round" />
-      </svg>
-      <div className={`ring-label ${value >= max ? 'pop-in' : ''}`} aria-hidden="true">{value >= max ? '✓' : `${value}/${max}`}</div>
+    <div className="goal-ring" role="img" aria-label={`${label}: ${value} su ${max}`} style={{ width: size, height: size, background: `conic-gradient(var(--okfill) ${deg}, var(--sf2) 0)` }}>
+      <div style={{ width: inner, height: inner }}><b>{Math.min(value, 999)}</b><span>su {max}</span></div>
     </div>
   );
 }
 
-/** Lettere decorative che fluttuano nel riquadro principale. */
-const DRIFT = [
-  { c: 'ש', x: 6, y: 12, s: 70, d: 9 }, { c: 'ל', x: 84, y: 8, s: 90, d: 11 }, { c: 'ו', x: 60, y: 70, s: 60, d: 8 },
-  { c: 'ם', x: 92, y: 62, s: 54, d: 12 }, { c: 'א', x: 30, y: 78, s: 64, d: 10 }, { c: 'ב', x: 46, y: 4, s: 48, d: 7.5 },
-  { c: 'ג', x: 72, y: 36, s: 44, d: 13 }, { c: 'ד', x: 16, y: 50, s: 58, d: 9.5 },
-];
-
 export function HomePage() {
   const state = useAppState();
   const auth = useAuth();
+  const [nikud, setNikud] = useState(true);
+  const [sel, setSel] = useState(0);
   const today = state.days[dayKey()] ?? { answered: 0, correct: 0 };
+  const goal = state.settings.dailyGoal;
   const due = dueItems(state, Date.now()).length;
-  const dueShown = useCountUp(due, 900);
-  const xpShown = useCountUp(state.xp, 1100);
 
   const next = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed);
   const done = LESSONS.filter((l) => state.lessons[l.id]?.passed).length;
-  const isNew = done === 0 && Object.keys(state.srs).length === 0;
+  const parts = useMemo(() => (next ? sampleParts(next) : []), [next]);
+  const part = parts[Math.min(sel, parts.length - 1)];
 
   const learned = useMemo(() => {
-    const count = (prefix: string, ids: string[]) =>
-      ids.filter((id) => mastery(state.srs[`${prefix}:${id}`]) >= 2).length;
-    return {
-      glyphs: count('g', GLYPHS.map((g) => g.id)),
-      vowels: count('v', VOWELS.map((v) => v.id)),
-      words: count('w', WORDS.map((w) => w.id)),
-    };
+    const count = (prefix: string, ids: string[]) => ids.filter((id) => mastery(state.srs[`${prefix}:${id}`]) >= 2).length;
+    return [
+      { label: 'Lettere', v: count('g', GLYPHS.map((g) => g.id)), max: GLYPHS.length },
+      { label: 'Vocali (nikud)', v: count('v', VOWELS.map((v) => v.id)), max: VOWELS.length },
+      { label: 'Parole', v: count('w', WORDS.map((w) => w.id)), max: WORDS.length },
+    ];
   }, [state.srs]);
 
   const week = useMemo(() => {
-    const out: { key: string; label: string; n: number }[] = [];
+    const out: { key: string; label: string; n: number; isToday: boolean }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const k = dayKey(d);
-      out.push({ key: k, label: d.toLocaleDateString('it-IT', { weekday: 'short' }).slice(0, 3), n: state.days[k]?.answered ?? 0 });
+      out.push({ key: k, label: d.toLocaleDateString('it-IT', { weekday: 'short' }).replace('.', '').slice(0, 3), n: state.days[k]?.answered ?? 0, isToday: i === 0 });
     }
     return out;
   }, [state.days]);
-  const maxDay = Math.max(10, ...week.map((d) => d.n));
+
+  const dateLabel = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  const kicker = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
+  const goalText = today.answered >= goal ? 'Raggiunto!' : `${goal - today.answered} risposte`;
 
   return (
-    <div className="home fade-in">
-      <div className="home-head">
-        <div>
-          <h1>
-            <span className="shalom" dir="rtl" lang="he">
-              {['שָׁ', 'ל', 'וֹ', 'ם'].map((c, i) => <span key={i} style={{ animationDelay: `${0.05 + i * 0.1}s` }}>{c}</span>)}
-            </span>{' '}
-            Ciao{auth.user ? `, ${auth.user.name}` : ''}!
-          </h1>
-          <p className="home-sub">Il tuo percorso per leggere l’ebraico, una lettera alla volta.</p>
-        </div>
-        <div className="home-chips">
-          <span className="stat-chip flame"><Icon name="flame" size={20} className="flame-icon" /> {state.streak} {state.streak === 1 ? 'giorno' : 'giorni'}</span>
-          <span className="stat-chip xp"><Icon name="star" size={20} className="star-icon" /> {xpShown} XP</span>
-        </div>
-      </div>
+    <div className="home">
+      <PageHeader he="שָׁלוֹם" kicker={kicker} title={`Ciao${auth.user ? `, ${auth.user.name}` : ''}`}>
+        {next && <a className="ph-chip" href={`#/lezioni/${next.id}`}><span>Oggi</span><b>Lezione {next.id}</b></a>}
+        <a className="ph-chip" href="#/ripasso"><span>Da ripassare</span><b>{due} {due === 1 ? 'parola' : 'parole'}</b></a>
+      </PageHeader>
 
-      <div className="hero2">
-        {DRIFT.map((d, i) => (
-          <span key={i} className="drift" aria-hidden="true" lang="he"
-            style={{ left: `${d.x}%`, top: `${d.y}%`, fontSize: d.s, animationDuration: `${d.d}s` }}>{d.c}</span>
-        ))}
-        {next ? (
-          <>
-            <div className="hero2-cover" aria-hidden="true"><span lang="he">{lessonGlyphText(next)}</span></div>
-            <div className="hero2-body">
-              <span className="kicker gold">Lezione {next.id} di {LESSONS.length}</span>
-              <h2>{next.title}</h2>
-              <p className="hero2-sub"><Rich text={next.subtitle} /></p>
-              <div className="hero2-path" aria-label={`${done} lezioni superate su ${LESSONS.length}`}>
-                <div className="hero2-bar"><div style={{ width: `${(done / LESSONS.length) * 100}%` }} /></div>
-                <span>{done}/{LESSONS.length}</span>
+      <div className="home-grid">
+        <div className="home-left">
+          <section className="hcard hero-card u-rise" style={{ animationDelay: '.06s' }}>
+            {next ? (
+              <>
+                <div className="hero-text">
+                  <span className="kicker-up">Lezione {next.id} di {LESSONS.length} · {KIND_NAME[lessonKind(next)]}</span>
+                  <h2>{next.title}</h2>
+                  <p><Rich text={next.subtitle} /></p>
+                  <div className="bar-row">
+                    <div className="bar-track"><div style={{ width: `${(done / LESSONS.length) * 100}%` }} /></div>
+                    <span>{done}/{LESSONS.length}</span>
+                  </div>
+                  <div className="hero-actions">
+                    <a className="hero-btn" href={`#/lezioni/${next.id}`}>{state.lessons[next.id]?.studied ? 'Continua la lezione' : 'Inizia la lezione'}</a>
+                    <a className="hero-link" href="#/lezioni">Vedi il percorso</a>
+                  </div>
+                </div>
+                {part && (
+                  <div className="syl-panel">
+                    <div className="syl-top">
+                      <span>Leggi da destra →</span>
+                      <button type="button" className={`mini-pill ${nikud ? 'on' : ''}`} aria-pressed={nikud} onClick={() => setNikud((v) => !v)}>{nikud ? 'Con nikud' : 'Senza nikud'}</button>
+                    </div>
+                    <div className="syl-row" dir="rtl" lang="he">
+                      {parts.map((p, i) => (
+                        <button key={i} type="button" className={i === sel ? 'on' : ''} aria-pressed={i === sel}
+                          onClick={() => { setSel(i); if (state.settings.audio) speak(p.he, state.settings.speechRate); }}>{nikud ? p.he : p.plain}</button>
+                      ))}
+                    </div>
+                    <div className="syl-sound">“{part.sound}”</div>
+                    <span className="syl-hint">Tocca una lettera</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="hero-text">
+                <span className="kicker-up">Percorso completato</span>
+                <h2>Hai completato tutte le lezioni!</h2>
+                <p>Metti alla prova le tue abilità con l’esame finale e continua il ripasso quotidiano.</p>
+                <div className="hero-actions"><a className="hero-btn" href="#/test/finale">Esame finale</a></div>
               </div>
-              {isNew && (
-                <ol className="hero-steps" aria-label="Come funziona">
-                  <li>Teoria</li><li>Studio</li><li>Esercizi</li><li>Test</li><li>Ripasso</li>
-                </ol>
-              )}
+            )}
+          </section>
+
+          {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
+
+          <section className="hcard path-card u-rise" style={{ animationDelay: '.12s' }}>
+            <div className="path-head"><b>Il percorso</b><span>{done} di {LESSONS.length} lezioni superate</span></div>
+            <div className="path-phases">
+              {PHASES.map((k) => {
+                const ls = LESSONS.filter((l) => lessonKind(l) === k);
+                if (!ls.length) return null;
+                return (
+                  <div key={k} className="path-phase" style={{ flex: ls.length }}>
+                    <span className="phase-name">{KIND_NAME[k]}</span>
+                    <div className="phase-nodes">
+                      {ls.map((l) => {
+                        const isDone = !!state.lessons[l.id]?.passed;
+                        const isNow = next?.id === l.id;
+                        return (
+                          <a key={l.id} href={`#/lezioni/${l.id}`} lang="he" className={`node ${isDone ? 'done' : isNow ? 'now' : ''}`}
+                            aria-label={`Lezione ${l.id}: ${l.title}${isDone ? ', superata' : ''}`} title={`${l.id}. ${l.title}`}>{firstGlyph(l)}</a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="hero2-cta">
-              <a className="btn btn-gold btn-xl" href={`#/lezioni/${next.id}`}>
-                {state.lessons[next.id]?.studied ? 'Continua' : 'Inizia'} la lezione <Icon name="arrowRight" size={18} className="" />
+          </section>
+
+          <div className="home-tiles u-rise" style={{ animationDelay: '.18s' }}>
+            {[
+              { g: 'אבג', t: 'Alfabeto', d: '22 lettere e 5 forme finali', href: '#/alfabeto' },
+              { g: 'אָ', t: 'Nikud (Punteggiatura)', d: 'Le vocali, sillaba per sillaba', href: '#/nikud' },
+              { g: 'שָׁלוֹם', t: 'Lettura', d: 'Parole e frasi, con e senza vocali', href: '#/lettura' },
+              { g: 'הוּא', t: 'Lingua e cultura', d: 'Numeri, calendario e luoghi', href: '#/grammatica' },
+            ].map((t) => (
+              <a key={t.t} className="home-tile" href={t.href}>
+                <span className="tile-he" lang="he">{t.g}</span>
+                <span className="tile-text"><b>{t.t}</b><span>{t.d}</span></span>
               </a>
-              <a className="hero-link" href="#/lezioni">Vedi tutto il percorso</a>
-              {isNew && <a className="hero-link" href="#/test/ingresso">Sai già un po’ di ebraico? Test d’ingresso</a>}
+            ))}
+          </div>
+        </div>
+
+        <aside className="home-aside">
+          <div className="acard goal-card u-rise" style={{ animationDelay: '.1s' }}>
+            <Ring value={today.answered} max={goal} size={84} inner={66} label="Obiettivo giornaliero" />
+            <div className="goal-text">
+              <span>Obiettivo di oggi</span>
+              <b>{goalText}</b>
+              <small>{today.answered ? `${Math.round((today.correct / today.answered) * 100)}% corrette` : 'Nessuna attività oggi'}</small>
             </div>
-          </>
-        ) : (
-          <div className="hero2-body">
-            <span className="kicker gold">Percorso completato</span>
-            <h2>Hai completato tutte le lezioni!</h2>
-            <p className="hero2-sub">Metti alla prova le tue abilità con l’esame finale e continua il ripasso quotidiano.</p>
-            <a className="btn btn-gold btn-xl" href="#/test/finale">Esame finale <Icon name="arrowRight" size={18} className="" /></a>
           </div>
-        )}
-      </div>
-
-      {auth.status === 'signedIn' && <Suspense fallback={null}><HomeAssignments /></Suspense>}
-
-      <div className="home-cards">
-        <div className="card row goal-card" style={{ animationDelay: '.1s' }}>
-          <Ring value={today.answered} max={state.settings.dailyGoal} label="Obiettivo giornaliero" />
-          <div className="stat">
-            <span className="stat-label">Obiettivo di oggi</span>
-            <span className="stat-value">{today.answered >= state.settings.dailyGoal ? 'Raggiunto!' : `${state.settings.dailyGoal - today.answered} risposte`}</span>
-            <span className="stat-label">{today.answered ? `${Math.round((today.correct / today.answered) * 100)}% corrette` : 'Nessuna attività oggi'}</span>
-          </div>
-        </div>
-        <div className="card" style={{ animationDelay: '.18s' }}>
-          <div className="card-title"><h3>Ripasso</h3><span className="wiggle"><Icon name="repeat" /></span></div>
-          <div className="stat stat-inline">
-            <span className="stat-value big">{dueShown}</span>
-            <span className="stat-label">{due === 1 ? 'elemento da ripassare' : 'elementi da ripassare'}</span>
-          </div>
-          <a className="btn btn-block btn-primary" style={{ marginTop: 12 }} href="#/ripasso/oggi">Sessione di oggi</a>
-          <a className="btn btn-block btn-ghost small" style={{ marginTop: 6 }} href="#/ripasso">Altri allenamenti</a>
-        </div>
-        <div className="card" style={{ animationDelay: '.26s' }}>
-          <div className="card-title"><h3>Serie</h3><Icon name="flame" size={24} className="flame-icon" /></div>
-          <span className="stat-value">{state.streak} {state.streak === 1 ? 'giorno' : 'giorni'}</span>
-          {week.some((d) => d.n) ? (
-            <div className="bars bars-74">
-              {week.map((d, i) => (
+          <div className="acard streak-card u-rise" style={{ animationDelay: '.14s' }}>
+            <div className="streak-top"><b>{state.streak}</b><span>{state.streak === 1 ? 'giorno di fila' : 'giorni di fila'}</span><em>{state.xp} XP</em></div>
+            <div className="streak-days">
+              {week.map((d) => (
                 <div key={d.key} title={`${d.n} risposte`}>
-                  <div className={`bar ${d.n ? '' : 'is-zero'} ${i === 6 ? 'today' : ''}`} style={{ height: `${Math.max(6, (d.n / maxDay) * 100)}%`, ['--i' as string]: i }} />
-                  <span>{d.label}</span>
+                  <span className={d.n ? 'ok' : d.isToday ? 'today' : ''}>{d.n ? '✓' : ''}</span>{d.label}
                 </div>
               ))}
             </div>
-          ) : <p className="small muted" style={{ margin: '10px 0 0' }}>Rispondi ad almeno una domanda al giorno per far crescere la serie.</p>}
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-title"><h3>Padronanza</h3><a href="#/progressi" className="small">Dettagli →</a></div>
-        <div className="grid grid-3">
-          {[
-            { label: 'Lettere', v: learned.glyphs, max: GLYPHS.length, cls: 'blue' },
-            { label: 'Vocali (nikud)', v: learned.vowels, max: VOWELS.length, cls: 'gold' },
-            { label: 'Parole', v: learned.words, max: WORDS.length, cls: 'green' },
-          ].map((x, i) => (
-            <div key={x.label}>
-              <div className="row small" style={{ marginBottom: 6 }}><b>{x.label}</b><span className="spacer" /><span className="muted">{x.v}/{x.max}</span></div>
-              <div className={`mbar ${x.cls}`}><div style={{ width: `${Math.max(x.v ? 3 : 0, (x.v / x.max) * 100)}%`, animationDelay: `${0.2 + i * 0.12}s` }} /></div>
-            </div>
-          ))}
-        </div>
-        <p className="small muted" style={{ marginTop: 12, marginBottom: 0 }}>
-          Un elemento è “consolidato” quando lo riconosci correttamente per più giorni di seguito nel ripasso.
-        </p>
-      </div>
-
-      <div className="home-cards">
-        <a className="card feature" href="#/alfabeto">
-          <span className="feature-glyph blue" lang="he" aria-hidden="true">אבג</span>
-          <h3>Alfabeto</h3>
-          <p className="muted small">Tutte le 22 lettere, le forme finali e come distinguerle.</p>
-        </a>
-        <a className="card feature" href="#/nikud">
-          <span className="feature-glyph gold" lang="he" aria-hidden="true">אָ</span>
-          <h3>Nikud</h3>
-          <p className="muted small">I segni vocalici e una tabella interattiva delle sillabe.</p>
-        </a>
-        <a className="card feature" href="#/lettura">
-          <span className="feature-glyph green" lang="he" aria-hidden="true">שָׁלוֹם</span>
-          <h3>Lettura</h3>
-          <p className="muted small">Parole e frasi da leggere, con e senza vocali.</p>
-        </a>
+          </div>
+          <div className="acard review-card u-rise" style={{ animationDelay: '.18s' }}>
+            <span className="rv-k">Ripasso intelligente</span>
+            <div className="rv-n"><b>{due}</b><span>{due === 1 ? 'da ripassare oggi' : 'da ripassare oggi'}</span></div>
+            <a href="#/ripasso/oggi">Inizia la sessione</a>
+          </div>
+          <div className="acard mast-card u-rise" style={{ animationDelay: '.22s' }}>
+            <b>Padronanza</b>
+            {learned.map((m) => (
+              <div key={m.label} className="mast-row">
+                <div><span>{m.label}</span><em>{m.v}/{m.max}</em></div>
+                <div className="bar-track thin"><div style={{ width: `${Math.max(m.v ? 3 : 0, (m.v / m.max) * 100)}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
     </div>
   );

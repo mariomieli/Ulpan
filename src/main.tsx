@@ -18,6 +18,7 @@ import '@fontsource/rubik/latin-700.css';
 import '@fontsource/rubik/latin-800.css';
 import './styles.css';
 import './redesign.css';
+import './ui.css';
 import { initAuth } from './lib/auth';
 
 initAuth();

@@ -1,15 +1,16 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { LESSONS, type Lesson } from '../data/curriculum';
 import { isLessonUnlocked, useAppState } from '../lib/store';
-import { JUST_PASSED_KEY, lessonGlyphText, lessonKind, type LessonKind } from '../components/LessonArt';
-import { Icon } from '../components/Icon';
-import { navigate } from '../lib/router';
+import { JUST_PASSED_KEY, lessonFirstGlyph, lessonGlyphText, lessonKind, type LessonKind } from '../components/LessonArt';
+import { PageHeader } from '../components/PageHeader';
+import { Rich } from '../components/Hebrew';
 
 /** Spostamento orizzontale delle tappe: il sentiero ondeggia a serpentina. */
 const OFF = [0, 60, 90, 60, 0, -60, -90, -60];
-const STEP = 118;
-const W = 340;
-const TILE = 78;
+
+interface Geo { W: number; T: number; S: number; k: number; F: number; X: number; LF: number }
+const DESKTOP: Geo = { W: 340, T: 78, S: 118, k: 1, F: 32, X: 110, LF: 15 };
+const MOBILE: Geo = { W: 320, T: 64, S: 100, k: 0.78, F: 26, X: 9, LF: 14 };
 
 const UNITS: { kind: LessonKind; title: string; glyph: string }[] = [
   { kind: 'vowels', title: 'Le vocali', glyph: 'אָ' },
@@ -17,55 +18,70 @@ const UNITS: { kind: LessonKind; title: string; glyph: string }[] = [
   { kind: 'rules', title: 'Regole di lettura', glyph: 'ספר' },
   { kind: 'grammar', title: 'Grammatica di base', glyph: 'הַ' },
 ];
-
+const PHASE_NAME: Record<LessonKind, string> = { vowels: 'Vocali', letters: 'Lettere', rules: 'Regole di lettura', grammar: 'Grammatica' };
 
 function toast(msg: string) {
   window.dispatchEvent(new CustomEvent('ulpan-toast', { detail: msg }));
 }
 
-function UnitPath({ lessons, offset, current, justPassed }: { lessons: Lesson[]; offset: number; current?: number; justPassed: number | null }) {
+function useIsMobile(): boolean {
+  const q = '(max-width: 860px)';
+  const [m, setM] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(q);
+    const on = () => setM(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return m;
+}
+
+function UnitPath({ lessons, geo, offset, current, selected, justPassed, onPick }: {
+  lessons: Lesson[]; geo: Geo; offset: number; current?: number; selected: number; justPassed: number | null; onPick: (l: Lesson) => void;
+}) {
   const state = useAppState();
   const [shaking, setShaking] = useState<number | null>(null);
-  const cx = (i: number) => W / 2 + OFF[i % OFF.length];
-  const cy = (i: number) => i * STEP + TILE / 2;
+  const { W, T, S, k, F, X, LF } = geo;
+  const cx = (i: number) => W / 2 + OFF[i % OFF.length] * k;
+  const cy = (i: number) => i * S + T / 2;
   let d = `M ${cx(0)} ${cy(0)}`;
-  for (let i = 1; i < lessons.length; i++) d += ` C ${cx(i - 1)} ${cy(i - 1) + STEP / 2}, ${cx(i)} ${cy(i) - STEP / 2}, ${cx(i)} ${cy(i)}`;
-  const height = (lessons.length - 1) * STEP + TILE + 10;
+  for (let i = 1; i < lessons.length; i++) d += ` C ${cx(i - 1)} ${cy(i - 1) + S / 2}, ${cx(i)} ${cy(i) - S / 2}, ${cx(i)} ${cy(i)}`;
+  const height = (lessons.length - 1) * S + T + 10;
 
   return (
-    <div className="path-wrap" style={{ height }}>
-      <svg className="path-line" width={W} height={height} aria-hidden="true">
-        <path d={d} className="path-base" />
-        <path d={d} className="path-dash" />
+    <div className="pth-wrap" style={{ width: W, height }}>
+      <svg width={W} height={height} className="pth-line" aria-hidden="true">
+        <path d={d} className="pth-base" />
+        <path d={d} className="pth-dash" />
       </svg>
       {lessons.map((l, i) => {
         const unlocked = isLessonUnlocked(state, l.id);
         const passed = !!state.lessons[l.id]?.passed;
-        const isCurrent = l.id === current;
-        const left = cx(i) - TILE / 2;
-        const labelRight = OFF[i % OFF.length] <= 0;
-        const text = lessonGlyphText(l);
-        const style = { left, top: i * STEP, animationDelay: `${(offset + i) * 60}ms` } as CSSProperties;
-        const open = () => {
-          if (unlocked) { navigate(`/lezioni/${l.id}`); return; }
+        const isNow = l.id === current;
+        const isSel = l.id === selected;
+        const tileLeft = OFF[i % OFF.length] * k <= 0;
+        const lw = Math.round(tileLeft ? W + X - (cx(i) + T / 2) - 14 : cx(i) - T / 2 + X - 14);
+        const cls = passed ? 'done' : isNow ? 'now' : 'todo';
+        const pick = () => {
+          if (unlocked) { onPick(l); return; }
           setShaking(l.id);
           setTimeout(() => setShaking(null), 500);
           toast(`Bloccata: supera prima il test della lezione ${l.id - 1}`);
         };
+        const stopStyle = { left: cx(i) - T / 2, top: i * S, width: T, height: T, animationDelay: `${(offset + i) * 45}ms` } as CSSProperties;
+        const labelStyle: CSSProperties = { width: lw, textAlign: tileLeft ? 'left' : 'right', [tileLeft ? 'left' : 'right']: T + 14 };
         return (
-          <div key={l.id} className="stop" style={style}>
-            {isCurrent && <span className="stop-bubble" aria-hidden="true">INIZIA</span>}
-            <button type="button"
-              className={`stop-tile kind-${lessonKind(l)} ${unlocked ? '' : 'locked'} ${isCurrent ? 'current' : ''} ${shaking === l.id ? 'shake' : ''} ${justPassed === l.id ? 'just-passed' : ''}`}
-              onClick={open} aria-label={`Lezione ${l.id}: ${l.title}${passed ? ', superata' : unlocked ? '' : ', bloccata'}`}
-              aria-current={isCurrent ? 'step' : undefined}>
-              <span className="stop-glyph" lang="he" data-long={[...text.replace(/[֑-ׇ]/g, '')].length > 2 || undefined}>{text}</span>
-              {passed && <span className="stop-badge ok" aria-hidden="true"><Icon name="check" size={14} className="" /></span>}
-              {!unlocked && <span className="stop-badge lock" aria-hidden="true"><Icon name="lock" size={12} className="" /></span>}
-            </button>
-            <div className={`stop-label ${labelRight ? 'right' : 'left'} kind-${lessonKind(l)}`} aria-hidden="true">
+          <div key={l.id} className="pth-stop" style={stopStyle}>
+            {isNow && <span className="pth-bubble" aria-hidden="true">INIZIA</span>}
+            <button type="button" lang="he"
+              className={`pth-tile ${cls} ${isSel ? 'sel' : ''} ${!unlocked ? 'locked' : ''} ${shaking === l.id ? 'shake' : ''} ${justPassed === l.id ? 'just-passed' : ''}`}
+              style={{ width: T, height: T, borderRadius: Math.round(T * 0.3), fontSize: F }}
+              onClick={pick} aria-label={`Lezione ${l.id}: ${l.title}${passed ? ', superata' : unlocked ? '' : ', bloccata'}`}
+              aria-current={isNow ? 'step' : undefined} aria-pressed={isSel}>{lessonFirstGlyph(l)}</button>
+            {(passed || !unlocked) && <span className={`pth-badge ${passed ? 'ok' : ''}`} aria-hidden="true">{passed ? '✓' : '–'}</span>}
+            <div className="pth-label" style={labelStyle}>
               <span>Lezione {l.id}</span>
-              <b>{l.title}</b>
+              <b style={{ fontSize: LF, color: passed || isNow ? 'var(--ink)' : 'var(--mute)' }}>{l.title}</b>
             </div>
           </div>
         );
@@ -76,9 +92,12 @@ function UnitPath({ lessons, offset, current, justPassed }: { lessons: Lesson[];
 
 export function LessonsPage() {
   const state = useAppState();
+  const isMobile = useIsMobile();
+  const geo = isMobile ? MOBILE : DESKTOP;
   const done = LESSONS.filter((l) => state.lessons[l.id]?.passed).length;
   // la tappa a cui sei arrivato: la prima sbloccata non ancora superata
   const current = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed)?.id;
+  const [selId, setSelId] = useState<number | null>(null);
   const [justPassed, setJustPassed] = useState<number | null>(null);
   useEffect(() => {
     try {
@@ -87,35 +106,74 @@ export function LessonsPage() {
     } catch { /* archiviazione non disponibile */ }
   }, []);
 
+  const selected = LESSONS.find((l) => l.id === (selId ?? current ?? LESSONS[LESSONS.length - 1].id)) ?? LESSONS[0];
+  const sPassed = !!state.lessons[selected.id]?.passed;
+  const sNow = selected.id === current;
+  const kind = lessonKind(selected);
+  const status = sPassed ? 'Completata' : sNow ? 'In corso · prossima da fare' : 'Da fare';
+  const stColor = sPassed ? 'var(--ok)' : sNow ? 'var(--gold-ink)' : 'var(--mute)';
+  const cta = sPassed ? 'Rivedi la lezione' : sNow ? 'Continua la lezione' : 'Apri la lezione';
+  const totalDeg = `${(done / LESSONS.length) * 100}%`;
+
   let offset = 0;
   return (
-    <div className="fade-in">
-      <div className="page-head">
-        <div>
-          <h1>Il percorso</h1>
-          <p>{LESSONS.length} tappe. Supera il test finale di ogni lezione (almeno 80%) per sbloccare la successiva.</p>
+    <div className="path-page">
+      <PageHeader he="דֶּרֶךְ" kicker={isMobile ? `${LESSONS.length} lezioni · ${UNITS.length} tappe` : `${LESSONS.length} tappe · ${UNITS.length} unità`} title="Il percorso">
+        <div className="legend" aria-hidden="true">
+          <span><i className="dot done" />Completata</span>
+          <span><i className="dot now" />In corso</span>
+          <span><i className="dot todo" />Da fare</span>
         </div>
-        <span className="pill pill-primary">{done}/{LESSONS.length} completate</span>
+      </PageHeader>
+      <div className="path-mprog">
+        <div className="bar-track"><div style={{ width: totalDeg }} /></div><span>{done} su {LESSONS.length}</span>
       </div>
-      {UNITS.map((u, ui) => {
-        const lessons = LESSONS.filter((l) => lessonKind(l) === u.kind);
-        const doneHere = lessons.filter((l) => state.lessons[l.id]?.passed).length;
-        const start = offset;
-        offset += lessons.length + 3;
-        return (
-          <section key={u.kind} className="unit" aria-label={`Unità ${ui + 1}: ${u.title}`}>
-            <div className={`unit-banner kind-${u.kind}`} style={{ animationDelay: `${start * 60}ms` }}>
-              <div>
-                <span className="unit-kicker">Unità {ui + 1}</span>
-                <h2>{u.title}</h2>
-                <span className="unit-count">{doneHere}/{lessons.length} lezioni</span>
-              </div>
-              <span className="unit-glyph" lang="he" aria-hidden="true">{u.glyph}</span>
+
+      <div className="path-layout">
+        <div className="path-units">
+          {UNITS.map((u, ui) => {
+            const lessons = LESSONS.filter((l) => lessonKind(l) === u.kind);
+            if (!lessons.length) return null;
+            const doneHere = lessons.filter((l) => state.lessons[l.id]?.passed).length;
+            const start = offset;
+            offset += lessons.length;
+            return (
+              <section key={u.kind} className="pth-unit" aria-label={`Unità ${ui + 1}: ${u.title}`}>
+                <div className="pth-banner">
+                  <span className="stripe" />
+                  <div className="pth-bt">
+                    <span className="k">Unità {ui + 1}</span>
+                    <b>{u.title}</b>
+                    <div className="pth-bp"><div className="bar-track thin"><div style={{ width: `${(doneHere / lessons.length) * 100}%` }} /></div><span>{doneHere} di {lessons.length} lezioni</span></div>
+                  </div>
+                  <span className="pth-bg" lang="he" dir="rtl">{u.glyph}</span>
+                </div>
+                <UnitPath lessons={lessons} geo={geo} offset={start} current={current} selected={selected.id} justPassed={justPassed}
+                  onPick={(l) => setSelId(l.id)} />
+              </section>
+            );
+          })}
+        </div>
+
+        <aside className="path-aside">
+          <div className="pth-detail">
+            <div className="pth-dg" dir="rtl" lang="he">{lessonGlyphText(selected)}</div>
+            <div className="pth-dt">
+              <span className="k">{PHASE_NAME[kind]} · {isMobile ? selected.id : `Lezione ${selected.id}`}</span>
+              <h2>{selected.title}</h2>
+              <span className="sub"><Rich text={selected.subtitle} /></span>
+              <span className="st" style={{ color: stColor }}>{status}</span>
+              <a className="pth-cta" href={`#/lezioni/${selected.id}`}>{cta}</a>
             </div>
-            <UnitPath lessons={lessons} offset={start + 2} current={current} justPassed={justPassed} />
-          </section>
-        );
-      })}
+          </div>
+          <div className="pth-total">
+            <div className="goal-ring" style={{ width: 64, height: 64, background: `conic-gradient(var(--okfill) ${totalDeg}, var(--sf2) 0)` }} role="img" aria-label={`${done} lezioni su ${LESSONS.length}`}>
+              <div style={{ width: 50, height: 50 }}><b style={{ fontSize: 20 }}>{done}</b><span style={{ fontSize: 10 }}>su {LESSONS.length}</span></div>
+            </div>
+            <span className="pt"><b>Percorso totale</b><span>{LESSONS.length - done} lezioni al traguardo</span></span>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

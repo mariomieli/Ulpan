@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { match, useRoute } from './lib/router';
 import { badges } from './lib/badges';
-import { dueItems, useAppState } from './lib/store';
+import { actions, dueItems, useAppState } from './lib/store';
 import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFocusMode } from './lib/focus';
@@ -53,21 +53,26 @@ function prefetchPages() {
 
 const NAV = [
   { path: '/', label: 'Home', icon: 'home' },
-  { path: '/lezioni', label: 'Percorso', icon: 'book' },
+  { path: '/lezioni', label: 'Percorso', icon: 'map' },
   { path: '/alfabeto', label: 'Alfabeto', icon: 'alef' },
   { path: '/nikud', label: 'Nikud (Punteggiatura)', icon: 'dots' },
   { path: '/lettura', label: 'Lettura', icon: 'read' },
   { path: '/grammatica', label: 'Lingua e cultura', icon: 'grammar' },
   { path: '/ripasso', label: 'Ripasso', icon: 'repeat' },
   { path: '/test', label: 'Test ed esami', icon: 'test' },
-  { path: '/gruppi', label: 'Gruppi e classi', icon: 'users' },
   { path: '/progressi', label: 'Progressi', icon: 'chart' },
+  { path: '/gruppi', label: 'Gruppi e classi', icon: 'users' },
   { path: '/impostazioni', label: 'Impostazioni', icon: 'settings' },
 ];
 
 const SYNC_LABEL = {
   idle: 'Account online', saving: 'Salvataggio…', saved: 'Progressi salvati', offline: 'Offline', error: 'Errore di sincronizzazione',
 } as const;
+
+/** Tema effettivo e passaggio giorno/notte (la preferenza resta tra Automatico/Chiaro/Scuro nelle Impostazioni). */
+function useDarkNow(theme: 'system' | 'light' | 'dark'): boolean {
+  return theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
 
 function logout() {
   if (confirm('Vuoi uscire dal tuo account? I progressi restano salvati.')) void signOut();
@@ -120,6 +125,8 @@ export function App() {
   }, [drawer]);
   const due = dueItems(state, Date.now()).length;
   const isAdmin = useIsAdmin();
+  const dark = useDarkNow(settings.theme);
+  const toggleTheme = () => actions.settings({ theme: dark ? 'light' : 'dark' });
   const nav = isAdmin ? [...NAV, { path: '/admin', label: 'Iscritti', icon: 'users' }] : NAV;
   const activeIdx = nav.findIndex((n) => isActive(n.path, path));
   const auth = useAuth();
@@ -205,27 +212,29 @@ export function App() {
           ))}
         </div>
         <div className="sidebar-foot">
+          <button type="button" className="theme-toggle" onClick={toggleTheme} aria-pressed={dark}>
+            <span>{dark ? 'Modalità notte' : 'Modalità giorno'}</span><span aria-hidden="true">{dark ? '☾' : '☀'}</span>
+          </button>
           {auth.user ? (
             <div className="user-row">
               <a href="#/impostazioni" className="user-chip">
-                <span className="avatar">{auth.user.name.slice(0, 1)}</span>
-                <span className="who"><b>{auth.user.name}</b><span className="small muted"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
+                <span className="avatar">{auth.user.name.slice(0, 1).toUpperCase()}</span>
+                <span className="who"><b>{auth.user.name}</b><span className="small"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
               </a>
               <button className="btn btn-ghost btn-icon" onClick={logout} aria-label="Esci" title="Esci">
                 <Icon name="logout" size={18} className="" />
               </button>
             </div>
-          ) : cloudEnabled && (
-            <button className="btn btn-sm btn-block" style={{ marginBottom: 8 }} onClick={showLogin}>Accedi o registrati</button>
-          )}
-          <div className="foot-stats"><Icon name="flame" size={16} className="flame-icon" /> {state.streak} {state.streak === 1 ? 'giorno' : 'giorni'} di fila · {state.xp} XP</div>
+          ) : cloudEnabled ? (
+            <button className="btn btn-sm btn-block" onClick={showLogin}>Accedi o registrati</button>
+          ) : null}
         </div>
       </nav>
 
       <header className="topbar">
         <a href="#/" className="topbar-brand"><img src="./logo-mark.png" alt="" width={34} height={34} /> Ulpan</a>
-        <span className="stat-chip flame sm" title="Giorni di fila"><Icon name="flame" size={16} className="flame-icon" /> {state.streak}</span>
-        <span className="stat-chip xp sm" title="XP totali"><Icon name="star" size={16} className="star-icon" /> {state.xp}</span>
+        <span className="stat-chip flame sm" title="Giorni di fila">{state.streak} {state.streak === 1 ? 'giorno' : 'giorni'}</span>
+        <button type="button" className="theme-btn" onClick={toggleTheme} aria-label={dark ? 'Passa alla modalità giorno' : 'Passa alla modalità notte'} aria-pressed={dark}><span aria-hidden="true">{dark ? '☾' : '☀'}</span></button>
       </header>
 
       <main className="main">
@@ -245,7 +254,7 @@ export function App() {
           </a>
         ))}
         <button onClick={() => setDrawer(true)} aria-label="Altre sezioni" aria-haspopup="dialog" aria-expanded={drawer}>
-          <span className="nav-pill"><Icon name="menu" size={22} className="" /></span> Altro
+          <span className="nav-pill"><Icon name="more" size={22} className="" /></span> Altro
         </button>
       </nav>
 

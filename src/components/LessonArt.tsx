@@ -18,6 +18,11 @@ export function lessonKind(l: Lesson): LessonKind {
   return 'rules';
 }
 
+/** Primo segno (lettera con i suoi punti) del simbolo di una lezione. */
+export function lessonFirstGlyph(l: Lesson): string {
+  return lessonGlyphText(l).match(/[א-ת][֑-ׇ]*/u)?.[0] ?? 'א';
+}
+
 /** Le lettere (o i segni) che rappresentano una lezione. */
 export function lessonGlyphText(l: Lesson): string {
   const kind = lessonKind(l);
