@@ -15,6 +15,7 @@ const UNITS: { kind: LessonKind; title: string; glyph: string }[] = [
   { kind: 'vowels', title: 'Le vocali', glyph: 'אָ' },
   { kind: 'letters', title: 'Le lettere', glyph: 'אב' },
   { kind: 'rules', title: 'Regole di lettura', glyph: 'ספר' },
+  { kind: 'grammar', title: 'Grammatica di base', glyph: 'הַ' },
 ];
 
 

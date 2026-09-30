@@ -845,8 +845,10 @@ dialog[open]::backdrop { animation: backdrop-in var(--dur-m) var(--ease-out); }
 }
 .cover-vowels { --c1: #C99A3E; --c2: #8C6414; }
 .cover-rules { --c1: #2E8A5E; --c2: #1B5E3E; }
+.cover-grammar { --c1: #8A4FB0; --c2: #5A2E7E; }
 :root[data-theme='dark'] .cover-vowels { --c1: #8C6A26; --c2: #5A4212; }
 :root[data-theme='dark'] .cover-rules { --c1: #226A48; --c2: #154530; }
+:root[data-theme='dark'] .cover-grammar { --c1: #6A3D8A; --c2: #40235A; }
 :root[data-theme='dark'] .cover-letters { --c1: #2A5A94; --c2: #1A3558; }
 .cover::after { /* un punto oro, come un segno del nikud */
   content: ''; position: absolute; width: 14%; aspect-ratio: 1; border-radius: 50%; background: var(--accent);

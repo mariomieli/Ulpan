@@ -5,7 +5,7 @@ import { clusters, normalizeTranslit } from './hebrew';
 import { MARKS } from '../data/nikud';
 import { ktivMale } from './ktiv';
 import {
-  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_LESSON, LAST_LETTER_LESSON, wordLesson,
+  LESSON_BY_ID, glyphsUpTo, vowelsUpTo, wordsOfLesson, wordsUpTo, LAST_READING_LESSON, LAST_LETTER_LESSON, wordLesson,
 } from '../data/curriculum';
 
 export type Rng = () => number;
@@ -660,7 +660,7 @@ export function buildLessonQuiz(
 ): Question[] {
   const lesson = LESSON_BY_ID[lessonId];
   // l'ultima lezione allena la lettura senza nikud
-  if (lessonId === LAST_LESSON) return buildPlainReading(count, rng, o);
+  if (lessonId === LAST_READING_LESSON) return buildPlainReading(count, rng, o);
   // nel test ogni elemento nuovo va chiesto almeno due volte (la lezione delle vocali ne ha molti)
   if (mode === 'test') count = Math.max(count, 2 * (lesson.glyphs.length + lesson.vowels.length) + 2);
   const pool = poolUpTo(lessonId);
@@ -871,7 +871,7 @@ export const EXAMS: ExamDef[] = [
     },
   },
   {
-    id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: LAST_LESSON,
+    id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: LAST_READING_LESSON,
     description: 'Parole scritte come su giornali e cartelli: senza vocali, in grafia piena (שולחן, סיפור).',
     build: (rng, o) => buildPlainReading(20, rng, o),
   },
@@ -881,7 +881,7 @@ export const EXAMS: ExamDef[] = [
     build: buildCursive,
   },
   {
-    id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: LAST_LESSON,
+    id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: LAST_READING_LESSON,
     description: 'Prova completa a tempo: lettere, vocali, sillabe e parole. Soglia di superamento 80%.',
     build: (rng, o) => buildQuiz({ focusGlyphs: GLYPHS, focusVowels: VOWELS, focusWords: WORDS, pool: FULL_POOL, count: 40 }, rng, o),
   },

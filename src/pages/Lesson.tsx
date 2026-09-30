@@ -4,6 +4,8 @@ import { listeningEnabled } from '../lib/speech';
 import { useMemo, useState, type ReactNode } from 'react';
 import { LESSON_BY_ID, LESSONS, coreWordsOfLesson, wordsOfLesson, wordsUpTo, glyphsUpTo, type TheoryBlock } from '../data/curriculum';
 import { GLYPH_BY_ID, type Glyph } from '../data/alphabet';
+import { GRAMMAR_BY_ID } from '../data/grammar';
+import { buildGrammarQuiz } from '../lib/grammar';
 import { VOWEL_BY_ID, type Vowel } from '../data/nikud';
 import type { Word } from '../data/words';
 import { requirements } from '../lib/hebrew';
@@ -20,7 +22,7 @@ import { cloudEnabled } from '../lib/supabase';
 
 type Tab = 'teoria' | 'studio' | 'esercizi' | 'test';
 
-const KIND_LABEL = { vowels: 'le vocali', letters: 'le lettere', rules: 'regole di lettura' } as const;
+const KIND_LABEL = { vowels: 'le vocali', letters: 'le lettere', rules: 'regole di lettura', grammar: 'grammatica di base' } as const;
 
 export function Theory({ blocks }: { blocks: TheoryBlock[] }) {
   const text = blocks.filter((b) => b.type !== 'example');
@@ -147,8 +149,32 @@ function WordReveal({ w }: { w: Word }) {
   );
 }
 
+/** Studio di una lezione di grammatica: le parole ed espressioni dell'unità, con audio. */
+function GrammarStudy({ unitId, onDone }: { unitId: string; onDone: () => void }) {
+  const unit = GRAMMAR_BY_ID[unitId];
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0 }}>Parole ed espressioni della lezione</h3>
+      {unit.items.map((it) => (
+        <div key={it.he} className="row" style={{ padding: '8px 0', borderBottom: '1px solid var(--border, #0001)' }}>
+          <He size="md">{it.he}</He>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div><b>{it.translit}</b></div>
+            <div className="muted small">{it.it}</div>
+          </div>
+          <SpeakButton text={it.he} />
+        </div>
+      ))}
+      <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+        <button className="btn btn-primary" onClick={onDone}>Agli esercizi <Icon name="arrowRight" size={18} className="" /></button>
+      </div>
+    </div>
+  );
+}
+
 function Study({ lessonId, onDone }: { lessonId: number; onDone: () => void }) {
   const lesson = LESSON_BY_ID[lessonId];
+  if (lesson.grammar) return <GrammarStudy unitId={lesson.grammar} onDone={onDone} />;
   const words = coreWordsOfLesson(lessonId);
   const extraWords = wordsOfLesson(lessonId).length - words.length;
   const cards = useMemo(() => {
@@ -188,8 +214,11 @@ function Practice({ lessonId, onTest }: { lessonId: number; onTest: () => void }
   const { settings } = useAppState();
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
+  const unitId = LESSON_BY_ID[lessonId].grammar;
   const questions = useMemo(
-    () => buildLessonQuiz(lessonId, 10, Math.random, { audio: listeningEnabled(settings.audio), typing: settings.typing, avoid: recentQuestions() }),
+    () => unitId
+      ? buildGrammarQuiz(GRAMMAR_BY_ID[unitId], 10, Math.random, recentQuestions())
+      : buildLessonQuiz(lessonId, 10, Math.random, { audio: listeningEnabled(settings.audio), typing: settings.typing, avoid: recentQuestions() }),
     [lessonId, round],
   );
   if (result) {
@@ -208,8 +237,11 @@ function LessonTest({ lessonId }: { lessonId: number }) {
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
+  const unitId = LESSON_BY_ID[lessonId].grammar;
   const questions = useMemo(
-    () => buildLessonQuiz(lessonId, 20, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }, 'test'),
+    () => unitId
+      ? buildGrammarQuiz(GRAMMAR_BY_ID[unitId], 16, Math.random, recentQuestions())
+      : buildLessonQuiz(lessonId, 20, Math.random, { audio: listeningEnabled(state.settings.audio), typing: state.settings.typing, avoid: recentQuestions() }, 'test'),
     [lessonId, round],
   );
   const p = state.lessons[lessonId];
@@ -235,7 +267,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
             Lezione {nextLesson.id} <Icon name="arrowRight" size={18} className="" />
           </button>
         )}
-        {passed && !nextLesson && <a className="btn btn-primary" href="#/test/finale">Esame finale</a>}
+        {passed && !nextLesson && <a className="btn btn-primary" href="#/grammatica">Continua con Lingua e cultura</a>}
         {passed && <a className="btn btn-primary" href="#/lezioni">Continua il percorso <Icon name="arrowRight" size={18} className="" /></a>}
         {passed && cloudEnabled && auth.status === 'guest' && (
           <button className="btn" onClick={showLogin} title="Salva i progressi su tutti i dispositivi">
@@ -251,7 +283,7 @@ function LessonTest({ lessonId }: { lessonId: number }) {
       <h2 style={{ marginTop: 8 }}>Test della lezione {lessonId}</h2>
       <p className="muted">{questions.length} domande · correzione alla fine · soglia {PASS_THRESHOLD}%</p>
       {p?.attempts ? <p>Miglior punteggio: <b>{p.bestScore}%</b> {p.passed && <span className="pill pill-ok">Superato</span>}</p> : null}
-      <p className="small muted">Superando il test gli elementi della lezione entrano nel tuo ripasso quotidiano.</p>
+      <p className="small muted">{unitId ? 'Superando il test sblocchi la lezione successiva.' : 'Superando il test gli elementi della lezione entrano nel tuo ripasso quotidiano.'}</p>
       <button className="btn btn-primary btn-lg" onClick={() => { setRound(round + 1); setPhase('run'); }}>Inizia il test</button>
     </div>
   );

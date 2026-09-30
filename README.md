@@ -5,13 +5,13 @@ Web app (PWA) in italiano per imparare a **leggere l'ebraico** da zero: alfabeto
 ## Funzionalità
 
 - **Test d'ingresso** per chi sa già un po' di ebraico: sblocca le lezioni che conosce.
-- **19 lezioni progressive** (vocali, lettere in ordine alfabetico, regole di lettura, lettura senza nikud): ogni lezione ha teoria, schede di studio, esercizi con correzione immediata e un test finale (soglia 80%) che sblocca la lezione successiva.
+- **28 lezioni progressive** (vocali, lettere in ordine alfabetico, regole di lettura, lettura senza nikud, grammatica di base con presente, passato, futuro e imperativo): ogni lezione ha teoria, schede di studio, esercizi con correzione immediata e un test finale (soglia 80%) che sblocca la lezione successiva.
 - **Alfabeto completo**: 22 lettere, 5 forme finali, varianti con dagesh (בּ/ב, כּ/כ, פּ/פ) e shin/sin, con pronuncia spiegata per italiani, lettere da non confondere, valore numerico ed esempi.
 - **Nikud**: tutti i 15 segni vocalici raggruppati per suono e tabella interattiva delle sillabe.
 - **Lettura**: oltre 1.000 parole in 19 categorie (tra cui verbi, professioni, vestiti, tempo libero), oltre 200 frasi e 25 testi graduati (storie, preghiere, cartelli reali, menù, messaggi e avvisi), filtrabili per lezione; nikud, traslitterazione e significato attivabili/disattivabili; flashcard.
 - **Dettato**: ricomponi la parola con le tessere lettera+vocale, evitando le “trappole” (vocali e lettere simili); ad ascolto se c'è una voce ebraica.
 - **Quiz variati**: riconoscimento di lettere, suoni, vocali e forme finali, lettura di sillabe e parole, significato, risposta scritta in traslitterazione, domande di ascolto. I distrattori sono scelti tra lettere simili e letture “quasi giuste”.
-- **Lingua e cultura**: 17 unità con teoria, elenco di parole ed esercizi: grammatica di base (articolo, pronomi, plurali, aggettivi, verbi al presente), numeri (prezzi, ore, età), giorni e mesi, calendario ebraico e feste, città e luoghi, vie, nomi propri.
+- **Lingua e cultura**: 12 unità con teoria, elenco di parole ed esercizi: numeri (prezzi, ore, età), giorni e mesi, calendario ebraico e feste, città e luoghi, vie, nomi propri.
 - **Esami**: alfabeto, nikud, lettura ed esame finale a tempo, con revisione degli errori.
 - **Ripasso intelligente** (algoritmo tipo SM-2): ogni lettera, vocale e parola torna quando stai per dimenticarla.
 - **Classi e pannello insegnante**: l'insegnante crea una classe, vede i progressi dettagliati e i punti deboli di ogni studente, assegna compiti con scadenza ed esporta i risultati in CSV; gli studenti danno il consenso all'ingresso.

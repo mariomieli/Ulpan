@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GRAMMAR_UNITS } from '../src/data/grammar';
 import { buildGrammarQuiz } from '../src/lib/grammar';
 import { seededRng } from '../src/lib/quiz';
+import { LESSONS, LAST_READING_LESSON } from '../src/data/curriculum';
 
 describe('grammatica e numeri', () => {
   it('id validi e unici (sono chiavi del punteggio salvato)', () => {
@@ -32,4 +33,30 @@ describe('grammatica e numeri', () => {
       }
     });
   }
+
+  it('le unità di grammatica sono lezioni del percorso, dopo la lettura', () => {
+    const lessons = LESSONS.filter((l) => l.grammar);
+    expect(lessons.length).toBeGreaterThanOrEqual(6);
+    expect(Math.min(...lessons.map((l) => l.id))).toBe(LAST_READING_LESSON + 1);
+    for (const l of lessons) {
+      const u = GRAMMAR_UNITS.find((x) => x.id === l.grammar);
+      expect(u, String(l.id)).toBeDefined();
+      expect(u!.group).toBe('grammatica');
+    }
+    // ogni unità di grammatica compare in una sola lezione
+    const ids = lessons.map((l) => l.grammar);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(ids)).toEqual(new Set(GRAMMAR_UNITS.filter((u) => u.group === 'grammatica').map((u) => u.id)));
+  });
+
+  it('le domande viste di recente non si ripropongono se ce ne sono altre', () => {
+    for (const u of GRAMMAR_UNITS) {
+      for (let seed = 1; seed <= 10; seed++) {
+        const first = buildGrammarQuiz(u, 10, seededRng(seed));
+        const avoid = new Set(first.map((q) => q.key));
+        const second = buildGrammarQuiz(u, 10, seededRng(seed + 300), avoid);
+        expect(second.filter((q) => avoid.has(q.key)), `${u.id} seed ${seed}`).toHaveLength(0);
+      }
+    }
+  });
 });

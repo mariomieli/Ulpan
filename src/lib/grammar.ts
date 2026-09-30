@@ -18,10 +18,10 @@ function choices(correct: Option, pool: Option[], rng: Rng): Option[] {
   return shuffle([correct, ...others], rng);
 }
 
-function grammarQuestion(unit: GrammarUnit, item: GrammarItem, kind: QuestionKind, index: number, rng: Rng): Question | null {
+function grammarQuestion(unit: GrammarUnit, item: GrammarItem, kind: QuestionKind, rng: Rng): Question | null {
   const others = unit.items.filter((x) => x !== item);
   const explanation = `${item.he} si legge «${item.translit}» e significa «${item.it}».`;
-  const base = { key: `${unit.id}:${kind}:${index}`, kind, itemIds: [] as string[], speak: item.he, explanation };
+  const base = { key: `${unit.id}:${kind}:${unit.items.indexOf(item)}`, kind, itemIds: [] as string[], speak: item.he, explanation };
   let q: Question;
   switch (kind) {
     case 'word-meaning':
@@ -45,15 +45,27 @@ function grammarQuestion(unit: GrammarUnit, item: GrammarItem, kind: QuestionKin
   return q.options && q.options.length >= 3 ? q : null;
 }
 
-/** Esercizi di un'unità: ogni voce compare con tipi di domanda diversi, mai due volte di seguito la stessa. */
-export function buildGrammarQuiz(unit: GrammarUnit, count: number, rng: Rng): Question[] {
+/**
+ * Esercizi di un'unità: ogni voce compare con tipi di domanda diversi, mai due volte di seguito la stessa.
+ * Le domande in `avoid` (viste di recente) si ripropongono solo se non ce ne sono altre.
+ */
+export function buildGrammarQuiz(unit: GrammarUnit, count: number, rng: Rng, avoid: ReadonlySet<string> = new Set()): Question[] {
+  const pairs: { item: GrammarItem; kind: QuestionKind }[] = [];
+  for (const kind of KINDS) for (const item of unit.items) pairs.push({ item, kind });
+  const shuffled = shuffle(pairs, rng);
+  const key = (p: { item: GrammarItem; kind: QuestionKind }) => `${unit.id}:${p.kind}:${unit.items.indexOf(p.item)}`;
+  const ordered = [...shuffled.filter((p) => !avoid.has(key(p))), ...shuffled.filter((p) => avoid.has(key(p)))];
   const out: Question[] = [];
-  for (let round = 0; out.length < count && round < KINDS.length * 2; round++) {
-    const kind = KINDS[round % KINDS.length];
-    for (const item of shuffle(unit.items, rng)) {
+  const perItem = new Map<GrammarItem, number>();
+  // prima una domanda per voce, poi (se servono) le altre
+  for (const pass of [0, 1, 2]) {
+    for (const p of ordered) {
       if (out.length >= count) break;
-      const q = grammarQuestion(unit, item, kind, out.length, rng);
-      if (q) out.push(q);
+      if ((perItem.get(p.item) ?? 0) !== pass) continue;
+      const q = grammarQuestion(unit, p.item, p.kind, rng);
+      if (!q) continue;
+      out.push(q);
+      perItem.set(p.item, pass + 1);
     }
   }
   // evita due domande consecutive sulla stessa voce

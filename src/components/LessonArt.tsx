@@ -6,12 +6,13 @@ import { vowelDisplay } from '../lib/quiz';
 /** Lezione appena superata (segnata dal test): nel percorso la sua tappa fa un piccolo salto. */
 export const JUST_PASSED_KEY = 'ulpan:justPassed';
 
-export type LessonKind = 'vowels' | 'letters' | 'rules';
+export type LessonKind = 'vowels' | 'letters' | 'rules' | 'grammar';
 
 /** Glifo simbolo delle lezioni di sole regole. */
-const RULE_GLYPHS: Record<number, string> = { 16: 'בּ', 17: 'בְ', 18: 'חַ', 19: 'ספר' };
+const RULE_GLYPHS: Record<number, string> = { 16: 'בּ', 17: 'בְ', 18: 'חַ', 19: 'ספר', 20: 'הַ', 21: 'אני', 22: 'ילד', 23: 'ים', 24: 'גדול', 25: 'כתב', 26: 'עבר', 27: 'עתיד', 28: 'לכתב' };
 
 export function lessonKind(l: Lesson): LessonKind {
+  if (l.grammar) return 'grammar';
   if (l.glyphs.length && l.glyphs.some((g) => g !== 'alef')) return 'letters';
   if (l.vowels.length) return 'vowels';
   return 'rules';

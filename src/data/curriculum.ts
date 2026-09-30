@@ -3,6 +3,7 @@ import { VOWELS, VOWEL_BY_ID } from './nikud';
 import { WORDS, SENTENCES, type Word, type Sentence } from './words';
 import { requirements } from '../lib/hebrew';
 import type { ReadingText } from './texts';
+import { GRAMMAR_BY_ID } from './grammar';
 
 export type TheoryBlock =
   | { type: 'p'; text: string }
@@ -17,6 +18,8 @@ export interface Lesson {
   glyphs: string[];
   vowels: string[];
   theory: TheoryBlock[];
+  /** Lezioni di grammatica: unità di `data/grammar.ts` con parole ed esercizi propri. */
+  grammar?: string;
 }
 
 const lessonGlyphs = (n: number) => GLYPHS.filter((g) => g.lesson === n).map((g) => g.id);
@@ -30,6 +33,12 @@ const letters = (n: number, title: string, subtitle: string, theory: TheoryBlock
   ({ id: n, title, subtitle, glyphs: lessonGlyphs(n), vowels: lessonVowels(n), theory });
 const rules = (n: number, title: string, subtitle: string, theory: TheoryBlock[]): Lesson =>
   ({ id: n, title, subtitle, glyphs: [], vowels: [], theory });
+
+/** Lezione di grammatica: teoria, parole ed esercizi vengono dall'unità collegata. */
+const grammar = (n: number, unitId: string): Lesson => {
+  const u = GRAMMAR_BY_ID[unitId];
+  return { id: n, title: u.title, subtitle: u.subtitle, glyphs: [], vowels: [], theory: u.theory, grammar: unitId };
+};
 
 export const LESSONS: Lesson[] = [
   letters(1, 'Alef e le vocali A ed E', 'א · אָ אַ אֵ אֶ אֵי', [
@@ -180,6 +189,15 @@ export const LESSONS: Lesson[] = [
     { type: 'p', text: 'Il resto lo fa il vocabolario: più parole conosci, più è facile leggere senza vocali. Allenati nella sezione Lettura togliendo il nikud e con l’esame “Lettura senza nikud”.' },
     { type: 'example', he: 'סִפּוּר', translit: 'sipur', note: 'racconto: senza nikud סיפור' },
   ]),
+  grammar(20, 'gr-articolo'),
+  grammar(21, 'gr-pronomi'),
+  grammar(22, 'gr-genere'),
+  grammar(23, 'gr-plurale'),
+  grammar(24, 'gr-aggettivi'),
+  grammar(25, 'gr-verbi'),
+  grammar(26, 'gr-passato'),
+  grammar(27, 'gr-futuro'),
+  grammar(28, 'gr-infinito'),
 ];
 
 /** Ultima lezione che introduce lettere: da lì l'alfabeto è completo. */
@@ -187,6 +205,8 @@ export const LAST_LETTER_LESSON = Math.max(...GLYPHS.map((g) => g.lesson));
 
 export const LESSON_BY_ID: Record<number, Lesson> = Object.fromEntries(LESSONS.map((l) => [l.id, l]));
 export const LAST_LESSON = LESSONS[LESSONS.length - 1].id;
+/** Ultima lezione di lettura (senza nikud): le lezioni di grammatica vengono dopo. */
+export const LAST_READING_LESSON = Math.max(...LESSONS.filter((l) => !l.grammar).map((l) => l.id));
 
 /** Lezione a partire dalla quale un testo è leggibile. */
 export function lessonForText(text: string): number {

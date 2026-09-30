@@ -1,4 +1,4 @@
-import { LAST_LESSON, LAST_LETTER_LESSON } from '../data/curriculum';
+import { LAST_READING_LESSON, LAST_LETTER_LESSON } from '../data/curriculum';
 import { WORDS } from '../data/words';
 import { mastery } from './srs';
 import type { AppState } from './store';
@@ -45,7 +45,7 @@ export function badges(s: AppState): Badge[] {
     b('prima-lezione', 'Primo passo', 'Supera il test di una lezione', 'א', 'blue', passedCount),
     b('vocali', 'Tutte le vocali', 'Supera le lezioni 1–3', 'אָ', 'gold', vowels / 3),
     b('alfabeto', 'Alfabeto completo', `Supera la lezione ${LAST_LETTER_LESSON}: conosci tutte le lettere`, 'א־ת', 'blue', passed(LAST_LETTER_LESSON) ? 1 : passedCount / LAST_LETTER_LESSON),
-    b('senza-nikud', 'Lettore esperto', `Supera la lezione ${LAST_LESSON}: leggere senza nikud`, 'ספר', 'green', passed(LAST_LESSON) ? 1 : passedCount / LAST_LESSON),
+    b('senza-nikud', 'Lettore esperto', `Supera la lezione ${LAST_READING_LESSON}: leggere senza nikud`, 'ספר', 'green', passed(LAST_READING_LESSON) ? 1 : passedCount / LAST_READING_LESSON),
     b('serie-7', 'Una settimana', '7 giorni di fila con almeno una risposta', '7', 'gold', streak / 7),
     b('serie-30', 'Un mese', '30 giorni di fila', '30', 'gold', streak / 30),
     b('parole-100', '100 parole', '100 parole consolidate nel ripasso', '100', 'green', words / 100),

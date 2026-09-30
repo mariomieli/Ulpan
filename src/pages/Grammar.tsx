@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { LESSONS } from '../data/curriculum';
 import { GRAMMAR_BY_ID, GRAMMAR_GROUP_LABELS, GRAMMAR_UNITS, type GrammarGroup } from '../data/grammar';
 import { buildGrammarQuiz } from '../lib/grammar';
 import { actions, useAppState } from '../lib/store';
@@ -8,7 +9,8 @@ import { He, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
 import { Theory } from './Lesson';
 
-const GROUPS: GrammarGroup[] = ['grammatica', 'numeri', 'tempo', 'luoghi'];
+/** La grammatica di base è nel percorso delle lezioni (dalla 20): qui restano numeri, tempo e luoghi. */
+const GROUPS: GrammarGroup[] = ['numeri', 'tempo', 'luoghi'];
 const QUESTIONS = 12;
 
 export function GrammarPage() {
@@ -18,7 +20,7 @@ export function GrammarPage() {
       <div className="page-head">
         <div>
           <h1>Lingua e cultura</h1>
-          <p>Dopo aver imparato a leggere: grammatica di base, numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi.</p>
+          <p>Dopo aver imparato a leggere: numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi. La grammatica di base è nel <a href="#/lezioni">percorso</a>, dalla lezione 20.</p>
         </div>
       </div>
       {GROUPS.map((g) => (
@@ -58,6 +60,9 @@ export function GrammarUnitPage({ id }: { id: string }) {
   const questions = useMemo(() => (unit ? buildGrammarQuiz(unit, QUESTIONS, Math.random) : []), [unit, round]);
 
   if (!unit) return <div className="empty">Unità non trovata. <a href="#/grammatica">Torna a Lingua e cultura</a></div>;
+
+  const lesson = LESSONS.find((l) => l.grammar === unit.id);
+  if (lesson) return <div className="card empty"><h2>{unit.title}</h2><p>Questa unità fa parte del percorso di studio.</p><a className="btn btn-primary" href={`#/lezioni/${lesson.id}`}>Vai alla lezione {lesson.id}</a></div>;
 
   if (result) {
     return (

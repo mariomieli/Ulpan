@@ -13,7 +13,8 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 ## Già fatto
 - [x] Modalità dislessia (carattere Atkinson Hyperlegible, spaziatura, sfondi colorati) nelle impostazioni
 - [x] Pannello insegnante: elenco «Da contattare» (fermi, precisione bassa, compiti in ritardo) e confronto tra le proprie classi
-- [x] Lingua e cultura: 17 unità (grammatica di base, numeri, giorni e mesi, calendario ebraico, feste, città e luoghi, Italia e mondo, vie e indirizzi, nomi propri). Da fare: revisione di un madrelingua (in particolare nomi di città straniere e forme dei numeri)
+- [x] Grammatica di base nel percorso (lezioni 20-28: articolo e prefissi, pronomi, maschile/femminile, plurale, aggettivi, verbi al presente, passato, futuro, infinito e imperativo)
+- [x] Lingua e cultura: 12 unità (numeri, giorni e mesi, calendario ebraico, feste, città e luoghi, Italia e mondo, vie e indirizzi, nomi propri). Da fare: revisione di un madrelingua (in particolare nomi di città straniere e forme dei numeri)
 - [x] Corsivo ebraico: carattere a mano, alfabeto in corsivo, esame «Corsivo ebraico» (lettere e parole senza nikud). Da fare: scrivere le lettere in corsivo, controllo di un madrelingua
 - [x] Categoria «Vita quotidiana»: menù, messaggi, meteo, avviso della scuola, stazione (da leggere anche senza nikud)
 - [x] Informativa privacy, conferma dell'età e consenso alle classi registrati sul server
