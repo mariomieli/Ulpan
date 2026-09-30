@@ -6,6 +6,7 @@ import { Icon } from './components/Icon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFocusMode } from './lib/focus';
 import { useAuth, showLogin, signOut } from './lib/auth';
+import { useIsAdmin } from './lib/admin';
 import { cloudEnabled } from './lib/supabase';
 import { HomePage } from './pages/Home';
 
@@ -23,6 +24,7 @@ const loaders = {
   privacy: () => import('./pages/Privacy'),
   groups: () => import('./pages/Groups'),
   grammar: () => import('./pages/Grammar'),
+  admin: () => import('./pages/Admin'),
 };
 const LessonsPage = lazy(() => loaders.lessons().then((m) => ({ default: m.LessonsPage })));
 const LessonPage = lazy(() => loaders.lesson().then((m) => ({ default: m.LessonPage })));
@@ -37,6 +39,7 @@ const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.Pro
 const GroupsPage = lazy(() => loaders.groups().then((m) => ({ default: m.GroupsPage })));
 const GrammarPage = lazy(() => loaders.grammar().then((m) => ({ default: m.GrammarPage })));
 const GrammarUnitPage = lazy(() => loaders.grammar().then((m) => ({ default: m.GrammarUnitPage })));
+const AdminPage = lazy(() => loaders.admin().then((m) => ({ default: m.AdminPage })));
 const AuthPage = lazy(() => import('./pages/Auth').then((m) => ({ default: m.AuthPage })));
 const PrivacyPage = lazy(() => loaders.privacy().then((m) => ({ default: m.PrivacyPage })));
 const SettingsPage = lazy(() => loaders.settings().then((m) => ({ default: m.SettingsPage })));
@@ -89,6 +92,7 @@ function Page({ path }: { path: string }) {
     case '/nikud': return <NikudPage />;
     case '/lettura': return <ReadingPage />;
     case '/grammatica': return <GrammarPage />;
+    case '/admin': return <AdminPage />;
     case '/ripasso': return <ReviewPage />;
     case '/ripasso/oggi': return <ReviewPage key="oggi" autoStart="oggi" />;
     case '/test': return <TestsPage />;
@@ -115,7 +119,9 @@ export function App() {
     if (!drawer && d.open) d.close();
   }, [drawer]);
   const due = dueItems(state, Date.now()).length;
-  const activeIdx = NAV.findIndex((n) => isActive(n.path, path));
+  const isAdmin = useIsAdmin();
+  const nav = isAdmin ? [...NAV, { path: '/admin', label: 'Iscritti', icon: 'users' }] : NAV;
+  const activeIdx = nav.findIndex((n) => isActive(n.path, path));
   const auth = useAuth();
 
   // tema, carattere e dimensione del testo ebraico
@@ -191,7 +197,7 @@ export function App() {
         <div className="nav-list">
           {/* indicatore che scorre dietro la voce attiva */}
           {activeIdx >= 0 && <span className="nav-indicator" aria-hidden="true" style={{ transform: `translateY(${activeIdx * 46}px)` }} />}
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`} aria-current={isActive(n.path, path) ? 'page' : undefined}>
               <Icon name={n.icon} /> {n.label}
               {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
@@ -231,7 +237,7 @@ export function App() {
       </main>
 
       <nav className="bottom-nav" aria-label="Navigazione">
-        {NAV.filter((n) => MOBILE.includes(n.path)).map((n) => (
+        {nav.filter((n) => MOBILE.includes(n.path)).map((n) => (
           <a key={n.path} href={`#${n.path}`} className={isActive(n.path, path) ? 'active' : ''} aria-current={isActive(n.path, path) ? 'page' : undefined}>
             <span className="nav-pill" key={isActive(n.path, path) ? 'on' : 'off'}><Icon name={n.icon} size={22} className="" /></span>
             {n.label.split(' ')[0]}
@@ -262,7 +268,7 @@ export function App() {
             <Icon name="x" size={20} className="" />
           </button>
         </div>
-        {NAV.filter((n) => !MOBILE.includes(n.path)).map((n) => (
+        {nav.filter((n) => !MOBILE.includes(n.path)).map((n) => (
           <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`}
             aria-current={isActive(n.path, path) ? 'page' : undefined}>
             <Icon name={n.icon} /> {n.label}
