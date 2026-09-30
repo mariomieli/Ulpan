@@ -168,7 +168,7 @@ describe('fase 1: validazione dei dati', () => {
     expect(Object.keys(s.srs)).toEqual(['g:bet']);
     expect(s.srs['g:bet'].seen).toBe(0);
     expect(s.days).toEqual({ '2026-01-01': { answered: 3, correct: 2 } });
-    expect(s.settings.theme).toBe('system');
+    expect(s.settings.theme).toBe('light');
     expect(s.settings.dailyGoal).toBe(20);
     expect(isBackup([])).toBe(false);
     expect(isBackup({ name: 'package' })).toBe(false);
