@@ -1321,3 +1321,45 @@ a.ts-lesson:hover { transform: translateY(-2px); }
   .lb-card { padding: 18px; }
   .gp-created { flex-direction: column; align-items: stretch; }
 }
+
+/* ---------- Area insegnante ---------- */
+.teacher-page { display: flex; flex-direction: column; gap: 16px; }
+.teacher-page > .page-header { margin-bottom: 0; }
+.teacher-page .grid-3 { gap: 14px; }
+.teacher-page .card { padding: 20px 24px; margin: 0; }
+.teacher-page .card.stat { padding: 18px 22px; }
+.teacher-page .card.stat .stat-value { font-size: 38px; line-height: 1.1; }
+.teacher-page .card.stat .stat-label { font-size: 13px; }
+.teacher-page .card h2 { font-size: 20px; margin-bottom: 8px; }
+.tc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+.tc-alert { box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 14px; padding: 10px 8px; border-radius: 14px; border: 0; border-top: 1px solid var(--line); background: transparent; cursor: pointer; text-align: left; color: var(--ink); min-height: 0; }
+.tc-alert:hover { background: var(--bg); }
+.tc-alert .ai { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--late-bg); color: var(--late-fg); display: grid; place-items: center; font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 17px; }
+.tc-alert .at { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.tc-alert .at b { font-weight: 600; font-size: 15px; }
+.tc-alert .at span { font-size: 12.5px; color: var(--late-fg); }
+.tc-alert .ar { color: var(--mute); }
+.review-item { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); }
+.review-item .he { flex: none; width: 44px; text-align: center; font-weight: 700; line-height: 1.2; }
+.review-item .ans { flex: 1; min-width: 0; }
+.review-item .ans b { font-weight: 600; font-size: 14.5px; }
+.teacher-page .data th { font-size: 12px; letter-spacing: .04em; }
+.teacher-page .student-table td { padding: 11px 10px; }
+.teacher-page .warn-text { color: var(--late-fg); }
+.teacher-page .avatar { width: 34px; height: 34px; background: var(--sf2); color: var(--pri); font-family: 'Frank Ruhl Libre', serif; font-weight: 700; }
+.teacher-page .bars { height: 130px; }
+.teacher-page .bars .bar { background: var(--pri); }
+.teacher-page .bars .bar.is-zero { background: var(--sf2); }
+.tc-invite .invite { border-radius: 22px; background: var(--pri); color: var(--onpri); padding: 24px 28px; }
+.tc-invite .invite .muted { color: var(--onpri); opacity: .85; font-size: 13px; }
+.tc-invite .invite-code { color: inherit; font-size: 36px; line-height: 1.1; letter-spacing: .16em; }
+.tc-invite .btn-primary { background: var(--onpri); color: var(--pri); border-color: var(--onpri); box-shadow: none; padding: 12px 30px; }
+.assignment { padding: 13px 0; border-top: 1px solid var(--line); animation: upop .35s both; }
+@media (max-width: 860px) {
+  .tc-two { grid-template-columns: 1fr; }
+  .teacher-page .card { padding: 18px; }
+  .teacher-page .card.stat .stat-value { font-size: 30px; }
+  .teacher-page .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .teacher-page .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .tc-invite .invite-code { font-size: 28px; }
+}

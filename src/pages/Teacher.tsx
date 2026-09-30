@@ -11,6 +11,7 @@ import { dayKey, sanitize } from '../lib/store';
 import { LESSONS } from '../data/curriculum';
 import { EXAMS } from '../lib/quiz';
 import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
 import { errorText, formatDate, Invite, Leaderboard } from './Groups';
 
 type Tab = 'studenti' | 'compiti' | 'classifica' | 'classe';
@@ -201,19 +202,17 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
   const sel = selected ? students.find((s) => s.user_id === selected) : undefined;
 
   return (
-    <div className="fade-in stack">
-      <div>
-        <button className="link-btn" onClick={onBack}>← Gruppi e classi</button>
-        <h1 style={{ margin: '6px 0 0' }}>{group.name}</h1>
-        <p className="muted" style={{ margin: 0 }}>Pannello insegnante · {students.length} {students.length === 1 ? 'studente' : 'studenti'}</p>
-      </div>
-      <div className="tabs" role="tablist">
-        {(['studenti', 'compiti', 'classifica', 'classe'] as Tab[]).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => { setTab(t); setSelected(null); }}>
-            {{ studenti: 'Studenti', compiti: 'Compiti', classifica: 'Classifica', classe: 'Classe' }[t]}
-          </button>
-        ))}
-      </div>
+    <div className="teacher-page">
+      <PageHeader he="מוֹרֶה" kicker={`Pannello insegnante · ${students.length} ${students.length === 1 ? 'studente' : 'studenti'}`} title={group.name}>
+        <div className="tabs" role="tablist" style={{ margin: 0 }}>
+          {(['studenti', 'compiti', 'classifica', 'classe'] as Tab[]).map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => { setTab(t); setSelected(null); }}>
+              {{ studenti: 'Studenti', compiti: 'Compiti', classifica: 'Classifica', classe: 'Classe' }[t]}
+            </button>
+          ))}
+        </div>
+      </PageHeader>
+      <button className="link-btn gp-back" onClick={onBack}>← Gruppi e classi</button>
       {error && <p className="feedback bad small" role="alert">{error}</p>}
       {rows === null && <p className="muted">Caricamento…</p>}
 
@@ -231,23 +230,40 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
             </div>
           </div>
 
+          <div className="tc-two">
           {students.length > 0 && (
             <div className="card">
               <h2>Da contattare</h2>
               {alerts.length === 0 ? <p className="muted small">Nessuno studente ha bisogno di attenzione: sono tutti attivi e in regola.</p> : (
                 <div className="stack" style={{ gap: 8 }}>
                   {alerts.map((a) => (
-                    <button key={a.user_id} type="button" className="row link-btn" style={{ textAlign: 'left', gap: 10 }} onClick={() => setSelected(a.user_id)}>
-                      <span className="avatar">{a.name.slice(0, 1)}</span>
-                      <span><b>{a.name}</b><br /><span className="small warn-text">{a.reasons.join(' · ')}</span></span>
+                    <button key={a.user_id} type="button" className="tc-alert" onClick={() => setSelected(a.user_id)}>
+                      <span className="ai">{a.name.slice(0, 1).toUpperCase()}</span>
+                      <span className="at"><b>{a.name}</b><span>{a.reasons.join(' · ')}</span></span>
+                      <span className="ar" aria-hidden="true">→</span>
                     </button>
                   ))}
                 </div>
               )}
-              <p className="small muted" style={{ marginBottom: 0 }}>Vengono segnalati gli studenti fermi da almeno 7 giorni o non ha iniziato, chi ha meno del 60% di risposte corrette (con almeno 20 risposte) e chi ha compiti in ritardo.</p>
+              <p className="small muted" style={{ marginBottom: 0 }}>Vengono segnalati gli studenti fermi da almeno 7 giorni o che non hanno iniziato, quelli con meno del 60% di risposte corrette (con almeno 20 risposte) e quelli con compiti in ritardo.</p>
             </div>
           )}
-
+          <div className="card">
+            <h2>Difficoltà della classe</h2>
+            {weakClass.length === 0 ? <p className="muted small">Nessuna difficoltà diffusa per ora.</p> : (
+              <div className="review-list">
+                {weakClass.map((w) => (
+                  <div className="review-item" key={w.id}>
+                    <span className="he" style={{ fontSize: '1.6rem' }}>{w.hebrew}</span>
+                    <div className="ans"><b>{w.label}</b>
+                      <div className="small muted">in difficoltà {w.students} {w.students === 1 ? 'studente' : 'studenti'} su {students.length} · {pct(w.accuracy)} risposte corrette</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          </div>
           <ClassComparison group={group} current={stats} />
 
           <div className="card">
@@ -290,21 +306,6 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
             {students.length > 0 && <p className="small muted" style={{ marginBottom: 0 }}>Tocca uno studente per vedere i dettagli.</p>}
           </div>
 
-          <div className="card">
-            <h2>Difficoltà della classe</h2>
-            {weakClass.length === 0 ? <p className="muted small">Nessuna difficoltà diffusa per ora.</p> : (
-              <div className="review-list">
-                {weakClass.map((w) => (
-                  <div className="review-item" key={w.id}>
-                    <span className="he" style={{ fontSize: '1.6rem' }}>{w.hebrew}</span>
-                    <div className="ans"><b>{w.label}</b>
-                      <div className="small muted">in difficoltà {w.students} {w.students === 1 ? 'studente' : 'studenti'} su {students.length} · {pct(w.accuracy)} risposte corrette</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </>
       ))}
 
@@ -328,7 +329,7 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
 
       {tab === 'classe' && (
         <>
-          <div className="card"><Invite code={group.code} name={group.name} kind="class" /></div>
+          <div className="tc-invite"><Invite code={group.code} name={group.name} kind="class" /></div>
           <div className="card">
             <h2>Insegnanti</h2>
             {teachers.map((t) => (
