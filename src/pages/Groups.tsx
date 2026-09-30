@@ -10,6 +10,8 @@ import { assignmentStatus, lessonTitle, type Assignment } from '../lib/teacher';
 import { useAppState } from '../lib/store';
 import { navigate } from '../lib/router';
 import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
+import { Segmented } from '../components/Controls';
 import { TeacherPanel } from './Teacher';
 
 const HEB_INITIALS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת'];
@@ -84,15 +86,12 @@ export function Leaderboard({ group, canRemove, onChanged }: { group: Group; can
   };
 
   return (
-    <div className="card">
-      <div className="card-title">
-        <h2>Classifica</h2>
+    <div className="gp-card lb-card">
+      <div className="gp-ch">
+        <b>Classifica</b>
         <button className="btn btn-sm btn-ghost" onClick={() => void load()} aria-label="Aggiorna"><Icon name="repeat" size={16} className="" /></button>
-      </div>
-      <div className="seg-switch" role="tablist">
-        <span className="seg-switch-ind" aria-hidden="true" style={{ transform: mode === 'totale' ? 'translateX(100%)' : 'none' }} />
-        <button role="tab" aria-selected={mode === 'settimana'} className={mode === 'settimana' ? 'on' : ''} onClick={() => setMode('settimana')}>Ultimi 7 giorni</button>
-        <button role="tab" aria-selected={mode === 'totale'} className={mode === 'totale' ? 'on' : ''} onClick={() => setMode('totale')}>XP totali</button>
+        <Segmented<RankMode> label="Periodo della classifica" value={mode} onChange={setMode}
+          options={[{ value: 'settimana', label: 'Ultimi 7 giorni' }, { value: 'totale', label: 'XP totali' }]} />
       </div>
       {ranked.length >= 2 && (
         <div className="podium" aria-hidden="true" key={mode}>
@@ -180,9 +179,10 @@ function GroupDetail({ group, onBack, onChanged }: { group: Group; onBack: () =>
     try { await deleteGroup(group.id); onChanged(); onBack(); } catch (e) { setError(errorText(e)); }
   };
   return (
-    <div className="fade-in stack">
-      <button className="link-btn" onClick={onBack} style={{ justifySelf: 'start' }}>← Gruppi e classi</button>
+    <div className="gp-page">
+      <button className="link-btn gp-back" onClick={onBack}>← Gruppi e classi</button>
       <div className="group-card">
+        <span className="gc-big" lang="he" aria-hidden="true">{HEB_INITIALS[group.name.length % HEB_INITIALS.length]}</span>
         <span className="group-letter" lang="he" aria-hidden="true">{HEB_INITIALS[group.name.length % HEB_INITIALS.length]}</span>
         <div className="group-info">
           <h1>{group.name}</h1>
@@ -209,41 +209,43 @@ function StudentClassView({ group, onBack, onChanged }: { group: Group; onBack: 
   }, [group.id]);
 
   return (
-    <div className="fade-in stack">
-      <div>
+    <div className="gp-page">
+      <PageHeader he="כִּתָּה" kicker={`Classe · ${group.members} ${group.members === 1 ? 'studente' : 'studenti'}`} title={group.name}>
         <button className="link-btn" onClick={onBack}>← Gruppi e classi</button>
-        <h1 style={{ margin: '6px 0 0' }}>{group.name}</h1>
-        <p className="muted" style={{ margin: 0 }}>Classe · {group.members} {group.members === 1 ? 'studente' : 'studenti'}</p>
-      </div>
-      <div className="tip small" style={{ margin: 0 }}>
-        L’insegnante di questa classe vede i tuoi progressi dettagliati (lezioni, test, punti deboli e attività), non la tua email.
+      </PageHeader>
+      <div className="gp-info">
+        <span className="i" aria-hidden="true">i</span>
+        <span>L’insegnante di questa classe vede i tuoi progressi dettagliati (lezioni, test, punti deboli e attività), non la tua email.</span>
       </div>
 
-      <div className="card">
-        <div className="card-title"><h2>Compiti</h2></div>
-        {error && <p className="feedback bad small">{error}</p>}
-        {assignments === null && <p className="muted">Caricamento…</p>}
-        {assignments?.length === 0 && <p className="muted">Nessun compito assegnato per ora.</p>}
-        <div className="group-list">
-          {assignments?.map((a) => {
-            const st = assignmentStatus(a, state.lessons);
-            return (
-              <a key={a.id} className="group-row" href={`#/lezioni/${a.lesson_id}`}>
-                <span className="lb-name">
-                  <b>{lessonTitle(a.lesson_id)}</b>
-                  <span className="small muted">{a.due_date ? `Entro il ${formatDate(a.due_date)}` : 'Senza scadenza'}{a.note ? ` · ${a.note}` : ''}</span>
-                </span>
-                <span className={`pill ${st === 'fatto' ? 'pill-ok' : st === 'in ritardo' ? 'pill-bad' : 'pill-warn'}`}>{st}</span>
-              </a>
-            );
-          })}
+      <div className="gp-two">
+        <div className="gp-card">
+          <div className="gp-ch"><b>Compiti</b></div>
+          {error && <p className="feedback bad small">{error}</p>}
+          {assignments === null && <p className="muted">Caricamento…</p>}
+          {assignments?.length === 0 && <p className="muted">Nessun compito assegnato per ora.</p>}
+          <div className="gp-tasks">
+            {assignments?.map((a) => {
+              const st = assignmentStatus(a, state.lessons);
+              return (
+                <a key={a.id} className="gp-task" href={`#/lezioni/${a.lesson_id}`}>
+                  <span className={`ti ${st === 'fatto' ? 'ok' : st === 'in ritardo' ? 'late' : ''}`} aria-hidden="true">{st === 'fatto' ? '✓' : st === 'in ritardo' ? '!' : '•'}</span>
+                  <span className="lb-name">
+                    <b>{lessonTitle(a.lesson_id)}</b>
+                    <span className="small muted">{a.due_date ? `Entro il ${formatDate(a.due_date)}` : 'Senza scadenza'}{a.note ? ` · ${a.note}` : ''}</span>
+                  </span>
+                  <span className={`pill ${st === 'fatto' ? 'pill-solid-ok' : st === 'in ritardo' ? 'pill-bad' : 'pill-warn'}`}>{st}</span>
+                </a>
+              );
+            })}
+          </div>
+          <p className="small muted" style={{ marginBottom: 0 }}>Un compito è fatto quando superi il test della lezione.</p>
         </div>
-        <p className="small muted" style={{ marginBottom: 0 }}>Un compito è fatto quando superi il test della lezione.</p>
-      </div>
 
-      {group.leaderboard_visible
-        ? <Leaderboard group={group} canRemove={false} onChanged={onChanged} />
-        : <div className="card muted small">La classifica di questa classe è visibile solo all’insegnante.</div>}
+        {group.leaderboard_visible
+          ? <Leaderboard group={group} canRemove={false} onChanged={onChanged} />
+          : <div className="gp-card gp-hidden"><b>Classifica nascosta</b><span>La classifica di questa classe è visibile solo all’insegnante.</span></div>}
+      </div>
 
       <LeaveButton group={group} onDone={() => { onChanged(); onBack(); }} />
     </div>
@@ -268,8 +270,8 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
   if (!cloudEnabled) return <div className="card empty">I gruppi richiedono gli account online.</div>;
   if (auth.status !== 'signedIn') {
     return (
-      <div className="fade-in">
-      <div className="page-head"><div><h1>Gruppi e classi</h1><p>Studia insieme ad altri e confronta i progressi.</p></div></div>
+      <div className="gp-page">
+      <PageHeader he="קְבוּצוֹת" kicker="Impara insieme ad altri e sfidatevi" title="Gruppi e classi" />
       <div className="card empty">
         <Icon name="users" size={36} className="" />
         <h2>Studia in gruppo o in classe</h2>
@@ -315,8 +317,8 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
   const classes = groups?.filter((g) => g.kind === 'class') ?? [];
   const plain = groups?.filter((g) => g.kind !== 'class') ?? [];
   const row = (g: Group) => (
-    <a key={g.id} className="group-row" href={`#/gruppi/${g.id}`}>
-      <span className="avatar">{g.name.slice(0, 1)}</span>
+    <a key={g.id} className="gp-row" href={`#/gruppi/${g.id}`}>
+      <span className="gp-av">{g.name.slice(0, 1).toUpperCase()}</span>
       <span className="lb-name">
         <b>{g.name}</b>
         <span className="small muted">
@@ -325,63 +327,61 @@ export function GroupsPage({ path, groupId }: { path: string; groupId?: string }
         </span>
       </span>
       {g.kind === 'class' && g.role === 'teacher' && <span className="pill pill-primary">Pannello</span>}
-      <Icon name="arrowRight" size={18} className="" />
+      <span className="arr" aria-hidden="true">→</span>
     </a>
   );
 
   return (
-    <div className="fade-in stack">
-      <div className="page-head">
-        <div>
-          <h1>Gruppi e classi</h1>
-          <p>Impara insieme ad altri e sfidatevi in classifica, oppure segui una classe come insegnante.</p>
-        </div>
-      </div>
+    <div className="gp-page">
+      <PageHeader he="קְבוּצוֹת" kicker="Impara insieme ad altri e sfidatevi" title="Gruppi e classi">
+        <span className="ph-note">Impara insieme ad altri e sfidatevi in classifica, oppure segui una classe come insegnante.</span>
+      </PageHeader>
       {error && <p className="feedback bad small" role="alert">{error}</p>}
 
-      {created && (
-        <div className="card fade-in">
-          <h3>{created.kind === 'class' ? 'Classe' : 'Gruppo'} «{created.name}» {created.kind === 'class' ? 'creata' : 'creato'}!</h3>
-          <p className="muted small">Condividi il codice o il link con chi vuoi invitare.</p>
-          <Invite code={created.code} name={created.name} kind={created.kind} />
-        </div>
-      )}
+      <div className="gp-layout">
+        <div className="gp-lists">
+          {created && (
+            <div className="gp-created">
+              <span><b>{created.kind === 'class' ? 'Classe' : 'Gruppo'} «{created.name}» {created.kind === 'class' ? 'creata' : 'creato'}!</b><span>Condividi il codice con chi vuoi invitare.</span></span>
+              <Invite code={created.code} name={created.name} kind={created.kind} compact />
+            </div>
+          )}
 
-      {classes.length > 0 && (
-        <div className="card">
-          <div className="card-title"><h2>Le mie classi</h2></div>
-          <div className="group-list">{classes.map(row)}</div>
+          {classes.length > 0 && (
+            <section className="gp-card">
+              <b className="gp-t">Le mie classi</b>
+              <div className="gp-rows">{classes.map(row)}</div>
+            </section>
+          )}
+          <section className="gp-card">
+            <b className="gp-t">I miei gruppi</b>
+            {groups === null && <p className="muted">Caricamento…</p>}
+            {groups !== null && plain.length === 0 && !error && <p className="muted small" style={{ margin: 0 }}>Nessun gruppo: creane uno o entra con un codice.</p>}
+            <div className="gp-rows">{plain.map(row)}</div>
+          </section>
         </div>
-      )}
-      <div className="card">
-        <div className="card-title"><h2>I miei gruppi</h2></div>
-        {groups === null && <p className="muted">Caricamento…</p>}
-        {groups !== null && plain.length === 0 && !error && <p className="muted">Nessun gruppo: creane uno o entra con un codice.</p>}
-        <div className="group-list">{plain.map(row)}</div>
-      </div>
 
-      <div className="grid grid-2">
-        <form className="card stack" style={{ gap: 10 }} onSubmit={submitJoin}>
-          <h3 style={{ margin: 0 }}>Entra con un codice</h3>
-          <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
-            placeholder="ES. K7M2QXPA" aria-label="Codice d’invito" className="code-input" autoCapitalize="characters" autoComplete="off" />
-          <button className="btn btn-primary" disabled={busy || code.length < 6}>Entra</button>
-        </form>
-        <form className="card stack" style={{ gap: 10 }} onSubmit={submitCreate}>
-          <h3 style={{ margin: 0 }}>Crea</h3>
-          <div className="chips" role="radiogroup" aria-label="Tipo">
-            <button type="button" role="radio" aria-checked={kind === 'group'} className={`chip ${kind === 'group' ? 'active' : ''}`} onClick={() => setKind('group')}>Gruppo di amici</button>
-            <button type="button" role="radio" aria-checked={kind === 'class'} className={`chip ${kind === 'class' ? 'active' : ''}`} onClick={() => setKind('class')}>Classe (sono insegnante)</button>
-          </div>
-          <p className="small muted" style={{ margin: 0 }}>
-            {kind === 'class'
-              ? 'Come insegnante vedrai i progressi dettagliati degli studenti, potrai assegnare compiti ed esportare i risultati.'
-              : 'Tutti i membri si confrontano in classifica.'}
-          </p>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
-            placeholder={kind === 'class' ? 'es. Ebraico base – martedì' : 'es. Famiglia Rossi'} aria-label="Nome" />
-          <button className="btn" disabled={busy || !name.trim()}>{kind === 'class' ? 'Crea classe' : 'Crea gruppo'}</button>
-        </form>
+        <aside className="gp-side">
+          <form className="gp-card" onSubmit={submitJoin}>
+            <b className="gp-t">Entra con un codice</b>
+            <input type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+              placeholder="ES. K7M2QXPA" aria-label="Codice d’invito" className="code-input" autoCapitalize="characters" autoComplete="off" />
+            <button className="gp-go" disabled={busy || code.length < 6}>Entra</button>
+          </form>
+          <form className="gp-card" onSubmit={submitCreate}>
+            <b className="gp-t">Crea</b>
+            <Segmented<GroupKind> label="Tipo" value={kind} onChange={setKind}
+              options={[{ value: 'group', label: 'Gruppo di amici' }, { value: 'class', label: 'Classe (insegnante)' }]} />
+            <span className="gp-note">
+              {kind === 'class'
+                ? 'Come insegnante vedrai i progressi dettagliati degli studenti, potrai assegnare compiti ed esportare i risultati.'
+                : 'Tutti i membri si confrontano in classifica.'}
+            </span>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+              placeholder={kind === 'class' ? 'es. Ebraico base – martedì' : 'es. Famiglia Rossi'} aria-label="Nome" />
+            <button className="gp-sec" disabled={busy || !name.trim()}>{kind === 'class' ? 'Crea classe' : 'Crea gruppo'}</button>
+          </form>
+        </aside>
       </div>
     </div>
   );

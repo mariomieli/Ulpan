@@ -1231,3 +1231,93 @@ a.ts-lesson:hover { transform: translateY(-2px); }
   .pv-brief > div, .pv-data { grid-template-columns: 1fr; }
   .pv-sec { padding: 18px 20px; }
 }
+.main.solo { margin-left: 0; max-width: 1180px; margin-inline: auto; }
+.main.solo { margin-left: 0; max-width: 1180px; margin-inline: auto; }
+
+/* ---------- Gruppi e classi ---------- */
+.gp-page { display: flex; flex-direction: column; gap: 16px; }
+.gp-page > .page-header { margin-bottom: 4px; }
+.gp-back { align-self: flex-start; color: var(--pri); font-size: 14px; font-weight: 500; padding: 0; }
+.gp-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.gp-lists, .gp-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.gp-card { border-radius: 22px; background: var(--sf); border: 1px solid var(--line); box-shadow: var(--sh); padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.gp-side .gp-card { padding: 20px; gap: 12px; }
+.gp-t, .gp-ch > b { font-family: var(--display-font); font-size: 20px; }
+.gp-side .gp-t { font-size: 19px; }
+.gp-ch { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gp-ch .seg-ctl { margin-left: auto; }
+.gp-rows { display: flex; flex-direction: column; }
+.gp-row { display: flex; align-items: center; gap: 14px; padding: 12px 8px; border-top: 1px solid var(--line); border-radius: 12px; color: var(--ink); }
+.gp-row:hover { background: var(--bg); }
+.gp-av { flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--sf2); color: var(--pri); display: grid; place-items: center; font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 18px; }
+.gp-row .lb-name b { font-weight: 600; font-size: 15.5px; }
+.gp-row .arr { font-size: 18px; color: var(--mute); }
+.gp-created { border-radius: 22px; background: var(--pri); color: var(--onpri); padding: 20px 26px; display: flex; align-items: center; gap: 20px; animation: upop .4s both; }
+.gp-created > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.gp-created b { font-family: var(--display-font); font-size: 20px; color: inherit; }
+.gp-created span span { font-size: 13.5px; opacity: .9; }
+.gp-created .invite-chip { font-family: 'Frank Ruhl Libre', serif; font-size: 24px; background: oklch(1 0 0 / .2); border: 0; padding: 10px 16px; }
+.code-input { height: 50px; text-align: center; border-radius: 12px; background: var(--bg); font: 600 20px 'Frank Ruhl Libre', serif; letter-spacing: .2em; }
+.gp-go { text-align: center; background: var(--pri); color: var(--onpri); font-weight: 600; padding: 13px; border-radius: 12px; border: 0; cursor: pointer; box-shadow: 0 4px 0 0 oklch(0 0 0 / .2); }
+.gp-go:disabled, .gp-sec:disabled { opacity: .5; cursor: default; }
+.gp-sec { text-align: center; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-weight: 600; padding: 12px; border-radius: 12px; cursor: pointer; }
+.gp-sec:hover:not(:disabled) { background: var(--sf2); }
+.gp-note { font-size: 12.5px; line-height: 1.45; color: var(--mute); }
+.gp-side input[type='text'] { height: 46px; background: var(--bg); }
+/* dettaglio gruppo */
+.group-card { position: relative; overflow: hidden; border-radius: 24px; background: var(--pri); color: var(--onpri); box-shadow: none; padding: 22px 28px; gap: 22px; }
+.gc-big { position: absolute; left: 240px; top: -30px; font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 170px; line-height: 1; opacity: .13; pointer-events: none; }
+.group-letter { position: relative; width: 64px; height: 64px; border-radius: 18px; background: var(--onpri); color: var(--pri); box-shadow: none; animation: none; font-weight: 700; font-size: 36px; }
+.group-info { position: relative; }
+.group-info h1 { font-family: var(--display-font); font-size: 30px; line-height: 1.1; color: inherit; }
+.group-info span { font-size: 14px; opacity: .9; }
+.invite-chip { position: relative; background: oklch(1 0 0 / .2); border: 0; color: inherit; border-radius: 14px; padding: 8px 22px; font-family: 'Frank Ruhl Libre', serif; font-size: 22px; line-height: 1.2; letter-spacing: .14em; }
+.invite-chip:hover { background: oklch(1 0 0 / .3); }
+.invite { border-radius: 18px; background: var(--bg); padding: 12px 16px; }
+.invite-code { font-family: 'Frank Ruhl Libre', serif; color: var(--pri); }
+/* classifica */
+.lb-card { padding: 22px 26px; gap: 18px; }
+.podium { grid-template-columns: repeat(3, 150px); gap: 16px; padding: 6px 0; margin: 0 auto; }
+.podium-col { gap: 6px; }
+.podium-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--sf2); color: var(--pri); border: 3px solid var(--line); font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 20px; animation: none; }
+.podium-col.p1 .podium-avatar { width: 48px; height: 48px; background: var(--gold); color: var(--gold-on); border-color: var(--gold); }
+.podium-col.p2 .podium-avatar { background: var(--pri); color: var(--onpri); border-color: var(--pri); }
+.podium-name { font-weight: 600; font-size: 14px; }
+.podium-block { border-radius: 14px 14px 4px 4px; box-shadow: none !important; transform-origin: bottom; animation: ugy .7s both; }
+.podium-block b { font-family: 'Frank Ruhl Libre', serif; font-size: 34px; }
+.podium-block span { font-size: 12.5px; font-weight: 500; }
+.podium-col.p1 .podium-block { height: 150px; background: var(--gold); color: var(--gold-on); }
+.podium-col.p2 .podium-block { height: 120px; background: var(--pri); color: var(--onpri); }
+.podium-col.p3 .podium-block { height: 92px; background: var(--sf2); color: var(--ink); }
+.leaderboard { gap: 0; }
+.leaderboard li { gap: 14px; padding: 11px 12px; border-radius: 14px; border-top: 1px solid var(--line); background: transparent; animation: urise .4s both; }
+.leaderboard li.me { background: var(--primary-soft) !important; outline: 0; font-weight: 400; }
+.lb-rank { flex: none; width: 24px; text-align: center; font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 18px; color: var(--mute); }
+.leaderboard .avatar { width: 38px; height: 38px; background: var(--sf2); color: var(--pri); font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 17px; }
+.lb-name b { font-weight: 600; font-size: 15px; }
+.lb-bar { height: 5px; border-radius: 9px; }
+.lb-bar i { background: var(--pri); border-radius: 9px; animation: ugx .8s both; transform-origin: left; }
+.leaderboard li.me .lb-bar i { background: var(--pri); }
+.lb-score { display: flex; flex-direction: column; align-items: flex-end; }
+.lb-score b { font-family: 'Frank Ruhl Libre', serif; font-size: 22px; line-height: 1.1; }
+/* vista studente */
+.gp-info { display: flex; gap: 12px; align-items: center; border-radius: 18px; background: var(--sf2); padding: 14px 18px; font-size: 14px; line-height: 1.5; }
+.gp-info .i { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--gold); color: var(--gold-on); display: grid; place-items: center; font-weight: 700; font-style: italic; }
+.gp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+.gp-tasks { display: flex; flex-direction: column; }
+.gp-task { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--line); color: var(--ink); }
+.gp-task .ti { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--sf2); color: var(--mute); font-weight: 700; }
+.gp-task .ti.ok { background: var(--okfill); color: #fff; }
+.gp-task .ti.late { background: var(--late-bg); color: var(--late-fg); }
+.gp-hidden { align-items: center; justify-content: center; text-align: center; color: var(--mute); }
+.gp-hidden b { font-family: var(--display-font); font-size: 20px; color: var(--ink); }
+@media (max-width: 860px) {
+  .gp-layout { display: flex; flex-direction: column; gap: 16px; }
+  .gp-side { order: -1; flex-direction: column; }
+  .gp-two { grid-template-columns: 1fr; }
+  .group-card { flex-wrap: wrap; padding: 20px; }
+  .gc-big { left: auto; right: 10px; }
+  .podium { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .lb-card { padding: 18px; }
+  .gp-created { flex-direction: column; align-items: stretch; }
+}

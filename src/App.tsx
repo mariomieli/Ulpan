@@ -189,7 +189,7 @@ export function App() {
   }
   if (auth.status === 'signedOut') {
     return path === '/privacy'
-      ? <main className="main"><Suspense fallback={null}><PrivacyPage /></Suspense></main>
+      ? <main className="main solo"><Suspense fallback={null}><PrivacyPage /></Suspense></main>
       : <Suspense fallback={null}><AuthPage /></Suspense>;
   }
   if (auth.status === 'recovery') return <Suspense fallback={null}><AuthPage recovery /></Suspense>;
