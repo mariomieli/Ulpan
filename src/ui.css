@@ -1339,7 +1339,8 @@ a.ts-lesson:hover { transform: translateY(-2px); }
 .tc-alert .at b { font-weight: 600; font-size: 15px; }
 .tc-alert .at span { font-size: 12.5px; color: var(--late-fg); }
 .tc-alert .ar { color: var(--mute); }
-.review-item { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); }
+.review-item { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); background: transparent; border-radius: 0; }
+.review-list { gap: 0; margin-top: 4px; }
 .review-item .he { flex: none; width: 44px; text-align: center; font-weight: 700; line-height: 1.2; }
 .review-item .ans { flex: 1; min-width: 0; }
 .review-item .ans b { font-weight: 600; font-size: 14.5px; }
@@ -1354,7 +1355,7 @@ a.ts-lesson:hover { transform: translateY(-2px); }
 .tc-invite .invite .muted { color: var(--onpri); opacity: .85; font-size: 13px; }
 .tc-invite .invite-code { color: inherit; font-size: 36px; line-height: 1.1; letter-spacing: .16em; }
 .tc-invite .btn-primary { background: var(--onpri); color: var(--pri); border-color: var(--onpri); box-shadow: none; padding: 12px 30px; }
-.assignment { padding: 13px 0; border-top: 1px solid var(--line); animation: upop .35s both; }
+.assignment { padding: 13px 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; animation: upop .35s both; }
 @media (max-width: 860px) {
   .tc-two { grid-template-columns: 1fr; }
   .teacher-page .card { padding: 18px; }

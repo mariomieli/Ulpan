@@ -4,6 +4,7 @@ import { useAuth, showLogin } from '../lib/auth';
 import { LESSON_BY_ID, LESSONS } from '../data/curriculum';
 import { dayKey } from '../lib/store';
 import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
 
 type SortKey = 'created_at' | 'last_sign_in_at' | 'last_active' | 'lessons_passed' | 'xp' | 'name';
 
@@ -111,13 +112,10 @@ export function AdminPage() {
   };
 
   return (
-    <div className="fade-in stack">
-      <div className="page-head">
-        <div>
-          <h1>Iscritti</h1>
-          <p>Elenco degli account registrati, con la data di iscrizione, l’ultimo accesso e il punto di studio.</p>
-        </div>
-      </div>
+    <div className="teacher-page">
+      <PageHeader he="מְנַהֵל" kicker="Area amministratore" title="Iscritti">
+        <span className="ph-note">Account registrati, con data di iscrizione, ultimo accesso e punto di studio.</span>
+      </PageHeader>
       <div className="grid grid-4">
         <div className="card stat"><span className="stat-value">{stats.total}</span><span className="stat-label">iscritti</span></div>
         <div className="card stat"><span className="stat-value">{stats.new7}</span><span className="stat-label">nuovi (7 giorni)</span></div>
