@@ -5,78 +5,70 @@ import { LESSONS, LESSON_BY_ID } from '../data/curriculum';
 import { actions, isLessonUnlocked, useAppState } from '../lib/store';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { Icon } from '../components/Icon';
-import { LessonCover } from '../components/LessonArt';
+import { PageHeader } from '../components/PageHeader';
 import { navigate } from '../lib/router';
 
 function examUnlocked(state: ReturnType<typeof useAppState>, requires: number) {
   return state.settings.unlockAll || !!state.lessons[requires]?.passed;
 }
 
+const EXAM_GLYPH: Record<string, string> = { alfabeto: 'א', nikud: 'אָ', lettura: 'ק', 'senza-nikud': 'ס', corsivo: 'ג', finale: 'ת' };
+
 export function TestsPage() {
   const state = useAppState();
+  const passed = LESSONS.filter((l) => state.lessons[l.id]?.passed).length;
+  const current = LESSONS.find((l) => isLessonUnlocked(state, l.id) && !state.lessons[l.id]?.passed)?.id;
   return (
-    <div className="fade-in stack">
-      <div className="page-head">
-        <div>
-          <h1>Test ed esami</h1>
-          <p>Verifica cosa hai imparato. I test di lezione sbloccano il percorso; gli esami certificano le tue abilità complessive.</p>
-        </div>
-      </div>
+    <div className="tests-page">
+      <PageHeader he="מִבְחָן" kicker="Verifica cosa hai imparato" title="Test ed esami">
+        <span className="ph-note">I test di lezione sbloccano il percorso; gli esami certificano le tue abilità complessive.</span>
+      </PageHeader>
 
-      <a className="card row" href="#/test/ingresso" style={{ color: 'inherit' }}>
-        <Icon name="test" />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ margin: 0 }}>Test d’ingresso</h3>
-          <p className="muted small" style={{ margin: 0 }}>Sai già un po’ di ebraico? Scopri da quale lezione partire e sblocca quelle che conosci.</p>
-        </div>
-        <Icon name="arrowRight" />
-      </a>
+      <div className="ts-list">
+        <a className="ts-entry" href="#/test/ingresso">
+          <span className="ts-ic" lang="he">א</span>
+          <span className="ts-et"><b>Test d’ingresso</b><span>Sai già un po’ di ebraico? Scopri da quale lezione partire e sblocca quelle che conosci.</span></span>
+          <span className="ts-arrow" aria-hidden="true">→</span>
+        </a>
 
-      <div className="card">
-        <div className="card-title"><h2>Esami</h2><Icon name="trophy" /></div>
-        <div className="grid grid-2">
-          {EXAMS.map((e) => {
-            const r = state.exams[e.id];
-            const unlocked = examUnlocked(state, e.requires);
-            return (
-              <div key={e.id} className="card" style={{ margin: 0, boxShadow: 'none' }}>
-                <div className="row">
-                  <h3 style={{ margin: 0 }}>{e.title}</h3>
-                  <span className="spacer" />
-                  {r && <span className={`pill ${r.bestScore >= PASS_THRESHOLD ? 'pill-ok' : 'pill-warn'}`}>Migliore: {r.bestScore}%</span>}
-                </div>
-                <p className="muted small" style={{ margin: '6px 0 10px' }}>{e.description}</p>
-                <p className="small muted">{e.count} domande{e.minutes ? ` · ${e.minutes} minuti` : ''}{r ? ` · ${r.attempts} tentativi` : ''}</p>
-                {unlocked
-                  ? <a className="btn btn-primary btn-sm" href={`#/test/${e.id}`}>Inizia</a>
-                  : <span className="pill"><Icon name="lock" size={14} className="" /> Completa la lezione {e.requires}</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+        <section className="ts-sec">
+          <b className="ts-h">Esami</b>
+          <div className="ts-exams">
+            {EXAMS.map((e) => {
+              const r = state.exams[e.id];
+              const unlocked = examUnlocked(state, e.requires);
+              const pill = r ? `Migliore: ${r.bestScore}%` : unlocked ? 'Da fare' : `Lezione ${e.requires}`;
+              const tone = r ? (r.bestScore >= PASS_THRESHOLD ? 'ok' : 'warn') : '';
+              return (
+                <a key={e.id} href={`#/test/${e.id}`} className={`ts-exam ${unlocked ? '' : 'locked'}`}>
+                  <div className="ts-eh"><b>{e.title}</b><span className={`pill ${tone ? `pill-${tone}` : ''}`}>{!unlocked && <Icon name="lock" size={12} className="" />}{pill}</span></div>
+                  <span className="ts-ed">{e.description}</span>
+                  <span className="ts-em">{e.count} domande{e.minutes ? ` · ${e.minutes} minuti` : ''}{r ? ` · ${r.attempts} ${r.attempts === 1 ? 'tentativo' : 'tentativi'}` : ''}</span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
 
-      <div className="card">
-        <div className="card-title"><h2>Test delle lezioni</h2></div>
-        <ul className="test-list">
-          {LESSONS.map((l) => {
-            const p = state.lessons[l.id];
-            const unlocked = isLessonUnlocked(state, l.id);
-            return (
-              <li key={l.id} className={`test-row ${unlocked ? '' : 'locked'}`}>
-                <LessonCover lesson={l} done={p?.passed} />
-                <div className="test-info">
-                  <b>{l.id}. {l.title}</b>
-                  <span className="small">
-                    {p?.passed ? <span className="pill pill-ok">Superato</span> : unlocked ? <span className="pill">Da fare</span> : <span className="pill"><Icon name="lock" size={12} className="" /> Bloccato</span>}
-                    {p?.attempts ? <span className="muted"> · migliore {p.bestScore}%</span> : null}
-                  </span>
-                </div>
-                {unlocked && <a className="btn btn-sm" href={`#/lezioni/${l.id}`} aria-label={`Apri la lezione ${l.id}`}>Apri</a>}
-              </li>
-            );
-          })}
-        </ul>
+        <section className="ts-sec">
+          <div className="ts-hh"><b className="ts-h">Test delle lezioni</b><span>{passed} di {LESSONS.length} superati</span></div>
+          <div className="ts-lessons">
+            {LESSONS.map((l) => {
+              const p = state.lessons[l.id];
+              const unlocked = isLessonUnlocked(state, l.id);
+              const cls = p?.passed ? 'done' : l.id === current ? 'now' : unlocked ? 'todo' : 'locked';
+              const inner = (
+                <>
+                  <div className="tl-top"><b>{l.id}</b><span aria-hidden="true">{p?.passed ? '✓' : !unlocked ? '–' : ''}</span></div>
+                  <span className="tl-t">{l.title}</span>
+                </>
+              );
+              return unlocked
+                ? <a key={l.id} className={`ts-lesson ${cls}`} href={`#/lezioni/${l.id}`} aria-label={`Lezione ${l.id}: ${l.title}${p?.passed ? ', superata' : ''}`} title={p?.attempts ? `Migliore ${p.bestScore}%` : undefined}>{inner}</a>
+                : <div key={l.id} className={`ts-lesson ${cls}`} aria-label={`Lezione ${l.id}: ${l.title}, bloccata`}>{inner}</div>;
+            })}
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -96,11 +88,20 @@ export function ExamPage({ id }: { id: string }) {
   if (!exam) return <div className="empty">Esame non trovato. <a href="#/test">Torna ai test</a></div>;
   if (!examUnlocked(state, exam.requires)) {
     return (
-      <div className="card empty">
-        <Icon name="lock" size={36} className="" />
-        <h2>{exam.title}</h2>
-        <p>Completa la lezione {exam.requires} per sbloccare questo esame.</p>
-        <a className="btn btn-primary" href="#/lezioni">Vai alle lezioni</a>
+      <div className="exam-intro">
+        <a href="#/test" className="gram-back">← Test ed esami</a>
+        <div className="ex-card">
+          <span className="ex-ic" lang="he">{EXAM_GLYPH[exam.id] ?? 'א'}</span>
+          <b className="ex-t">{exam.title}</b>
+          <span className="ex-d">{exam.description}</span>
+          <div className="ex-stats">
+            <div><b>{exam.count}</b><span>domande</span></div>
+            <div><b>{exam.minutes ? `${exam.minutes}′` : '—'}</b><span>tempo limite</span></div>
+            <div><b>{PASS_THRESHOLD}%</b><span>per superarlo</span></div>
+          </div>
+          <span className="ex-lock"><Icon name="lock" size={16} className="" /> Completa la lezione {exam.requires} per sbloccarlo</span>
+          <a className="btn btn-primary" href="#/lezioni">Vai alle lezioni</a>
+        </div>
       </div>
     );
   }
@@ -122,20 +123,20 @@ export function ExamPage({ id }: { id: string }) {
   }
   const r = state.exams[exam.id];
   return (
-    <div className="quiz fade-in">
-      <a href="#/test" className="small">← Test ed esami</a>
-      <div className="card center" style={{ marginTop: 10 }}>
-        <Icon name="trophy" size={40} className="" />
-        <h1 style={{ marginTop: 8 }}>{exam.title}</h1>
-        <p className="muted">{exam.description}</p>
-        <div className="grid grid-3" style={{ margin: '18px 0' }}>
-          <div className="stat"><span className="stat-value">{exam.count}</span><span className="stat-label">domande</span></div>
-          <div className="stat"><span className="stat-value">{exam.minutes ? `${exam.minutes}′` : '—'}</span><span className="stat-label">tempo limite</span></div>
-          <div className="stat"><span className="stat-value">{PASS_THRESHOLD}%</span><span className="stat-label">per superarlo</span></div>
+    <div className="exam-intro">
+      <a href="#/test" className="gram-back">← Test ed esami</a>
+      <div className="ex-card">
+        <span className="ex-ic" lang="he">{EXAM_GLYPH[exam.id] ?? 'א'}</span>
+        <b className="ex-t">{exam.title}</b>
+        <span className="ex-d">{exam.description}</span>
+        <div className="ex-stats">
+          <div><b>{exam.count}</b><span>domande</span></div>
+          <div><b>{exam.minutes ? `${exam.minutes}′` : '—'}</b><span>tempo limite</span></div>
+          <div><b>{PASS_THRESHOLD}%</b><span>per superarlo</span></div>
         </div>
-        {r && <p>Miglior risultato: <b>{r.bestScore}%</b> · ultimo: {r.lastScore}% ({r.lastDate})</p>}
-        <p className="small muted">Le risposte vengono corrette alla fine. Nessun suggerimento durante la prova.</p>
-        <button className="btn btn-primary btn-lg" onClick={() => { setRound(round + 1); setPhase('run'); }}>Inizia l’esame</button>
+        {r && <span className="ex-n">Miglior risultato: <b>{r.bestScore}%</b> · ultimo: {r.lastScore}% ({r.lastDate})</span>}
+        <span className="ex-n">Le risposte vengono corrette alla fine. Nessun suggerimento durante la prova.</span>
+        <button type="button" className="ex-go" onClick={() => { setRound(round + 1); setPhase('run'); }}>{r ? 'Riprova l’esame' : 'Inizia l’esame'}</button>
       </div>
     </div>
   );

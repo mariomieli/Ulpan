@@ -852,17 +852,17 @@ function buildCursive(rng: Rng, o: QuizOptions): Question[] {
 
 export const EXAMS: ExamDef[] = [
   {
-    id: 'alfabeto', title: 'Esame: alfabeto', count: 30, requires: LAST_LETTER_LESSON,
+    id: 'alfabeto', title: 'Esame: Alfabeto', count: 30, requires: LAST_LETTER_LESSON,
     description: 'Tutte le 22 lettere, le varianti con dagesh e le 5 forme finali.',
     build: (rng, o) => buildQuiz({ focusGlyphs: GLYPHS, focusVowels: [], focusWords: [], pool: FULL_POOL, count: 30, categories: ['glyph'] }, rng, o),
   },
   {
-    id: 'nikud', title: 'Esame: nikud', count: 25, requires: 3,
+    id: 'nikud', title: 'Esame: Nikud', count: 25, requires: 3,
     description: 'Riconoscere i segni vocalici e leggere le sillabe.',
     build: (rng, o) => buildQuiz({ focusGlyphs: [], focusVowels: VOWELS, focusWords: [], pool: FULL_POOL, count: 25, categories: ['vowel', 'syllable'], weights: { vowel: 2, syllable: 3 } }, rng, o),
   },
   {
-    id: 'lettura', title: 'Esame: lettura', count: 25, requires: LAST_LETTER_LESSON,
+    id: 'lettura', title: 'Esame: Lettura', count: 25, requires: LAST_LETTER_LESSON,
     description: 'Leggere parole vocalizzate, anche mai viste prima: lettura, scrittura e dettato.',
     build: (rng, o) => {
       const decoding = buildQuiz({ focusGlyphs: [], focusVowels: [], focusWords: WORDS, pool: FULL_POOL, count: 18, categories: ['word'], kinds: DECODING_KINDS }, rng, o);
