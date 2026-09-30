@@ -14,6 +14,7 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 - [ ] **Promemoria giornaliero** con notifica sul telefono se il ripasso non è stato fatto.
 
 ## Già fatto
+- [x] Lingua e cultura: 17 unità (grammatica di base, numeri, giorni e mesi, calendario ebraico, feste, città e luoghi, Italia e mondo, vie e indirizzi, nomi propri). Da fare: revisione di un madrelingua (in particolare nomi di città straniere e forme dei numeri)
 - [x] Corsivo ebraico: carattere a mano, alfabeto in corsivo, esame «Corsivo ebraico» (lettere e parole senza nikud). Da fare: scrivere le lettere in corsivo, controllo di un madrelingua
 - [x] Categoria «Vita quotidiana»: menù, messaggi, meteo, avviso della scuola, stazione (da leggere anche senza nikud)
 - [x] Informativa privacy, conferma dell'età e consenso alle classi registrati sul server

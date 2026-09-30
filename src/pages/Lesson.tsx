@@ -22,7 +22,7 @@ type Tab = 'teoria' | 'studio' | 'esercizi' | 'test';
 
 const KIND_LABEL = { vowels: 'le vocali', letters: 'le lettere', rules: 'regole di lettura' } as const;
 
-function Theory({ blocks }: { blocks: TheoryBlock[] }) {
+export function Theory({ blocks }: { blocks: TheoryBlock[] }) {
   const text = blocks.filter((b) => b.type !== 'example');
   const examples = blocks.filter((b): b is Extract<TheoryBlock, { type: 'example' }> => b.type === 'example');
   return (

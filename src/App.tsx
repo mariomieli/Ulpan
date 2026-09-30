@@ -22,6 +22,7 @@ const loaders = {
   settings: () => import('./pages/Settings'),
   privacy: () => import('./pages/Privacy'),
   groups: () => import('./pages/Groups'),
+  grammar: () => import('./pages/Grammar'),
 };
 const LessonsPage = lazy(() => loaders.lessons().then((m) => ({ default: m.LessonsPage })));
 const LessonPage = lazy(() => loaders.lesson().then((m) => ({ default: m.LessonPage })));
@@ -34,6 +35,8 @@ const PlacementPage = lazy(() => loaders.tests().then((m) => ({ default: m.Place
 const ExamPage = lazy(() => loaders.tests().then((m) => ({ default: m.ExamPage })));
 const ProgressPage = lazy(() => loaders.progress().then((m) => ({ default: m.ProgressPage })));
 const GroupsPage = lazy(() => loaders.groups().then((m) => ({ default: m.GroupsPage })));
+const GrammarPage = lazy(() => loaders.grammar().then((m) => ({ default: m.GrammarPage })));
+const GrammarUnitPage = lazy(() => loaders.grammar().then((m) => ({ default: m.GrammarUnitPage })));
 const AuthPage = lazy(() => import('./pages/Auth').then((m) => ({ default: m.AuthPage })));
 const PrivacyPage = lazy(() => loaders.privacy().then((m) => ({ default: m.PrivacyPage })));
 const SettingsPage = lazy(() => loaders.settings().then((m) => ({ default: m.SettingsPage })));
@@ -51,6 +54,7 @@ const NAV = [
   { path: '/alfabeto', label: 'Alfabeto', icon: 'alef' },
   { path: '/nikud', label: 'Nikud (Punteggiatura)', icon: 'dots' },
   { path: '/lettura', label: 'Lettura', icon: 'read' },
+  { path: '/grammatica', label: 'Lingua e cultura', icon: 'grammar' },
   { path: '/ripasso', label: 'Ripasso', icon: 'repeat' },
   { path: '/test', label: 'Test ed esami', icon: 'test' },
   { path: '/gruppi', label: 'Gruppi e classi', icon: 'users' },
@@ -76,6 +80,7 @@ function Page({ path }: { path: string }) {
   let p: Record<string, string> | null;
   if ((p = match('/lezioni/:id', path))) return <LessonPage id={Number(p.id)} />;
   if (path.split('?')[0] === '/test/ingresso') return <PlacementPage />;
+  if ((p = match('/grammatica/:id', path))) return <GrammarUnitPage id={p.id} />;
   if ((p = match('/test/:id', path))) return <ExamPage id={p.id} />;
   if ((p = match('/gruppi/:id', path))) return <GroupsPage path={path} groupId={p.id} />;
   switch (path.split('?')[0]) {
@@ -83,6 +88,7 @@ function Page({ path }: { path: string }) {
     case '/alfabeto': return <AlphabetPage />;
     case '/nikud': return <NikudPage />;
     case '/lettura': return <ReadingPage />;
+    case '/grammatica': return <GrammarPage />;
     case '/ripasso': return <ReviewPage />;
     case '/ripasso/oggi': return <ReviewPage key="oggi" autoStart="oggi" />;
     case '/test': return <TestsPage />;
