@@ -1198,3 +1198,36 @@ a.ts-lesson:hover { transform: translateY(-2px); }
   .auth-form-side { padding: 22px 20px 40px; overflow: visible; }
   .auth-form { gap: 14px; }
 }
+
+/* ---------- Privacy ---------- */
+.pv-back { font-size: 14px; font-weight: 500; color: var(--pri); }
+.pv-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
+.pv-toc { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 2px; }
+.pv-toc > span { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); padding: 0 12px 8px; }
+.pv-toc button { text-align: left; cursor: pointer; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 400; background: transparent; color: var(--ink); border: 0; min-height: 0; }
+.pv-toc button:hover { background: var(--sf2); }
+.pv-toc button.on { background: var(--sf2); color: var(--pri); font-weight: 600; }
+.pv-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding-bottom: 40px; }
+.pv-brief { scroll-margin-top: 20px; border-radius: 24px; background: var(--pri); color: var(--onpri); padding: 28px 32px; display: flex; flex-direction: column; gap: 14px; }
+.pv-brief > b { font-family: var(--display-font); font-size: 26px; }
+.pv-brief > div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+.pv-brief > div > div { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5; }
+.pv-brief > div > div > span:first-child { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--onpri); color: var(--pri); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.pv-brief a { color: inherit; text-decoration: underline; }
+.pv-sec { scroll-margin-top: 20px; border-radius: 22px; background: var(--sf); border: 1px solid var(--line); box-shadow: var(--sh); padding: 22px 28px; display: flex; flex-direction: column; gap: 8px; }
+.pv-sec > b { font-family: var(--display-font); font-size: 22px; }
+.pv-sec > span { font-size: 15px; line-height: 1.6; }
+.pv-sec a { color: var(--pri); text-decoration: underline; }
+.pv-data { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+.pv-data > div { border-radius: 16px; background: var(--bg); border: 1px solid var(--line); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.pv-data b { font-weight: 600; font-size: 15px; color: var(--pri); }
+.pv-data span { font-size: 14px; line-height: 1.55; }
+@media (max-width: 860px) {
+  .pv-layout { grid-template-columns: 1fr; }
+  .pv-toc { position: static; flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: none; }
+  .pv-toc > span { display: none; }
+  .pv-toc button { flex: none; white-space: nowrap; border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; }
+  .pv-brief { padding: 22px 20px; }
+  .pv-brief > div, .pv-data { grid-template-columns: 1fr; }
+  .pv-sec { padding: 18px 20px; }
+}
