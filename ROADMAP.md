@@ -10,10 +10,9 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 - [ ] **Scrittura delle lettere**: tracciarle col dito, con l'ordine e il verso corretti dei tratti.
 - [ ] **Controllo della grafia piena** dei testi senza nikud da parte di un madrelingua.
 
-## Motivazione
-- [ ] **Promemoria giornaliero** con notifica sul telefono se il ripasso non è stato fatto.
-
 ## Già fatto
+- [x] Modalità dislessia (carattere Atkinson Hyperlegible, spaziatura, sfondi colorati) nelle impostazioni
+- [x] Pannello insegnante: elenco «Da contattare» (fermi, precisione bassa, compiti in ritardo) e confronto tra le proprie classi
 - [x] Lingua e cultura: 17 unità (grammatica di base, numeri, giorni e mesi, calendario ebraico, feste, città e luoghi, Italia e mondo, vie e indirizzi, nomi propri). Da fare: revisione di un madrelingua (in particolare nomi di città straniere e forme dei numeri)
 - [x] Corsivo ebraico: carattere a mano, alfabeto in corsivo, esame «Corsivo ebraico» (lettere e parole senza nikud). Da fare: scrivere le lettere in corsivo, controllo di un madrelingua
 - [x] Categoria «Vita quotidiana»: menù, messaggi, meteo, avviso della scuola, stazione (da leggere anche senza nikud)

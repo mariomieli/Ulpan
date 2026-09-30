@@ -114,6 +114,21 @@ export function SettingsPage() {
       </div>
 
       <div className="card stack">
+        <h2 style={{ margin: 0 }}>Accessibilità</h2>
+        <label className="toggle"><input type="checkbox" checked={settings.dyslexia} onChange={(e) => set({ dyslexia: e.target.checked })} /> Modalità dislessia: carattere più leggibile, più spazio tra lettere, parole e righe</label>
+        <div className="field" style={{ maxWidth: 320 }}>
+          <label htmlFor="tint">Colore dello sfondo (tema chiaro)</label>
+          <select id="tint" value={settings.tint} onChange={(e) => set({ tint: e.target.value as Settings['tint'] })}>
+            <option value="none">Standard</option>
+            <option value="cream">Crema (meno abbagliante)</option>
+            <option value="blue">Azzurro tenue</option>
+            <option value="green">Verde tenue</option>
+          </select>
+        </div>
+        <p className="muted small" style={{ margin: 0 }}>Per l’ebraico puoi anche aumentare la dimensione e scegliere il carattere in «Aspetto». Le animazioni si riducono in «Animazioni».</p>
+      </div>
+
+      <div className="card stack">
         <h2 style={{ margin: 0 }}>Studio</h2>
         <div className="field" style={{ maxWidth: 320 }}>
           <label htmlFor="goal">Obiettivo giornaliero (risposte)</label>

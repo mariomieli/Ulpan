@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAuth } from '../lib/auth';
 import {
-  addAssignment, classReport, deleteAssignment, deleteGroup, listAssignments, removeMember, setLeaderboardVisible,
+  addAssignment, classReport, deleteAssignment, deleteGroup, listAssignments, myGroups, removeMember, setLeaderboardVisible,
   setMemberRole, type Group,
 } from '../lib/groups';
 import {
-  assignmentStatus, classCsv, classWeakItems, lessonTitle, summarize, type Assignment, type StudentRow, type StudentSummary,
+  assignmentStatus, classCsv, classStats, classWeakItems, lessonTitle, studentAlerts, summarize, type ClassStats, type Assignment, type StudentRow, type StudentSummary,
 } from '../lib/teacher';
 import { dayKey, sanitize } from '../lib/store';
 import { LESSONS } from '../data/curriculum';
@@ -26,6 +26,49 @@ function lastActiveLabel(d: string | null): string {
   if (d === today) return 'oggi';
   if (d === dayKey(y)) return 'ieri';
   return formatDate(d);
+}
+
+/** Confronto tra le classi dello stesso insegnante (solo se ne ha più di una). */
+function ClassComparison({ group, current }: { group: Group; current: ClassStats }) {
+  const [others, setOthers] = useState<{ group: Group; stats: ClassStats }[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const mine = (await myGroups()).filter((g) => g.kind === 'class' && g.role === 'teacher' && g.id !== group.id);
+        const rows = await Promise.all(mine.map(async (g) => {
+          const students = (await classReport(g.id)).filter((r) => r.role === 'student');
+          return { group: g, stats: classStats(students) };
+        }));
+        if (alive) setOthers(rows);
+      } catch { if (alive) setOthers([]); }
+    })();
+    return () => { alive = false; };
+  }, [group.id]);
+  if (!others || others.length === 0) return null;
+  const rows = [{ group, stats: current }, ...others];
+  return (
+    <div className="card">
+      <h2>Confronto tra le tue classi</h2>
+      <div className="table-wrap">
+        <table className="data">
+          <thead><tr><th>Classe</th><th>Studenti</th><th>Attivi (7 gg)</th><th>Lezioni in media</th><th>Precisione</th><th>Risposte 7 gg</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.group.id} style={r.group.id === group.id ? { fontWeight: 700 } : undefined}>
+                <td>{r.group.name}{r.group.id === group.id ? ' (questa)' : ''}</td>
+                <td>{r.stats.students}</td>
+                <td>{pct(r.stats.activeShare)}</td>
+                <td>{r.stats.avgLessons === null ? '—' : r.stats.avgLessons.toFixed(1)}</td>
+                <td>{pct(r.stats.avgAccuracy)}</td>
+                <td>{r.stats.answers7}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 function StudentDetail({ groupId, row, sum, assignments, onBack, onChanged }: {
@@ -142,6 +185,8 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
   const teachers = useMemo(() => (rows ?? []).filter((r) => r.role === 'teacher'), [rows]);
   const summaries = useMemo(() => new Map(students.map((s) => [s.user_id, summarize(s.progress)])), [students]);
   const weakClass = useMemo(() => classWeakItems(students), [students]);
+  const alerts = useMemo(() => studentAlerts(students, summaries, assignments), [students, summaries, assignments]);
+  const stats = useMemo(() => classStats(students), [students]);
   const active7 = students.filter((s) => (summaries.get(s.user_id)?.activeDays7 ?? 0) > 0).length;
 
   const exportCsv = () => {
@@ -185,6 +230,25 @@ export function TeacherPanel({ group, onBack, onChanged }: { group: Group; onBac
               <span className="stat-label">lezioni superate in media</span>
             </div>
           </div>
+
+          {students.length > 0 && (
+            <div className="card">
+              <h2>Da contattare</h2>
+              {alerts.length === 0 ? <p className="muted small">Nessuno studente ha bisogno di attenzione: sono tutti attivi e in regola.</p> : (
+                <div className="stack" style={{ gap: 8 }}>
+                  {alerts.map((a) => (
+                    <button key={a.user_id} type="button" className="row link-btn" style={{ textAlign: 'left', gap: 10 }} onClick={() => setSelected(a.user_id)}>
+                      <span className="avatar">{a.name.slice(0, 1)}</span>
+                      <span><b>{a.name}</b><br /><span className="small warn-text">{a.reasons.join(' · ')}</span></span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="small muted" style={{ marginBottom: 0 }}>Vengono segnalati gli studenti fermi da almeno 7 giorni o non ha iniziato, chi ha meno del 60% di risposte corrette (con almeno 20 risposte) e chi ha compiti in ritardo.</p>
+            </div>
+          )}
+
+          <ClassComparison group={group} current={stats} />
 
           <div className="card">
             <div className="card-title">

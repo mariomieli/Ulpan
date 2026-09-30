@@ -17,7 +17,7 @@ Web app (PWA) in italiano per imparare a **leggere l'ebraico** da zero: alfabeto
 - **Classi e pannello insegnante**: l'insegnante crea una classe, vede i progressi dettagliati e i punti deboli di ogni studente, assegna compiti con scadenza ed esporta i risultati in CSV; gli studenti danno il consenso all'ingresso.
 - **Gruppi e classifica**: crea un gruppo, invita con codice o link e confrontatevi (risposte corrette negli ultimi 7 giorni o XP totali).
 - **Progressi**: XP, serie di giorni, obiettivo giornaliero, mappa di padronanza, punti deboli.
-- **Audio** con la sintesi vocale del browser (voce ebraica), tema chiaro/scuro, due caratteri ebraici, dimensione regolabile, funzionamento offline, esportazione/importazione dei progressi.
+- **Audio** con la sintesi vocale del browser (voce ebraica), modalità dislessia e sfondi colorati, tema chiaro/scuro, due caratteri ebraici, dimensione regolabile, funzionamento offline, esportazione/importazione dei progressi.
 
 La lezione in cui ogni parola diventa leggibile è calcolata automaticamente analizzando lettere e segni vocalici, così gli esercizi usano solo ciò che hai già studiato.
 

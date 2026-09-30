@@ -639,3 +639,15 @@ img.brand-mark, .topbar-brand img, .brand-logo { object-fit: contain; background
 .he-cursive, .he-cursive * { font-family: 'Gveret Levin', 'Comic Sans MS', cursive !important; font-weight: 400 !important; }
 .he-cursive { font-size: 1.15em; }
 :root[data-font='cursive'] { --he-font: 'Gveret Levin', 'Comic Sans MS', cursive; }
+
+/* Modalità dislessia: carattere leggibile e più spazio */
+:root[data-dyslexia='on'] { --display-font: 'Atkinson Hyperlegible', Rubik, system-ui, sans-serif; }
+:root[data-dyslexia='on'] body { font-family: 'Atkinson Hyperlegible', Rubik, system-ui, sans-serif; letter-spacing: .025em; word-spacing: .16em; line-height: 1.75; }
+:root[data-dyslexia='on'] p, :root[data-dyslexia='on'] li { max-width: 68ch; line-height: 1.8; }
+:root[data-dyslexia='on'] .he, :root[data-dyslexia='on'] .he-inline { word-spacing: .35em; line-height: 2; letter-spacing: 0; }
+:root[data-dyslexia='on'] button, :root[data-dyslexia='on'] input, :root[data-dyslexia='on'] select, :root[data-dyslexia='on'] textarea { font-family: inherit; letter-spacing: inherit; }
+
+/* Colore dello sfondo (solo tema chiaro) */
+:root[data-tint='cream']:not([data-theme='dark']) { --bg: #F6EAC9; --surface: #FBF3DD; }
+:root[data-tint='blue']:not([data-theme='dark']) { --bg: #E1EDF7; --surface: #EDF5FB; }
+:root[data-tint='green']:not([data-theme='dark']) { --bg: #E2F0DE; --surface: #EEF7EB; }

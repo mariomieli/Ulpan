@@ -9,6 +9,7 @@ const WORD_IDS = new Set(WORDS.map((w) => w.id));
 
 export type Theme = 'system' | 'light' | 'dark';
 export type HebrewFont = 'serif' | 'sans' | 'cursive';
+export type PageTint = 'none' | 'cream' | 'blue' | 'green';
 export type MotionPref = 'system' | 'reduced' | 'full';
 
 export interface Settings {
@@ -28,6 +29,10 @@ export interface Settings {
   haptics: boolean;
   /** Dopo una risposta giusta a scelta multipla si passa da soli alla domanda seguente. */
   autoAdvance: boolean;
+  /** Modalità dislessia: carattere leggibile, più spazio tra parole e righe. */
+  dyslexia: boolean;
+  /** Colore di sfondo delle pagine (tema chiaro), per ridurre l'abbagliamento. */
+  tint: PageTint;
 }
 
 export interface LessonProgress {
@@ -107,6 +112,8 @@ export const DEFAULT_SETTINGS: Settings = {
   sfx: true,
   haptics: true,
   autoAdvance: true,
+  dyslexia: false,
+  tint: 'none',
 };
 
 export function initialState(): AppState {
@@ -176,6 +183,8 @@ function sanitizeSettings(v: unknown): Settings {
     sfx: typeof o.sfx === 'boolean' ? o.sfx : d.sfx,
     haptics: typeof o.haptics === 'boolean' ? o.haptics : d.haptics,
     autoAdvance: typeof o.autoAdvance === 'boolean' ? o.autoAdvance : d.autoAdvance,
+    dyslexia: typeof o.dyslexia === 'boolean' ? o.dyslexia : d.dyslexia,
+    tint: o.tint === 'cream' || o.tint === 'blue' || o.tint === 'green' || o.tint === 'none' ? o.tint : d.tint,
   };
 }
 

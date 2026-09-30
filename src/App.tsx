@@ -131,11 +131,13 @@ export function App() {
     apply();
     root.dataset.font = settings.font;
     root.dataset.motion = settings.motion;
+    root.dataset.dyslexia = settings.dyslexia ? 'on' : 'off';
+    root.dataset.tint = settings.tint;
     root.style.setProperty('--he-scale', String(settings.fontScale));
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, [settings.theme, settings.font, settings.fontScale, settings.motion]);
+  }, [settings.theme, settings.font, settings.fontScale, settings.motion, settings.dyslexia, settings.tint]);
 
   useEffect(() => setDrawer(false), [path]);
   useEffect(prefetchPages, []);

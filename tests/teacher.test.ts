@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { summarize, classWeakItems, assignmentStatus, classCsv, itemLabel, type StudentRow } from '../src/lib/teacher';
+import { summarize, classWeakItems, assignmentStatus, classCsv, itemLabel, daysSince, studentAlerts, classStats, type StudentRow } from '../src/lib/teacher';
 import { applyAnswer, applyLessonTest, initialState, type AppState } from '../src/lib/store';
 
 const d = (s: string) => new Date(`${s}T12:00:00`);
@@ -64,5 +64,37 @@ describe('pannello insegnante', () => {
   it('etichette leggibili', () => {
     expect(itemLabel('g:shin')).toEqual({ label: 'Shin', hebrew: 'שׁ' });
     expect(itemLabel('w:shalom').label).toContain('shalom');
+  });
+});
+
+describe('avvisi e statistiche di classe', () => {
+  const students = [anna, ben, student('Carla', (s) => s)];
+  const summaries = new Map(students.map((x) => [x.user_id, summarize(x.progress, today)]));
+
+  it('conta i giorni dall\'ultima attività', () => {
+    expect(daysSince('2026-09-25', today)).toBe(0);
+    expect(daysSince('2026-09-10', today)).toBe(15);
+    expect(daysSince(null, today)).toBeNull();
+  });
+
+  it('segnala chi è fermo o non ha iniziato, non chi è attivo', () => {
+    const alerts = studentAlerts(students, summaries, [], today);
+    expect(alerts.map((a) => a.name).sort()).toEqual(['Ben', 'Carla']);
+    expect(alerts.find((a) => a.name === 'Ben')!.reasons[0]).toContain('fermo da 15 giorni');
+    expect(alerts.find((a) => a.name === 'Carla')!.reasons).toContain('non ha ancora iniziato');
+  });
+
+  it('segnala i compiti in ritardo', () => {
+    const late = [{ id: 'a', group_id: 'g', lesson_id: 5, note: '', due_date: '2026-09-20', created_at: '2026-09-01' }];
+    const alerts = studentAlerts([anna], new Map([['Anna', summaries.get('Anna')!]]), late, today);
+    expect(alerts[0].reasons).toContain('1 compito in ritardo');
+  });
+
+  it('statistiche di classe', () => {
+    const c = classStats(students, today);
+    expect(c.students).toBe(3);
+    expect(c.activeShare).toBeCloseTo(1 / 3);
+    expect(c.avgLessons).toBeCloseTo(1 / 3);
+    expect(classStats([], today)).toMatchObject({ students: 0, activeShare: null, avgLessons: null, avgAccuracy: null });
   });
 });

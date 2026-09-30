@@ -117,6 +117,72 @@ export function classWeakItems(students: StudentRow[], n = 8): (WeakItem & { stu
     .slice(0, n);
 }
 
+/** Giorni trascorsi da una data "AAAA-MM-GG" (null se non c'è). */
+export function daysSince(day: string | null, today: Date = new Date()): number | null {
+  if (!day) return null;
+  const a = Date.parse(`${day}T00:00:00Z`);
+  const b = Date.parse(`${dayKey(today)}T00:00:00Z`);
+  return Number.isFinite(a) ? Math.max(0, Math.round((b - a) / 86_400_000)) : null;
+}
+
+export const INACTIVE_DAYS = 7;
+export const LOW_ACCURACY = 0.6;
+export const MIN_ANSWERS_FOR_ACCURACY = 20;
+
+export interface StudentAlert {
+  user_id: string;
+  name: string;
+  reasons: string[];
+  /** Più alto = più urgente. */
+  severity: number;
+}
+
+/** Studenti che meritano attenzione: fermi da giorni, con molti errori o con compiti in ritardo. */
+export function studentAlerts(
+  students: StudentRow[], summaries: Map<string, StudentSummary>, assignments: Assignment[], today: Date = new Date(),
+): StudentAlert[] {
+  const out: StudentAlert[] = [];
+  for (const st of students) {
+    const sum = summaries.get(st.user_id);
+    if (!sum) continue;
+    const reasons: string[] = [];
+    let severity = 0;
+    const idle = daysSince(sum.lastActive, today);
+    if (idle === null) { reasons.push('non ha ancora iniziato'); severity += 3; }
+    else if (idle >= INACTIVE_DAYS) { reasons.push(`fermo da ${idle} giorni`); severity += 2 + Math.min(3, Math.floor(idle / 7)); }
+    if (sum.accuracy7 !== null && sum.answers7 >= MIN_ANSWERS_FOR_ACCURACY && sum.accuracy7 < LOW_ACCURACY) {
+      reasons.push(`precisione bassa (${Math.round(sum.accuracy7 * 100)}%)`); severity += 2;
+    }
+    const lessons = sanitize(st.progress).lessons;
+    const late = assignments.filter((a) => assignmentStatus(a, lessons, today) === 'in ritardo').length;
+    if (late) { reasons.push(late === 1 ? '1 compito in ritardo' : `${late} compiti in ritardo`); severity += 1 + late; }
+    if (reasons.length) out.push({ user_id: st.user_id, name: st.display_name, reasons, severity });
+  }
+  return out.sort((a, b) => b.severity - a.severity || a.name.localeCompare(b.name));
+}
+
+export interface ClassStats {
+  students: number;
+  /** Quota di studenti attivi negli ultimi 7 giorni (0-1). */
+  activeShare: number | null;
+  avgLessons: number | null;
+  avgAccuracy: number | null;
+  answers7: number;
+}
+
+export function classStats(students: StudentRow[], today: Date = new Date()): ClassStats {
+  const sums = students.map((s) => summarize(s.progress, today));
+  const n = sums.length;
+  const acc = sums.filter((x) => x.accuracy7 !== null);
+  return {
+    students: n,
+    activeShare: n ? sums.filter((x) => x.activeDays7 > 0).length / n : null,
+    avgLessons: n ? sums.reduce((t, x) => t + x.lessonsPassed, 0) / n : null,
+    avgAccuracy: acc.length ? acc.reduce((t, x) => t + (x.accuracy7 as number), 0) / acc.length : null,
+    answers7: sums.reduce((t, x) => t + x.answers7, 0),
+  };
+}
+
 export type AssignmentStatus = 'fatto' | 'in ritardo' | 'da fare';
 
 export function assignmentStatus(a: Pick<Assignment, 'lesson_id' | 'due_date'>, lessons: AppState['lessons'], today: Date = new Date()): AssignmentStatus {
