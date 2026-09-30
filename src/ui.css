@@ -709,3 +709,70 @@ input[type='range'] { accent-color: var(--pri); }
   .card.theory { padding: 20px; }
   .tip { padding: 16px 18px; }
 }
+
+/* ---------- Ripasso ---------- */
+.review-page > .page-header .ph-note { max-width: 380px; }
+.rv-hub { display: flex; flex-direction: column; gap: 18px; }
+.rv-today { border-radius: 26px; background: var(--pri); color: var(--onpri); padding: 36px 40px; display: flex; align-items: center; gap: 40px; position: relative; overflow: hidden; }
+.rv-big-he { position: absolute; right: 30px; top: -20px; font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 210px; line-height: 1; opacity: .12; pointer-events: none; }
+.rv-today-text { position: relative; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.rv-today-text .k { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.rv-today-text b { font-family: var(--display-font); font-size: 36px; line-height: 1.1; }
+.rv-today-text .d { font-size: 15px; line-height: 1.5; max-width: 460px; opacity: .92; }
+.rv-start { position: relative; flex: none; cursor: pointer; background: var(--onpri); color: var(--pri); font-weight: 600; font-size: 18px; padding: 16px 34px; border-radius: 16px; border: 0; box-shadow: 0 8px 0 0 oklch(0 0 0 / .2); transition: transform .15s; }
+.rv-start:hover:not(:disabled) { transform: translateY(-2px); }
+.rv-start:disabled { opacity: .6; cursor: default; }
+.rv-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.rv-card { border-radius: 22px; background: var(--sf); border: 1px solid var(--line); box-shadow: var(--sh); padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+.rv-card .k { font-size: 13px; color: var(--mute); }
+.rv-card .d { font-size: 14px; line-height: 1.5; color: var(--mute); }
+.rv-t { font-family: var(--display-font); font-size: 22px; line-height: 1.15; }
+.rv-num { display: flex; align-items: baseline; gap: 10px; }
+.rv-num b { font-family: 'Frank Ruhl Libre', serif; font-size: 56px; line-height: 1; }
+.rv-num span { font-size: 14px; color: var(--mute); line-height: 1.3; }
+.bar-track.gold > div { background: var(--gold); }
+.rv-sim { font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 30px; line-height: 1.15; color: var(--pri); }
+.rv-btn { margin-top: auto; text-align: center; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-weight: 500; padding: 12px; border-radius: 12px; cursor: pointer; font-size: 15px; }
+.rv-btn:hover:not(:disabled) { background: var(--sf2); }
+.rv-btn.primary { background: var(--pri); color: var(--onpri); border-color: var(--pri); margin-top: 6px; }
+.rv-btn.primary:hover:not(:disabled) { background: var(--pri); filter: brightness(1.08); }
+.rv-btn:disabled { opacity: .6; cursor: default; }
+/* mazzo a carte */
+.deck { max-width: 560px; margin: 0 auto; }
+.deck .lesson-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.deck .quiz-close { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--sf); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; flex: none; }
+.deck .quiz-close:hover { background: var(--sf2); }
+.deck-title b { font-family: var(--display-font); font-size: 18px; }
+.deck-dots { display: flex; gap: 4px; margin: 0 0 18px; flex-wrap: nowrap; justify-content: stretch; }
+.deck-dots span { flex: 1; width: auto; height: 6px; border-radius: 9px; background: var(--sf2); }
+.deck-dots span.done { background: var(--pri); }
+.deck-dots span.active { width: auto; background: var(--gold); }
+.deck-scene .flash-face { min-height: 340px; border-radius: 30px !important; }
+.deck-kicker { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--pri); }
+.flash-face .he.deck-he { font-weight: 700; font-size: calc(120px * var(--he-scale)) !important; line-height: 1.25; }
+.deck-scene .flash-back .he { font-size: calc(84px * var(--he-scale)) !important; line-height: 1.25; }
+.deck-scene .flash-back h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 38px !important; color: var(--pri) !important; }
+.deck-speak { background: var(--sf); }
+.deck-show { background: var(--pri); color: var(--onpri); font-weight: 600; border-radius: 14px; box-shadow: 0 6px 0 0 oklch(0 0 0 / .2); }
+.deck-votes .btn { min-width: 120px; font-weight: 600; border-radius: 14px; box-shadow: 0 5px 0 0 oklch(0 0 0 / .14); }
+.deck-votes .btn-bad { background: var(--sf); color: var(--danger-fg); border: 1px solid var(--danger-fill); }
+.deck-votes .btn-gold { background: var(--sf); color: var(--late-fg); border: 1px solid var(--gold); }
+.deck-votes .btn-ok { background: var(--okfill); color: #fff; border-color: var(--okfill); }
+.deck-end { border-radius: 30px; padding: 44px; background: var(--sf); box-shadow: var(--sh); }
+.deck-check { width: 76px; height: 76px; background: var(--okfill); }
+.deck-end h2 { font-size: 32px; }
+.ok-text { color: var(--ok); }
+.gold-text { color: var(--late-fg); }
+.bad-text { color: var(--danger-fg); }
+.deck-xp { background: none; box-shadow: none; padding: 0; font-family: 'Frank Ruhl Libre', serif; font-size: 44px; font-weight: 700; color: var(--pri); }
+@media (max-width: 860px) {
+  .review-page > .page-header .ph-note { display: none; }
+  .rv-today { flex-direction: column; align-items: stretch; gap: 18px; padding: 26px 22px; }
+  .rv-today-text b { font-size: 30px; }
+  .rv-start { text-align: center; }
+  .rv-cards { grid-template-columns: 1fr; gap: 12px; }
+  .deck-scene .flash-face { min-height: 300px; }
+  .deck-votes { flex-wrap: wrap; }
+  .deck-votes .btn { min-width: 0; flex: 1 1 28%; }
+  .deck-end { padding: 32px 20px; }
+}

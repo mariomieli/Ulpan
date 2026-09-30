@@ -6,7 +6,7 @@ import { dueItems, isLessonUnlocked, lessonItemIds, maxUnlockedLesson, useAppSta
 import { LESSONS, glyphsUpTo } from '../data/curriculum';
 import { QuizResults, QuizRunner, type QuizResult } from '../components/Quiz';
 import { LetterArt } from '../components/LessonArt';
-import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
 import { ReviewDeck } from '../components/ReviewDeck';
 
 const SESSION = 20;
@@ -93,13 +93,10 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
   }
 
   return (
-    <div className="fade-in">
-      <div className="page-head">
-        <div>
-          <h1>Ripasso</h1>
-          <p>La ripetizione dilazionata ti ripropone ogni elemento proprio quando stai per dimenticarlo: pochi minuti al giorno bastano.</p>
-        </div>
-      </div>
+    <div className="review-page">
+      <PageHeader he="חֲזָרָה" kicker="Ripetizione dilazionata" title="Ripasso">
+        <span className="ph-note">Ogni elemento torna proprio quando stai per dimenticarlo: pochi minuti al giorno bastano.</span>
+      </PageHeader>
       {deckSize === 0 ? (
         <div className="card empty">
           <LetterArt letters="אבג" />
@@ -108,36 +105,41 @@ export function ReviewPage({ autoStart }: { autoStart?: 'oggi' }) {
           <a className="btn btn-primary" href="#/lezioni/1">Inizia la lezione 1</a>
         </div>
       ) : (
-        <>
-        <div className="card today-card">
-          <div className="card-title"><h2>Sessione di oggi</h2><Icon name="star" /></div>
-          <p className="muted" style={{ marginTop: 0 }}>Circa 10 minuti: ciò che è in scadenza, i tuoi punti deboli e qualche elemento nuovo{current ? ` della lezione ${current.id}` : ''}. Leggi la carta, girala e di’ quanto è stato facile.</p>
-          <button className="btn btn-primary btn-lg" disabled={!todayIds.length} onClick={startToday}>
-            Inizia la sessione ({todayIds.length} carte)
-          </button>
+        <div className="rv-hub">
+          <div className="rv-today">
+            <span className="rv-big-he" lang="he" aria-hidden="true">ר</span>
+            <div className="rv-today-text">
+              <span className="k">Sessione di oggi</span>
+              <b>Circa 10 minuti</b>
+              <span className="d">Ciò che è in scadenza, i tuoi punti deboli e qualche elemento nuovo{current ? ` della lezione ${current.id}` : ''}. Leggi la carta, girala e di’ quanto è stato facile.</span>
+            </div>
+            <button type="button" className="rv-start" disabled={!todayIds.length} onClick={startToday}>Inizia la sessione ({todayIds.length} carte)</button>
+          </div>
+          <div className="rv-cards">
+            <div className="rv-card">
+              <span className="k">Da ripassare oggi</span>
+              <div className="rv-num"><b>{due.length}</b><span>in scadenza<br />su {deckSize} nel mazzo</span></div>
+              <div className="bar-track gold"><div style={{ width: `${Math.min(100, deckSize ? (due.length / deckSize) * 100 : 0)}%` }} /></div>
+              <button type="button" className="rv-btn primary" disabled={!due.length} onClick={() => start(due)}>
+                {due.length ? `Inizia (${Math.min(SESSION, due.length)} carte)` : 'Tutto in pari per oggi ✓'}
+              </button>
+            </div>
+            <div className="rv-card">
+              <span className="k">Ripasso libero</span>
+              <b className="rv-t">Punti deboli</b>
+              <span className="d">Allenati sugli elementi in cui sbagli di più, anche se non sono in scadenza.</span>
+              <button type="button" className="rv-btn" onClick={() => start(practicePick(weakestItems(state, 40), 15))}>Allenati sui punti deboli</button>
+            </div>
+            <div className="rv-card">
+              <span className="k">Lettere simili</span>
+              <span className="rv-sim" lang="he" dir="rtl">ב כ · ד ר · ה ח ת</span>
+              <span className="d">Domande mirate sulle lettere che si confondono facilmente.</span>
+              <button type="button" className="rv-btn" disabled={!confusable.length} onClick={startConfusable}>
+                {confusable.length ? 'Allenati sulle lettere simili' : 'Disponibile quando conosci più lettere'}
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-2" style={{ marginTop: 16 }}>
-          <div className="card">
-            <div className="card-title"><h2>Da ripassare oggi</h2><Icon name="repeat" /></div>
-            <div className="stat"><span className="stat-value">{due.length}</span><span className="stat-label">elementi in scadenza su {deckSize} nel mazzo</span></div>
-            <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 16 }} disabled={!due.length} onClick={() => start(due)}>
-              {due.length ? `Inizia (${Math.min(SESSION, due.length)} carte)` : 'Tutto in pari per oggi ✓'}
-            </button>
-          </div>
-          <div className="card">
-            <div className="card-title"><h2>Ripasso libero</h2><Icon name="star" /></div>
-            <p className="muted">Allenati sugli elementi in cui sbagli di più, anche se non sono in scadenza.</p>
-            <button className="btn btn-block btn-lg" onClick={() => start(practicePick(weakestItems(state, 40), 15))}>Allenati sui punti deboli</button>
-          </div>
-          <div className="card">
-            <div className="card-title"><h2>Lettere simili</h2><span className="he-inline" lang="he" aria-hidden="true">ב כ · ד ר</span></div>
-            <p className="muted">Domande mirate sulle lettere che si confondono: ב/כ, ד/ר, ה/ח/ת, ו/ז/ן, ס/ם…</p>
-            <button className="btn btn-block btn-lg" disabled={!confusable.length} onClick={startConfusable}>
-              {confusable.length ? 'Allenati sulle lettere simili' : 'Disponibile quando conosci più lettere'}
-            </button>
-          </div>
-        </div>
-        </>
       )}
     </div>
   );
