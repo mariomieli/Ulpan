@@ -149,7 +149,7 @@ export function HomePage() {
                 const ls = LESSONS.filter((l) => lessonKind(l) === k);
                 if (!ls.length) return null;
                 return (
-                  <div key={k} className="path-phase" style={{ flex: ls.length }}>
+                  <div key={k} className="path-phase">
                     <span className="phase-name">{KIND_NAME[k]}</span>
                     <div className="phase-nodes">
                       {ls.map((l) => {
