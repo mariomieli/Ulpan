@@ -16,6 +16,7 @@ import { glossWord, lineTokens } from '../lib/gloss';
 import { actions, maxUnlockedLesson, useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
 import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
 
 type Mode = 'parole' | 'frasi' | 'testi' | 'flashcard' | 'dettato' | 'scrivi' | 'velocita';
 
@@ -56,43 +57,51 @@ export function ReadingPage() {
   const sentences = sentencesUpTo(level).filter((x) => matches(x.it, x.translit, x.he));
 
   return (
-    <div className="fade-in">
-      <div className="page-head">
-        <div>
-          <h1>Lettura</h1>
-          <p>Allenati a leggere parole, frasi e testi, e prova il dettato. Nascondi la traslitterazione per metterti alla prova, togli il nikud per la sfida finale.</p>
+    <div className="reading-page">
+      <PageHeader he="קְרִיאָה" kicker="Parole, frasi e testi da leggere" title="Lettura">
+        <div className="tabs tabs-head" role="tablist">
+          {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
+            <button key={m} role="tab" aria-selected={mode === m} className={`tab ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
+              {MODE_LABELS[m]}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className="tabs" role="tablist">
-        {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
-          <button key={m} role="tab" aria-selected={mode === m} className={`tab ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
-            {MODE_LABELS[m]}
-          </button>
-        ))}
-      </div>
+      </PageHeader>
 
-      <div className="toolbar">
-        <div className="field" style={{ gridAutoFlow: 'column', alignItems: 'center' }}>
-          <label htmlFor="lvl">Fino alla lezione</label>
-          <select id="lvl" value={level} onChange={(e) => setLevel(Number(e.target.value))}>
-            {LESSONS.map((l) => <option key={l.id} value={l.id}>{l.id} · {l.title}</option>)}
-          </select>
+      <div className="cmdbar">
+        <div className="cb-level">
+          <button type="button" aria-label="Lezione precedente" disabled={level <= 1} onClick={() => setLevel((v) => Math.max(1, v - 1))}>‹</button>
+          <label className="cb-lvl">
+            <span>Fino alla lezione</span>
+            <b>{level}</b>
+            <select id="lvl" aria-label="Fino alla lezione" value={level} onChange={(e) => setLevel(Number(e.target.value))}>
+              {LESSONS.map((l) => <option key={l.id} value={l.id}>{l.id} · {l.title}</option>)}
+            </select>
+          </label>
+          <button type="button" aria-label="Lezione successiva" disabled={level >= LESSONS.length} onClick={() => setLevel((v) => Math.min(LESSONS.length, v + 1))}>›</button>
         </div>
-        {mode !== 'dettato' && mode !== 'scrivi' && <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>}
-        {mode !== 'dettato' && mode !== 'scrivi' && nikud && <label className="toggle"><input type="checkbox" checked={syl} onChange={(e) => setSyl(e.target.checked)} /> Dividi in sillabe</label>}
-        {mode !== 'flashcard' && mode !== 'dettato' && mode !== 'scrivi' && mode !== 'velocita' && <>
-          <label className="toggle"><input type="checkbox" checked={translit} onChange={(e) => setTranslit(e.target.checked)} /> Traslitterazione</label>
-          <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
-        </>}
+        {mode !== 'dettato' && mode !== 'scrivi' && (
+          <>
+            <span className="cb-sep" />
+            <div className="cb-toggles">
+              <label className="toggle"><input type="checkbox" checked={nikud} onChange={(e) => setNikud(e.target.checked)} /> Nikud</label>
+              {nikud && <label className="toggle"><input type="checkbox" checked={syl} onChange={(e) => setSyl(e.target.checked)} /> Dividi in sillabe</label>}
+              {mode !== 'flashcard' && mode !== 'velocita' && <>
+                <label className="toggle"><input type="checkbox" checked={translit} onChange={(e) => setTranslit(e.target.checked)} /> Traslitterazione</label>
+                <label className="toggle"><input type="checkbox" checked={meaning} onChange={(e) => setMeaning(e.target.checked)} /> Significato</label>
+              </>}
+            </div>
+          </>
+        )}
+        {(mode === 'parole' || mode === 'frasi') && (
+          <>
+            <span className="cb-sep end" />
+            <input type="search" className="cb-search" placeholder="Cerca parola o frase…" aria-label="Cerca (italiano, traslitterazione o ebraico)" value={q} onChange={(e) => setQ(e.target.value)} />
+          </>
+        )}
       </div>
       {!nikud && mode !== 'dettato' && mode !== 'scrivi' && <p className="small muted">Senza nikud l’ebraico si scrive in <b>grafia piena</b>: si aggiungono ו per “o/u” e י per “i” (שֻׁלְחָן → שולחן), come su giornali e cartelli.</p>}
       {level > unlocked && <p className="small muted">Nota: stai guardando parole con lettere che non hai ancora studiato.</p>}
-
-      {(mode === 'parole' || mode === 'frasi') && (
-        <div className="toolbar">
-          <input type="search" placeholder="Cerca (italiano, traslitterazione o ebraico)…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-      )}
 
       {mode === 'parole' && (
         <>
@@ -128,7 +137,7 @@ export function ReadingPage() {
               <button className="btn" onClick={() => setShown(shown + PAGE)}>Mostra altre {Math.min(PAGE, words.length - shown)} parole</button>
             </div>
           )}
-          <p className="small muted" style={{ marginTop: 12 }}>{words.length} parole · tocca una parola coperta per scoprirla.</p>
+          <p className="small muted reading-count">{words.length} parole · tocca una parola coperta per scoprirla.</p>
         </>
       )}
 

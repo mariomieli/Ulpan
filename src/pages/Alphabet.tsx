@@ -10,6 +10,7 @@ import { TraceGlyph } from '../components/LessonVisuals';
 import { speak } from '../lib/speech';
 import { useAppState } from '../lib/store';
 import { He, Rich, SpeakButton } from '../components/Hebrew';
+import { PageHeader } from '../components/PageHeader';
 import { Icon } from '../components/Icon';
 
 
@@ -117,6 +118,7 @@ export function AlphabetPage() {
     showVariants ? [GLYPH_BY_ID[id], ...(LETTER_VARIANTS[id] ?? []).map((v) => GLYPH_BY_ID[v])] : [GLYPH_BY_ID[id]]);
   const baseOf = (g: Glyph) => BASE_LETTERS.find((b) => b === g.id || LETTER_VARIANTS[b]?.includes(g.id)) ?? g.id;
   const g = GLYPH_BY_ID[sel];
+  const similar = (CONFUSABLES[g.id] ?? []).map((id) => GLYPH_BY_ID[id]).filter(Boolean);
   const pick = (x: Glyph) => {
     setSel(x.id);
     setDrawKey((k) => k + 1);
@@ -133,70 +135,90 @@ export function AlphabetPage() {
     );
   }
 
+  const know = [
+    'Le lettere בּ כּ פּ con il puntino (dagesh) si leggono b, k, p; senza puntino ב כ פ si leggono v, ch, f.',
+    'Cinque lettere cambiano forma a fine parola: כ→ך, מ→ם, נ→ן, פ→ף, צ→ץ.',
+    'שׁ con il punto a destra è “sh”, שׂ con il punto a sinistra è “s”.',
+    'Suoni uguali, lettere diverse: ת/ט = t · כּ/ק = k · ח/כ = ch · ב/ו = v · ס/שׂ = s · א/ע = mute.',
+    'A mano l’ebraico si scrive in corsivo e senza nikud: molte lettere cambiano forma (per esempio א, ב, ה, ט, מ, ש). Attiva “Corsivo a mano” e poi allenati con l’esame «Corsivo ebraico» nella pagina Test.',
+    'Il valore numerico (ghematria): le lettere si usano anche come numeri.',
+  ];
+
   return (
-    <div className="fade-in">
-      <div className="page-head">
-        <div>
-          <h1>Alfabeto · <span className="he-inline" lang="he">אָלֶף־בֵּית</span></h1>
-          <p>22 lettere, da destra a sinistra. Tocca una lettera per vederla disegnarsi e sentirne il nome.</p>
-        </div>
-        <label className="toggle">
+    <div className="alpha-page">
+      <PageHeader he="אָלֶף־בֵּית" kicker="22 lettere · si legge da destra a sinistra" title="L’alfabeto">
+        <label className="toggle card-toggle">
           <input type="checkbox" checked={showVariants} onChange={(e) => setShowVariants(e.target.checked)} />
-          Mostra varianti e forme finali
+          Varianti e forme finali
         </label>
-        <label className="toggle">
+        <label className="toggle card-toggle">
           <input type="checkbox" checked={cursive} onChange={(e) => setCursive(e.target.checked)} />
-          Mostra in corsivo (a mano)
+          Corsivo a mano
         </label>
-      </div>
+      </PageHeader>
+
       <div className="alpha-layout">
-        <aside className="card alpha-panel" aria-live="polite">
+        <div className="alpha-main">
+          <div className={`alpha-grid ${cursive ? 'he-cursive' : ''}`} dir="rtl">
+            {tiles.map((x, i) => {
+              const studied = (srs[`g:${x.id}`]?.seen ?? 0) > 0;
+              return (
+                <button key={x.id} className={`atile ${sel === x.id ? 'sel' : studied ? 'studied' : ''}`} style={{ animationDelay: `${i * 20}ms` }}
+                  onClick={() => pick(x)} aria-pressed={sel === x.id} aria-label={`${x.name}, suono ${x.sound}${studied ? `, ${['nuova', 'in apprendimento', 'consolidata', 'padroneggiata'][mastery(srs[`g:${x.id}`])]}` : ''}`}>
+                  <span className="atile-char" lang="he">{x.char}</span>
+                  <span className="atile-name" dir="ltr">{x.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="alpha-names">
+            <div>
+              <b>Leggi i nomi delle lettere</b>
+              <span>Il primo esercizio di lettura: <Rich text="אָלֶף, בֵּית, גִּימֶל…" /> Ideale quando conosci tutte le lettere.</span>
+            </div>
+            <button className="btn btn-primary" onClick={() => setNames(true)}>Inizia</button>
+          </div>
+          <div className="alpha-know">
+            <b>Da sapere</b>
+            {know.map((t, i) => (
+              <div key={i}><span className="num">{i + 1}</span><span><Rich text={t} /></span></div>
+            ))}
+          </div>
+        </div>
+
+        <aside className="alpha-panel" aria-live="polite">
           <div className={`alpha-trace ${cursive ? 'he-cursive' : ''}`}><TraceGlyph key={`${sel}-${drawKey}`} text={g.char} /></div>
-          <div className="row" style={{ alignItems: 'center' }}>
-            <h2 className="alpha-name">{g.name}</h2>
+          <div className="alpha-head">
+            <b>{g.name}</b>
             <span className="pill pill-primary">{g.sound}</span>
-            <span className="spacer" />
+            <span className="alpha-he" dir="rtl" lang="he">{g.hebrewName}</span>
             <button className="round-btn" onClick={() => settings.audio && speak(g.hebrewName, settings.speechRate)} aria-label={`Ascolta il nome ${g.name}`}>
-              <Icon name="speaker" size={20} className="" />
+              <Icon name="speaker" size={18} className="" />
             </button>
           </div>
           <p className="alpha-desc"><Rich text={g.description} /></p>
           <div className="alpha-facts">
-            <div className="fact gold"><span>Valore</span><b>{g.gematria}</b></div>
-            <div className="fact green"><span>Si studia</span><b>Lez. {g.lesson}</b></div>
+            <div><span>Valore</span><b>{g.gematria}</b></div>
+            <div><span>Si studia</span><b>Lez. {g.lesson}</b></div>
           </div>
-          <button className="link-btn" onClick={() => setOpen(baseOf(g))}>Esempi e lettere simili →</button>
+          <div className="alpha-tip"><b>Riconoscerla · </b><Rich text={g.tip} /></div>
+          {similar.length > 0 && (
+            <div className="alpha-sim">
+              <span>Da non confondere con</span>
+              <div>
+                {similar.map((s) => (
+                  <button key={s.id} type="button" onClick={() => pick(s)}><span lang="he">{s.char}</span>{s.name}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <button className="link-btn" style={{ textAlign: 'left' }} onClick={() => setOpen(baseOf(g))}>Esempi e varianti →</button>
+          <div className="alpha-forms">
+            <div><span lang="he" style={{ fontWeight: 700 }}>{g.char}</span><small>stampatello</small></div>
+            <div><span lang="he" style={{ fontFamily: "'Gveret Levin', cursive", fontWeight: 400 }}>{g.char}</span><small>corsivo</small></div>
+            <div><span lang="he" style={{ fontFamily: "'Noto Sans Hebrew', sans-serif", fontWeight: 700 }}>{g.char}</span><small>moderno</small></div>
+          </div>
         </aside>
-        <div className={`alpha-grid ${cursive ? 'he-cursive' : ''}`} dir="rtl">
-          {tiles.map((x, i) => {
-            const studied = (srs[`g:${x.id}`]?.seen ?? 0) > 0;
-            return (
-              <button key={x.id} className={`atile ${sel === x.id ? 'sel' : studied ? 'studied' : ''}`} style={{ animationDelay: `${i * 25}ms` }}
-                onClick={() => pick(x)} aria-pressed={sel === x.id} aria-label={`${x.name}, suono ${x.sound}${studied ? `, ${['nuova', 'in apprendimento', 'consolidata', 'padroneggiata'][mastery(srs[`g:${x.id}`])]}` : ''}`}>
-                <span className="atile-char" lang="he">{x.char}</span>
-                <span className="atile-name" dir="ltr">{x.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="card row" style={{ marginTop: 20 }}>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <h3 style={{ margin: 0 }}>Leggi i nomi delle lettere</h3>
-          <p className="muted small" style={{ margin: 0 }}><Rich text="Il primo esercizio di lettura dei metodi tradizionali: אָלֶף, בֵּית, גִּימֶל… Ideale quando conosci tutte le lettere." /></p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setNames(true)}>Inizia</button>
-      </div>
-      <div className="card" style={{ marginTop: 20 }}>
-        <h3>Da sapere</h3>
-        <ul className="theory" style={{ margin: 0 }}>
-          <li><Rich text="Le lettere בּ כּ פּ con il puntino (dagesh) si leggono b, k, p; senza puntino ב כ פ si leggono v, ch, f." /></li>
-          <li><Rich text="Cinque lettere cambiano forma a fine parola: כ→ך, מ→ם, נ→ן, פ→ף, צ→ץ." /></li>
-          <li><Rich text="שׁ con il punto a destra è “sh”, שׂ con il punto a sinistra è “s”." /></li>
-          <li><Rich text="Suoni uguali, lettere diverse: ת/ט = t · כּ/ק = k · ח/כ = ch · ב/ו = v · ס/שׂ = s · א/ע = mute." /></li>
-          <li><Rich text="A mano l’ebraico si scrive in corsivo e senza nikud: molte lettere cambiano forma (per esempio א, ב, ה, ט, מ, ש). Attiva “Mostra in corsivo” e poi allenati con l’esame «Corsivo ebraico» nella pagina Test." /></li>
-          <li>Il valore numerico (ghematria): le lettere si usano anche come numeri.</li>
-        </ul>
       </div>
       {open && <LetterModal letterId={open} onClose={() => setOpen(null)} />}
     </div>
