@@ -57,14 +57,16 @@ export function buildGrammarQuiz(unit: GrammarUnit, count: number, rng: Rng, avo
   const ordered = [...shuffled.filter((p) => !avoid.has(key(p))), ...shuffled.filter((p) => avoid.has(key(p)))];
   const out: Question[] = [];
   const perItem = new Map<GrammarItem, number>();
+  const used = new Set<string>();
   // prima una domanda per voce, poi (se servono) le altre
   for (const pass of [0, 1, 2]) {
     for (const p of ordered) {
       if (out.length >= count) break;
-      if ((perItem.get(p.item) ?? 0) !== pass) continue;
+      if ((perItem.get(p.item) ?? 0) !== pass || used.has(key(p))) continue;
       const q = grammarQuestion(unit, p.item, p.kind, rng);
       if (!q) continue;
       out.push(q);
+      used.add(key(p));
       perItem.set(p.item, pass + 1);
     }
   }
