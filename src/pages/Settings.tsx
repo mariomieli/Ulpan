@@ -62,6 +62,7 @@ export function SettingsPage() {
             <select id="font" value={settings.font} onChange={(e) => set({ font: e.target.value as Settings['font'] })}>
               <option value="serif">Classico (Frank Ruhl)</option>
               <option value="sans">Moderno (Noto Sans)</option>
+              <option value="cursive">Corsivo a mano (Gveret Levin)</option>
             </select>
           </div>
           <div className="field">

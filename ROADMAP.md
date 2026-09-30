@@ -9,12 +9,12 @@ Migliorie proposte e non ancora realizzate, in ordine di priorità suggerita.
 ## Apprendimento
 - [ ] **Scrittura delle lettere**: tracciarle col dito, con l'ordine e il verso corretti dei tratti.
 - [ ] **Controllo della grafia piena** dei testi senza nikud da parte di un madrelingua.
-- [ ] **Corsivo ebraico** (scrittura a mano): riconoscere e scrivere le lettere in corsivo.
 
 ## Motivazione
 - [ ] **Promemoria giornaliero** con notifica sul telefono se il ripasso non è stato fatto.
 
 ## Già fatto
+- [x] Corsivo ebraico: carattere a mano, alfabeto in corsivo, esame «Corsivo ebraico» (lettere e parole senza nikud). Da fare: scrivere le lettere in corsivo, controllo di un madrelingua
 - [x] Categoria «Vita quotidiana»: menù, messaggi, meteo, avviso della scuola, stazione (da leggere anche senza nikud)
 - [x] Informativa privacy, conferma dell'età e consenso alle classi registrati sul server
 - [x] Caratteri ospitati dall'app (nessuna richiesta a Google), Content Security Policy

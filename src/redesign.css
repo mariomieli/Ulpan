@@ -634,3 +634,8 @@ img.brand-mark, .topbar-brand img, .brand-logo { object-fit: contain; background
   :root:not([data-theme="light"]) img.brand-mark, :root:not([data-theme="light"]) .topbar-brand img, :root:not([data-theme="light"]) .brand-logo { background: #FAF7F2; padding: 3px; }
   :root:not([data-theme="light"]) .brand-logo { padding: 12px 16px; border-radius: 16px; }
 }
+
+/* Corsivo ebraico (scrittura a mano): carattere Gveret Levin */
+.he-cursive, .he-cursive * { font-family: 'Gveret Levin', 'Comic Sans MS', cursive !important; font-weight: 400 !important; }
+.he-cursive { font-size: 1.15em; }
+:root[data-font='cursive'] { --he-font: 'Gveret Levin', 'Comic Sans MS', cursive; }

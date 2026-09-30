@@ -8,7 +8,7 @@ import { WORDS } from '../data/words';
 const WORD_IDS = new Set(WORDS.map((w) => w.id));
 
 export type Theme = 'system' | 'light' | 'dark';
-export type HebrewFont = 'serif' | 'sans';
+export type HebrewFont = 'serif' | 'sans' | 'cursive';
 export type MotionPref = 'system' | 'reduced' | 'full';
 
 export interface Settings {
@@ -165,7 +165,7 @@ function sanitizeSettings(v: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     theme: o.theme === 'light' || o.theme === 'dark' || o.theme === 'system' ? o.theme : d.theme,
-    font: o.font === 'sans' || o.font === 'serif' ? o.font : d.font,
+    font: o.font === 'sans' || o.font === 'serif' || o.font === 'cursive' ? o.font : d.font,
     fontScale: num(o.fontScale, d.fontScale, 0.5, 2),
     audio: typeof o.audio === 'boolean' ? o.audio : d.audio,
     speechRate: num(o.speechRate, d.speechRate, 0.3, 2),

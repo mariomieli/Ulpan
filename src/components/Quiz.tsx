@@ -320,7 +320,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
 
         {q.stimulus && (
           <div className="stimulus">
-            <He size={q.stimulus.size}>{q.stimulus.text}</He>
+            <He size={q.stimulus.size} className={q.cursive ? 'he-cursive' : ''}>{q.stimulus.text}</He>
             {q.speak && mode === 'practice' && showFeedback && <SpeakButton text={q.speak} label="Ascolta" />}
           </div>
         )}
@@ -376,7 +376,7 @@ export function QuizRunner({ questions, mode, timeLimitSec, onFinish, onExit, ti
                 disabled={showFeedback} role={mode === 'exam' ? 'radio' : undefined}
                 aria-checked={mode === 'exam' ? selected === o.value : undefined}>
                 <span className="key">{i + 1}</span>
-                {o.hebrew ? <He>{o.label}</He> : o.label}
+                {o.hebrew ? <He className={q.cursive ? 'he-cursive' : ''}>{o.label}</He> : o.label}
               </button>
             ))}
           </div>

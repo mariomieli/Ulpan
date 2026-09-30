@@ -59,6 +59,7 @@ function LetterModal({ letterId, onClose }: { letterId: string; onClose: () => v
         </dl>
         <div className="variant-row">
           <div className="variant"><He>{g.char}</He><small>stampatello (serif)</small></div>
+          <div className="variant"><span className="he he-cursive" lang="he" style={{ fontSize: '2.4rem', display: 'block' }}>{g.char}</span><small>corsivo (a mano)</small></div>
           <div className="variant"><span className="he" style={{ fontFamily: "'Noto Sans Hebrew', sans-serif", fontSize: '2.4rem', display: 'block' }}>{g.char}</span><small>moderno (sans)</small></div>
         </div>
         {similar.length > 0 && (
@@ -108,6 +109,7 @@ export function AlphabetPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [showVariants, setShowVariants] = useState(false);
   const [names, setNames] = useState(false);
+  const [cursive, setCursive] = useState(false);
   const [sel, setSel] = useState('alef');
   const [drawKey, setDrawKey] = useState(0);
 
@@ -142,10 +144,14 @@ export function AlphabetPage() {
           <input type="checkbox" checked={showVariants} onChange={(e) => setShowVariants(e.target.checked)} />
           Mostra varianti e forme finali
         </label>
+        <label className="toggle">
+          <input type="checkbox" checked={cursive} onChange={(e) => setCursive(e.target.checked)} />
+          Mostra in corsivo (a mano)
+        </label>
       </div>
       <div className="alpha-layout">
         <aside className="card alpha-panel" aria-live="polite">
-          <div className="alpha-trace"><TraceGlyph key={`${sel}-${drawKey}`} text={g.char} /></div>
+          <div className={`alpha-trace ${cursive ? 'he-cursive' : ''}`}><TraceGlyph key={`${sel}-${drawKey}`} text={g.char} /></div>
           <div className="row" style={{ alignItems: 'center' }}>
             <h2 className="alpha-name">{g.name}</h2>
             <span className="pill pill-primary">{g.sound}</span>
@@ -161,7 +167,7 @@ export function AlphabetPage() {
           </div>
           <button className="link-btn" onClick={() => setOpen(baseOf(g))}>Esempi e lettere simili →</button>
         </aside>
-        <div className="alpha-grid" dir="rtl">
+        <div className={`alpha-grid ${cursive ? 'he-cursive' : ''}`} dir="rtl">
           {tiles.map((x, i) => {
             const studied = (srs[`g:${x.id}`]?.seen ?? 0) > 0;
             return (
@@ -188,6 +194,7 @@ export function AlphabetPage() {
           <li><Rich text="Cinque lettere cambiano forma a fine parola: כ→ך, מ→ם, נ→ן, פ→ף, צ→ץ." /></li>
           <li><Rich text="שׁ con il punto a destra è “sh”, שׂ con il punto a sinistra è “s”." /></li>
           <li><Rich text="Suoni uguali, lettere diverse: ת/ט = t · כּ/ק = k · ח/כ = ch · ב/ו = v · ס/שׂ = s · א/ע = mute." /></li>
+          <li><Rich text="A mano l’ebraico si scrive in corsivo e senza nikud: molte lettere cambiano forma (per esempio א, ב, ה, ט, מ, ש). Attiva “Mostra in corsivo” e poi allenati con l’esame «Corsivo ebraico» nella pagina Test." /></li>
           <li>Il valore numerico (ghematria): le lettere si usano anche come numeri.</li>
         </ul>
       </div>

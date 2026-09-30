@@ -54,6 +54,8 @@ export interface Question {
   itemIds: string[];
   prompt: string;
   stimulus?: { text: string; hebrew: boolean; size: 'xl' | 'lg' | 'md' };
+  /** Ebraico mostrato in corsivo (scrittura a mano): stimolo e risposte in ebraico. */
+  cursive?: boolean;
   /** Testo ebraico da far pronunciare alla sintesi vocale. */
   speak?: string;
   /** Domanda di ascolto: lo stimolo è solo audio. */
@@ -840,6 +842,14 @@ function buildPlainReading(count: number, rng: Rng, o: QuizOptions): Question[] 
   } : q);
 }
 
+/** Lettere e parole in corsivo ebraico: a mano non si scrive il nikud, quindi le parole sono in grafia piena. */
+function buildCursive(rng: Rng, o: QuizOptions): Question[] {
+  const letters = buildQuiz({ focusGlyphs: GLYPHS.filter((g) => !g.finalOf), focusVowels: [], focusWords: [], pool: FULL_POOL, count: 12, categories: ['glyph'], kinds: ['glyph-name', 'name-glyph', 'glyph-sound'] }, rng, o)
+    .map((q) => ({ ...q, key: `cursive:${q.key}`, cursive: true }));
+  const words = buildPlainReading(12, rng, o).map((q) => ({ ...q, key: `cursive:${q.key}`, cursive: true }));
+  return spread(shuffle([...letters, ...words], rng));
+}
+
 export const EXAMS: ExamDef[] = [
   {
     id: 'alfabeto', title: 'Esame: alfabeto', count: 30, requires: LAST_LETTER_LESSON,
@@ -864,6 +874,11 @@ export const EXAMS: ExamDef[] = [
     id: 'senza-nikud', title: 'Lettura senza nikud', count: 20, requires: LAST_LESSON,
     description: 'Parole scritte come su giornali e cartelli: senza vocali, in grafia piena (שולחן, סיפור).',
     build: (rng, o) => buildPlainReading(20, rng, o),
+  },
+  {
+    id: 'corsivo', title: 'Corsivo ebraico', count: 24, requires: LAST_LETTER_LESSON,
+    description: 'Riconoscere lettere e parole nella scrittura a mano (ktav yad), come nei biglietti e negli appunti.',
+    build: buildCursive,
   },
   {
     id: 'finale', title: 'Esame finale', count: 40, minutes: 20, requires: LAST_LESSON,
