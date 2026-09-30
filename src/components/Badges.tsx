@@ -5,11 +5,11 @@ import { useAppState } from '../lib/store';
 /** Medaglione esagonale: colorato se ottenuto, in scala di grigi con l'avanzamento se no. */
 function Medal({ glyph, tone, earned, progress }: { glyph: string; tone: string; earned: boolean; progress: number }) {
   const len = [...glyph.replace(/[֑-ׇ]/g, '')].length;
-  const hex = 'M32 3l25 14.5v29L32 61 7 46.5v-29z';
+  const hex = 'M32 4a28 28 0 1 1 0 56a28 28 0 1 1 0-56z';
   return (
     <svg className={`medal medal-${tone} ${earned ? 'earned' : 'locked'}`} viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
       <path d={hex} className="medal-bg" />
-      <path d="M32 9l20 11.6v22.8L32 55 12 43.4V20.6z" className="medal-inner" />
+      <circle cx="32" cy="32" r="22" className="medal-inner" />
       {!earned && progress > 0 && (
         <path d={hex} className="medal-progress" pathLength={100} strokeDasharray={`${progress * 100} 100`} />
       )}
@@ -24,8 +24,8 @@ export function Badges() {
   const list = useMemo(() => badges(state), [state]);
   const earned = list.filter((b) => b.earned).length;
   return (
-    <div className="card">
-      <div className="card-title"><h2>Traguardi</h2><span className="pill pill-accent">{earned}/{list.length}</span></div>
+    <div className="pg-card">
+      <div className="pg-ch"><b>Traguardi</b><span>{earned} di {list.length} ottenuti</span></div>
       <ul className="badge-grid">
         {list.map((b, i) => (
           <li key={b.id} className={b.earned ? 'earned' : ''} title={b.description} style={{ animationDelay: `${i * 70}ms` }}>
