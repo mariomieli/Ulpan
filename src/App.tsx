@@ -221,8 +221,8 @@ export function App() {
                 <span className="avatar">{auth.user.name.slice(0, 1).toUpperCase()}</span>
                 <span className="who"><b>{auth.user.name}</b><span className="small"><i className={`sync-dot ${auth.sync}`} />{SYNC_LABEL[auth.sync]}</span></span>
               </a>
-              <button className="btn btn-ghost btn-icon" onClick={logout} aria-label="Esci" title="Esci">
-                <Icon name="logout" size={18} className="" />
+              <button className="logout-btn" onClick={logout}>
+                <Icon name="logout" size={16} className="" /> Esci
               </button>
             </div>
           ) : cloudEnabled ? (

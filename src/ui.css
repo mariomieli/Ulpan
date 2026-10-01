@@ -1406,3 +1406,12 @@ a.ts-lesson:hover { transform: translateY(-2px); }
   .auth-split { grid-template-columns: minmax(0, 1fr) 460px; }
   .ph-side { justify-content: flex-end; }
 }
+
+/* utente nel menu: nome e stato per intero, "Esci" sotto */
+.user-row { flex-direction: column; align-items: stretch; gap: 6px; }
+.user-chip { background: transparent; margin: 0; padding: 4px 6px; }
+.user-chip .who { flex: 1; }
+.user-chip .who .small { overflow: visible; text-overflow: clip; white-space: normal; line-height: 1.3; }
+.user-chip .who .small .sync-dot { vertical-align: 1px; }
+.logout-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 14px; cursor: pointer; min-height: 0; }
+.logout-btn:hover { background: var(--sf2); }
