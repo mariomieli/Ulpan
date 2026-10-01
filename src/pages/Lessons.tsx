@@ -4,6 +4,7 @@ import { isLessonUnlocked, useAppState } from '../lib/store';
 import { JUST_PASSED_KEY, lessonFirstGlyph, lessonGlyphText, lessonKind, type LessonKind } from '../components/LessonArt';
 import { PageHeader } from '../components/PageHeader';
 import { Rich } from '../components/Hebrew';
+import { navigate } from '../lib/router';
 
 /** Spostamento orizzontale delle tappe: il sentiero ondeggia a serpentina. */
 const OFF = [0, 60, 90, 60, 0, -60, -90, -60];
@@ -63,7 +64,8 @@ function UnitPath({ lessons, geo, offset, current, selected, justPassed, onPick 
         const lw = Math.round(tileLeft ? W + X - (cx(i) + T / 2) - 14 : cx(i) - T / 2 + X - 14);
         const cls = passed ? 'done' : isNow ? 'now' : 'todo';
         const pick = () => {
-          if (unlocked) { onPick(l); return; }
+          // la tappa "INIZIA" e quella già selezionata aprono subito la lezione
+          if (unlocked) { if (isNow || isSel) navigate(`/lezioni/${l.id}`); else onPick(l); return; }
           setShaking(l.id);
           setTimeout(() => setShaking(null), 500);
           toast(`Bloccata: supera prima il test della lezione ${l.id - 1}`);
