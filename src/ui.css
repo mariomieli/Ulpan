@@ -1431,3 +1431,10 @@ a.ts-lesson:hover { transform: translateY(-2px); }
 .pw-wrap input, .pw-wrap input[type='text'], .pw-wrap input[type='password'] { width: 100%; box-sizing: border-box; height: 46px; padding: 0 92px 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--sf); color: var(--ink); font: 400 15px Rubik, sans-serif; }
 .pw-toggle { position: absolute; top: 50%; right: 8px; left: auto; bottom: auto; transform: translateY(-50%); width: auto; height: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; white-space: nowrap; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--pri); background: none; border: 0; cursor: pointer; min-height: 0; }
 .pw-toggle:hover { background: var(--sf2); color: var(--pri); }
+
+/* badge del Ripasso vicino alla parola italiana; l'ebraico resta a destra */
+.nav-link .badge { margin-left: 8px; color: var(--gold-on); }
+@media (min-width: 861px) {
+  .nav-link .badge { margin-left: 8px; }
+  .nav-link .badge + .nav-he { margin-left: auto; }
+}
