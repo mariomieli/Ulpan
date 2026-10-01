@@ -1425,3 +1425,9 @@ a.ts-lesson:hover { transform: translateY(-2px); }
   .nav-link.active .nav-he { color: var(--pri); }
 }
 @media (max-width: 860px) { .nav-he { display: none; } }
+
+/* campo password: pulsante "Mostra/Nascondi" dentro il campo */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input, .pw-wrap input[type='text'], .pw-wrap input[type='password'] { width: 100%; box-sizing: border-box; height: 46px; padding: 0 92px 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--sf); color: var(--ink); font: 400 15px Rubik, sans-serif; }
+.pw-toggle { position: absolute; top: 50%; right: 8px; left: auto; bottom: auto; transform: translateY(-50%); width: auto; height: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; white-space: nowrap; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--pri); background: none; border: 0; cursor: pointer; min-height: 0; }
+.pw-toggle:hover { background: var(--sf2); color: var(--pri); }
