@@ -65,6 +65,9 @@ const NAV = [
   { path: '/impostazioni', label: 'Impostazioni', icon: 'settings' },
 ];
 
+/** Traduzione ebraica delle voci di menu (solo desktop). */
+const NAV_HE: Record<string, string> = {'/': 'שָׁלוֹם', '/lezioni': 'דֶּרֶךְ', '/alfabeto': 'אָלֶף־בֵּית', '/nikud': 'נִקּוּד', '/lettura': 'קְרִיאָה', '/grammatica': 'תַּרְבּוּת', '/ripasso': 'חֲזָרָה', '/test': 'מִבְחָן', '/progressi': 'הִתְקַדְּמוּת', '/gruppi': 'קְבוּצוֹת', '/impostazioni': 'הַגְדָּרוֹת', '/admin': 'מְנַהֵל'};
+
 const SYNC_LABEL = {
   idle: 'Account online', saving: 'Salvataggio…', saved: 'Progressi salvati', offline: 'Offline', error: 'Errore di sincronizzazione',
 } as const;
@@ -208,6 +211,7 @@ export function App() {
             <a key={n.path} href={`#${n.path}`} className={`nav-link ${isActive(n.path, path) ? 'active' : ''}`} aria-current={isActive(n.path, path) ? 'page' : undefined}>
               <Icon name={n.icon} /> {n.label}
               {n.path === '/ripasso' && due > 0 && <span className="badge">{due}</span>}
+              {NAV_HE[n.path] && <span className="nav-he" lang="he" dir="rtl">{NAV_HE[n.path]}</span>}
             </a>
           ))}
         </div>

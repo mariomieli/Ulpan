@@ -1415,3 +1415,13 @@ a.ts-lesson:hover { transform: translateY(-2px); }
 .user-chip .who .small .sync-dot { vertical-align: 1px; }
 .logout-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 14px; cursor: pointer; min-height: 0; }
 .logout-btn:hover { background: var(--sf2); }
+
+/* menu desktop più largo, con la traduzione ebraica di ogni voce */
+@media (min-width: 861px) {
+  :root { --sidebar: 268px; }
+  .nav-he { margin-left: auto; font-family: 'Frank Ruhl Libre', serif; font-weight: 500; font-size: 17px; line-height: 1; color: var(--mute); white-space: nowrap; }
+  .nav-link .badge + .nav-he { margin-left: 8px; }
+  .nav-link .badge { margin-left: auto; }
+  .nav-link.active .nav-he { color: var(--pri); }
+}
+@media (max-width: 860px) { .nav-he { display: none; } }
