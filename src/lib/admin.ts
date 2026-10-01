@@ -40,28 +40,32 @@ export async function adminUsers(): Promise<AdminUser[]> {
   }));
 }
 
-/* Stato amministratore in cache: una sola verifica per utente collegato. */
+/* Stato amministratore: si ricontrolla finché non risulta admin (la sessione può non essere ancora pronta al primo avvio). */
 let adminOf: string | null = null;
 let isAdminNow = false;
 let checking: string | null = null;
+let lastKey = '';
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
 export function useIsAdmin(): boolean {
   const auth = useAuth();
   const id = auth.status === 'signedIn' ? auth.user?.id ?? null : null;
+  // si ripete dopo ogni sincronizzazione riuscita: a quel punto la sessione online è sicuramente attiva
+  const key = `${id}:${auth.sync}`;
   useEffect(() => {
     if (!id) {
-      if (adminOf !== null || isAdminNow) { adminOf = null; isAdminNow = false; emit(); }
+      if (adminOf !== null || isAdminNow) { adminOf = null; isAdminNow = false; lastKey = ''; emit(); }
       return;
     }
-    if (adminOf === id || checking === id) return;
+    if ((adminOf === id && isAdminNow) || checking === id || lastKey === key) return;
+    lastKey = key;
     checking = id;
     void checkAdmin().then((ok) => {
       if (checking !== id) return;
       checking = null; adminOf = id; isAdminNow = ok; emit();
     });
-  }, [id]);
+  }, [id, key]);
   return useSyncExternalStore(
     (l) => { listeners.add(l); return () => listeners.delete(l); },
     () => isAdminNow && adminOf === id,
