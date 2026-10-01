@@ -151,7 +151,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .nav-list { display: flex; flex-direction: column; gap: 2px; position: relative; }
 .nav-indicator { display: none; }
 .nav-link { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 15px; font-weight: 400; color: var(--ink); white-space: nowrap; }
-.nav-link .nav-icon { display: none; }
+.nav-link .nav-icon { display: block; width: 20px; height: 20px; flex: none; opacity: .75; }
+.nav-link.active .nav-icon, .nav-link:hover .nav-icon { opacity: 1; }
 .nav-link:hover { background: var(--sf2); color: var(--ink); }
 .nav-link.active { background: var(--sf2); color: var(--pri); font-weight: 600; }
 .nav-link .badge { margin-left: auto; background: var(--gold); color: var(--gold-on); font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; min-width: 0; height: auto; }
