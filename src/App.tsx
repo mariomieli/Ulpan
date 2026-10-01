@@ -66,7 +66,7 @@ const NAV = [
 ];
 
 /** Traduzione ebraica delle voci di menu (solo desktop). */
-const NAV_HE: Record<string, string> = {'/': 'שָׁלוֹם', '/lezioni': 'דֶּרֶךְ', '/alfabeto': 'אָלֶף־בֵּית', '/nikud': 'נִקּוּד', '/lettura': 'קְרִיאָה', '/grammatica': 'תַּרְבּוּת', '/ripasso': 'חֲזָרָה', '/test': 'מִבְחָן', '/progressi': 'הִתְקַדְּמוּת', '/gruppi': 'קְבוּצוֹת', '/impostazioni': 'הַגְדָּרוֹת', '/admin': 'מְנַהֵל'};
+const NAV_HE: Record<string, string> = {'/': 'דַּף הַבַּיִת', '/lezioni': 'דֶּרֶךְ', '/alfabeto': 'אָלֶף־בֵּית', '/nikud': 'נִקּוּד', '/lettura': 'קְרִיאָה', '/grammatica': 'תַּרְבּוּת', '/ripasso': 'חֲזָרָה', '/test': 'מִבְחָן', '/progressi': 'הִתְקַדְּמוּת', '/gruppi': 'קְבוּצוֹת', '/impostazioni': 'הַגְדָּרוֹת', '/admin': 'מְנַהֵל'};
 
 const SYNC_LABEL = {
   idle: 'Account online', saving: 'Salvataggio…', saved: 'Progressi salvati', offline: 'Offline', error: 'Errore di sincronizzazione',
