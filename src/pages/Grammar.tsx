@@ -9,7 +9,7 @@ import { He, SpeakButton } from '../components/Hebrew';
 import { PageHeader } from '../components/PageHeader';
 import { Theory } from './Lesson';
 
-/** La grammatica di base è nel percorso delle lezioni (dalla 20): qui restano numeri, tempo e luoghi. */
+/** La grammatica di base è nel percorso delle lezioni (dalla 19): qui restano numeri, tempo e luoghi. */
 const GROUPS: GrammarGroup[] = ['numeri', 'tempo', 'luoghi'];
 const QUESTIONS = 12;
 
@@ -21,7 +21,7 @@ export function GrammarPage() {
   return (
     <div className="gram-page">
       <PageHeader he="תַּרְבּוּת" kicker="Dopo aver imparato a leggere" title="Lingua e cultura">
-        <span className="ph-note">Numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi. La grammatica di base è nel <a href="#/lezioni">percorso</a>, dalla lezione 20.</span>
+        <span className="ph-note">Numeri, giorni, calendario e feste, luoghi e nomi. Ogni unità ha teoria, parole ed esercizi. La grammatica di base è nel <a href="#/lezioni">percorso</a>, dalla lezione 19.</span>
       </PageHeader>
       <div className="gram-groups">
         {GROUPS.map((g) => {

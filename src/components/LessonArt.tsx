@@ -9,7 +9,7 @@ export const JUST_PASSED_KEY = 'ulpan:justPassed';
 export type LessonKind = 'vowels' | 'letters' | 'rules' | 'grammar';
 
 /** Glifo simbolo delle lezioni di sole regole. */
-const RULE_GLYPHS: Record<number, string> = { 16: 'בּ', 17: 'בְ', 18: 'חַ', 19: 'ספר', 20: 'הַ', 21: 'אני', 22: 'ילד', 23: 'ים', 24: 'גדול', 25: 'כתב', 26: 'עבר', 27: 'עתיד', 28: 'לכתב' };
+const RULE_GLYPHS: Record<number, string> = { 16: 'בּ', 17: 'בְ', 18: 'חַ', 19: 'הַ', 20: 'אני', 21: 'ילד', 22: 'ים', 23: 'גדול', 24: 'כתב', 25: 'עבר', 26: 'עתיד', 27: 'לכתב', 28: 'ספר' };
 
 export function lessonKind(l: Lesson): LessonKind {
   if (l.grammar) return 'grammar';

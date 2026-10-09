@@ -62,8 +62,8 @@ export interface DeviceContrib {
 
 export interface AppState {
   version: 1;
-  /** Versione dell'ordine del corso (3 = 19 lezioni: vocali, lettere in ordine alfabetico, regole). */
-  curriculum?: 3;
+  /** Versione dell'ordine del corso (4 = lettura senza nikud come ultima lezione, la 28). */
+  curriculum?: 4;
   settings: Settings;
   lessons: Record<number, LessonProgress>;
   exams: Record<string, ExamResult>;
@@ -118,7 +118,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function initialState(): AppState {
   return {
-    version: 1, curriculum: 3, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
+    version: 1, curriculum: 4, settings: { ...DEFAULT_SETTINGS }, lessons: {}, exams: {}, srs: {},
     xp: 0, streak: 0, lastActive: null, days: {}, texts: {}, contrib: {},
   };
 }
@@ -241,10 +241,12 @@ export function sanitize(raw: unknown): AppState {
   }
   return {
     version: 1,
-    curriculum: 3,
+    curriculum: 4,
     settings: sanitizeSettings(r.settings),
     // progressi salvati con un ordine delle lezioni precedente: si convertono
-    lessons: r.version === 1 && r.curriculum !== 3 ? migrateLessons(lessons, r.curriculum === 2 ? 2 : 1) : lessons,
+    lessons: r.version === 1 && r.curriculum !== 4
+      ? (r.curriculum === 3 ? shiftReadingLast(lessons) : migrateLessons(lessons, r.curriculum === 2 ? 2 : 1))
+      : lessons,
     exams, srs, texts, contrib, reading,
     ...totals(contrib),
     streak: num(r.streak, 0, 0, 1e5),
@@ -308,6 +310,16 @@ export function migrateLessons(old: AppState['lessons'], from: 1 | 2 = 1): AppSt
       bestScore: passed ? Math.min(...prev.map((p) => p!.bestScore)) : 0,
       attempts: passed ? 1 : 0,
     };
+  }
+  return out;
+}
+
+/** Ordine 3 → 4: «Leggere senza nikud» passa da 19 a 28 e la grammatica scala di uno (20-28 → 19-27). */
+export function shiftReadingLast(old: AppState['lessons']): AppState['lessons'] {
+  const out: AppState['lessons'] = {};
+  for (const [k, v] of Object.entries(old)) {
+    const n = Number(k);
+    out[n === 19 ? 28 : n >= 20 && n <= 28 ? n - 1 : n] = v;
   }
   return out;
 }
@@ -475,7 +487,7 @@ export function mergeStates(a: AppState, b: AppState): AppState {
 
   return {
     version: 1,
-    curriculum: 3,
+    curriculum: 4,
     settings: { ...newerSettings.settings },
     settingsUpdatedAt: Math.max(a.settingsUpdatedAt ?? 0, b.settingsUpdatedAt ?? 0) || undefined,
     lessons, exams, srs, contrib, ...totals(contrib),

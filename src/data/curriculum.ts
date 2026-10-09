@@ -179,7 +179,16 @@ export const LESSONS: Lesson[] = [
     { type: 'example', he: 'רוּחַ', translit: 'ruach', note: 'vento, spirito' },
     { type: 'example', he: 'יְרוּשָׁלַיִם', translit: 'yerushalayim', note: 'Gerusalemme' },
   ]),
-  rules(19, 'Leggere senza nikud', 'La grafia di giornali e cartelli', [
+  grammar(19, 'gr-articolo'),
+  grammar(20, 'gr-pronomi'),
+  grammar(21, 'gr-genere'),
+  grammar(22, 'gr-plurale'),
+  grammar(23, 'gr-aggettivi'),
+  grammar(24, 'gr-verbi'),
+  grammar(25, 'gr-passato'),
+  grammar(26, 'gr-futuro'),
+  grammar(27, 'gr-infinito'),
+  rules(28, 'Leggere senza nikud', 'La grafia di giornali e cartelli', [
     { type: 'p', text: 'Nei testi di tutti i giorni le vocali non si scrivono. Per aiutare chi legge si usa la grafia piena (ktiv malè): si aggiungono lettere mute.' },
     { type: 'list', items: [
       'ו per “o” e “u”: שֻׁלְחָן → שולחן, חֹדֶשׁ → חודש.',
@@ -189,15 +198,6 @@ export const LESSONS: Lesson[] = [
     { type: 'p', text: 'Il resto lo fa il vocabolario: più parole conosci, più è facile leggere senza vocali. Allenati nella sezione Lettura togliendo il nikud e con l’esame “Lettura senza nikud”.' },
     { type: 'example', he: 'סִפּוּר', translit: 'sipur', note: 'racconto: senza nikud סיפור' },
   ]),
-  grammar(20, 'gr-articolo'),
-  grammar(21, 'gr-pronomi'),
-  grammar(22, 'gr-genere'),
-  grammar(23, 'gr-plurale'),
-  grammar(24, 'gr-aggettivi'),
-  grammar(25, 'gr-verbi'),
-  grammar(26, 'gr-passato'),
-  grammar(27, 'gr-futuro'),
-  grammar(28, 'gr-infinito'),
 ];
 
 /** Ultima lezione che introduce lettere: da lì l'alfabeto è completo. */
