@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { LESSONS, type Lesson } from '../data/curriculum';
+import { LESSONS, LAST_LESSON, type Lesson } from '../data/curriculum';
 import { isLessonUnlocked, useAppState } from '../lib/store';
 import { JUST_PASSED_KEY, lessonFirstGlyph, lessonGlyphText, lessonKind, type LessonKind } from '../components/LessonArt';
 import { PageHeader } from '../components/PageHeader';
