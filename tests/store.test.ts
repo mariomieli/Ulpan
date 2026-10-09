@@ -208,7 +208,7 @@ describe('nuovo ordine del corso', () => {
   it('converte i progressi dell’ordine originale', () => {
     const old = { ...initialState(), curriculum: undefined, lessons: { 1: lp(90), 2: lp(85), 3: lp(95) } };
     const s = sanitize(JSON.parse(JSON.stringify(old)));
-    expect(s.curriculum).toBe(3);
+    expect(s.curriculum).toBe(4);
     // vecchie lezioni 1-3: א בּ ב ל מ ם שׁ ת ד י נ ן ג → בּ ב (4), ג ד (5) superate
     expect(s.lessons[4]).toMatchObject({ passed: true, bestScore: 90 });
     expect(s.lessons[5]).toMatchObject({ passed: true, bestScore: 85 });

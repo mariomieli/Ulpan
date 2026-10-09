@@ -34,10 +34,11 @@ describe('grammatica e numeri', () => {
     });
   }
 
-  it('le unità di grammatica sono lezioni del percorso, dopo la lettura', () => {
+  it('le unità di grammatica sono lezioni del percorso, dopo le regole e prima della lettura senza nikud', () => {
     const lessons = LESSONS.filter((l) => l.grammar);
     expect(lessons.length).toBeGreaterThanOrEqual(6);
-    expect(Math.min(...lessons.map((l) => l.id))).toBe(LAST_READING_LESSON + 1);
+    expect(Math.min(...lessons.map((l) => l.id))).toBe(19);
+    expect(Math.max(...lessons.map((l) => l.id))).toBe(LAST_READING_LESSON - 1);
     for (const l of lessons) {
       const u = GRAMMAR_UNITS.find((x) => x.id === l.grammar);
       expect(u, String(l.id)).toBeDefined();
