@@ -13,11 +13,14 @@ interface Geo { W: number; T: number; S: number; k: number; F: number; X: number
 const DESKTOP: Geo = { W: 340, T: 78, S: 118, k: 1, F: 32, X: 110, LF: 15 };
 const MOBILE: Geo = { W: 320, T: 64, S: 100, k: 0.78, F: 26, X: 9, LF: 14 };
 
-const UNITS: { kind: LessonKind; title: string; glyph: string }[] = [
-  { kind: 'vowels', title: 'Le vocali', glyph: 'אָ' },
-  { kind: 'letters', title: 'Le lettere', glyph: 'אב' },
-  { kind: 'rules', title: 'Regole di lettura', glyph: 'ספר' },
-  { kind: 'grammar', title: 'Grammatica di base', glyph: 'הַ' },
+/** Lezione conclusiva del corso: la lettura senza nikud viene dopo la grammatica. */
+const isFinalReading = (l: Lesson) => l.id === LAST_LESSON;
+const UNITS: { key: string; has: (l: Lesson) => boolean; title: string; glyph: string }[] = [
+  { key: 'vowels', has: (l) => lessonKind(l) === 'vowels', title: 'Le vocali', glyph: 'אָ' },
+  { key: 'letters', has: (l) => lessonKind(l) === 'letters', title: 'Le lettere', glyph: 'אב' },
+  { key: 'rules', has: (l) => lessonKind(l) === 'rules' && !isFinalReading(l), title: 'Regole di lettura', glyph: 'בְּ' },
+  { key: 'grammar', has: (l) => lessonKind(l) === 'grammar', title: 'Grammatica di base', glyph: 'הַ' },
+  { key: 'plain', has: isFinalReading, title: 'Leggere senza nikud', glyph: 'ספר' },
 ];
 const PHASE_NAME: Record<LessonKind, string> = { vowels: 'Vocali', letters: 'Lettere', rules: 'Regole di lettura', grammar: 'Grammatica' };
 
@@ -134,13 +137,13 @@ export function LessonsPage() {
       <div className="path-layout">
         <div className="path-units">
           {UNITS.map((u, ui) => {
-            const lessons = LESSONS.filter((l) => lessonKind(l) === u.kind);
+            const lessons = LESSONS.filter(u.has);
             if (!lessons.length) return null;
             const doneHere = lessons.filter((l) => state.lessons[l.id]?.passed).length;
             const start = offset;
             offset += lessons.length;
             return (
-              <section key={u.kind} className="pth-unit" aria-label={`Unità ${ui + 1}: ${u.title}`}>
+              <section key={u.key} className="pth-unit" aria-label={`Unità ${ui + 1}: ${u.title}`}>
                 <div className="pth-banner">
                   <span className="stripe" />
                   <div className="pth-bt">
